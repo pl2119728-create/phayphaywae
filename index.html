@@ -21,31 +21,31 @@
 <body class="bg-[#05080f] text-slate-100">
   <div id="nightOverlay" class="hidden fixed inset-0 z-40 pointer-events-none bg-black/35 transition-opacity"></div>
   <div id="app" class="max-w-md mx-auto min-h-screen bg-[#0b1120] shadow-2xl flex flex-col relative pb-24 border-x border-slate-800/80">
-    <header class="sticky top-0 z-30 bg-[#0b1120]/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-sm">
+    <header class="sticky top-0 z-30 bg-[#0b1120]/95 backdrop-blur border-b border-slate-800 px-3.5 py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shrink-0">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
         </div>
-        <div>
+        <div class="min-w-0">
           <div class="flex items-center gap-1.5">
-            <h1 class="text-base font-bold text-white leading-tight">ဖြေးဖြေး ဝယ်</h1>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">APK</span>
+            <h1 class="text-base font-bold text-white leading-tight truncate">ဖြေးဖြေး ဝယ်</h1>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">APK</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span id="syncText" class="text-xs text-slate-400 font-medium">ချိတ်ဆက်ပြီး</span>
+            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="syncText" class="text-[11px] text-slate-400 font-medium">ချိတ်ဆက်ပြီး</span>
           </div>
         </div>
       </div>
-      <div class="flex items-center gap-1.5">
-        <button onclick="toggleNightMode()" id="nightBtn" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 text-sm" title="Night Mode">🌙</button>
-        <button onclick="toggleSound()" id="soundBtn" class="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-emerald-300 text-sm" title="အသံဖွင့်/ပိတ်">🔊</button>
-        <button onclick="switchTab('chats')" class="relative p-2 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300" title="မက်ဆေ့ချ်များ">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button onclick="toggleNightMode()" id="nightBtn" class="p-2 rounded-full bg-slate-800 text-amber-300 text-sm" title="Night Mode">🌙</button>
+        <button onclick="toggleSound()" id="soundBtn" class="p-2 rounded-full bg-slate-800 text-emerald-300 text-sm" title="အသံ">🔊</button>
+        <button onclick="switchTab('chats')" class="p-2 rounded-full bg-emerald-500/15 text-emerald-300" title="စာတို">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         </button>
-        <button onclick="switchTab('notifications')" class="relative p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200" title="အကြောင်းကြားစာ">
+        <button onclick="switchTab('notifications')" class="relative p-2 rounded-full bg-slate-800 text-slate-200" title="အကြောင်းကြားစာ">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">0</span>
+          <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
         </button>
       </div>
     </header>
@@ -61,7 +61,7 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         <span class="text-xs font-semibold">ရှာဖွေ</span>
       </button>
-      <button onclick="openComposerModal()" class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-950 active:scale-95 transition">
+      <button onclick="openComposerModal()" class="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md active:scale-95 transition">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
       </button>
       <button onclick="switchTab('chats')" id="nav-chats" class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-slate-400">
@@ -99,10 +99,9 @@
     const STICKER_ICONS = ["🛍️", "✨", "🎉", "🙏", "🚀", "💙", "🤝", "🎁", "🥰", "🔥", "💯", "👍"];
     const BLOCKED_PHYSICAL = ["အဝတ်အစား", "ရှပ်အင်္ကျီ", "ဘောင်းဘီ", "ဖိနပ်", "ထဘီ", "ပုဆိုး", "shirt", "pants", "clothes", "dress", "shoes"];
     const RULES = [
-      "Facebook Page၊ YouTube Account၊ TikTok Account စသည့် အကောင့်/ပိုင်ဆိုင်မှု ရောင်းဝယ်မှုများကိုသာ တင်ရမည်။ အဝတ်အစားနှင့် မသက်ဆိုင်သော ရုပ်ပိုင်းဆိုင်ရာပစ္စည်းများ ခွင့်မပြုပါ။",
-      "အမျိုးအစားအလိုက် #youtube၊ #facebook၊ #tiktok စသဖြင့် # ခံပြီး ထည့်သွင်းပါက Category မှ တစ်ချက်နှိပ်ပြီး ရှာဖွေနိုင်မည်။",
-      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — ယုံကြည်ရကြောင်း အထောက်အထား / ဝယ်ယူအတည်ပြုမှုဖြင့် ကိုပိုင်ဇော်ထက်ထံ Settings မှတစ်ဆင့် လျှောက်ထား/အယူခံဝင်ရမည်။",
-      "မက်ဆေ့ချ်ထဲတွင် Online/Last Seen၊ Seen ပြ/မပြ၊ ✓ / ✓✓ နှင့် မိမိဘက်ဖျက် / Everyone ဖျက်စနစ်များ ထည့်သွင်းထားသည်။",
+      "Facebook Page၊ YouTube Account၊ TikTok Account စသည့် အကောင့်/ပိုင်ဆိုင်မှု ရောင်းဝယ်မှုများကိုသာ တင်ရမည်။ အဝတ်အစားနှင့် မသက်ဆိုင်သော ပစ္စည်းများ ခွင့်မပြုပါ။",
+      "အမျိုးအစားအလိုက် #youtube၊ #facebook၊ #tiktok စသဖြင့် # ခံပြီး ထည့်သွင်းပါက Category မှ တစ်ချက်နှိပ် ရှာဖွေနိုင်မည်။",
+      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — Settings ထဲမှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ လျှောက်ထား/အယူခံဝင်ရမည်။",
       "ပို့စ်တစ်ခုတွင် Reaction နှင့် မှတ်ချက် (Comment) များလေ လူတွေဆီ ပိုမိုရောက်ရှိမည်။"
     ];
 
@@ -154,7 +153,7 @@
 
     let st = {
       tab: "home",
-      profileTab: "posts",
+      profileSubTab: "posts",
       me: getUser(),
       posts: [],
       myday: [],
@@ -186,7 +185,6 @@
       seenNotifIds: {},
       seenCallIds: {},
       firstSync: true,
-      urlUserHandled: false,
       recorder: null,
       audioChunks: []
     };
@@ -194,8 +192,12 @@
     const saveMe = () => { try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(st.me)); } catch (e) {} };
     const esc = s => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     function toast(m) {
-      const el = document.getElementById("toast"); el.textContent = m; el.classList.remove("hidden");
-      clearTimeout(window._tt); window._tt = setTimeout(() => el.classList.add("hidden"), 2400);
+      const el = document.getElementById("toast");
+      if (!el) return;
+      el.textContent = m;
+      el.classList.remove("hidden");
+      clearTimeout(window._tt);
+      window._tt = setTimeout(() => el.classList.add("hidden"), 2400);
     }
     function ago(ts) {
       const d = Math.floor((Date.now() - (ts || Date.now())) / 1000);
@@ -207,13 +209,13 @@
     function formatExactTime(ts) {
       if (!ts) return "မသိရသေး";
       const dt = new Date(Number(ts));
-      return dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " • " + dt.toLocaleDateString();
+      return dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
     function onlineText(uid) {
-      if (uid === st.me.id) return "🟢 Online (ယခုအွန်လိုင်း)";
+      if (uid === st.me.id) return "🟢 Online";
       const ts = Number(st.presence[uid] || 0);
-      if (ts && (Date.now() - ts < 10000)) return "🟢 Online ရှိနေသည်";
-      if (ts) return "⚫ ဆင်းသွားချိန်: " + formatExactTime(ts);
+      if (ts && (Date.now() - ts < 10000)) return "🟢 Online";
+      if (ts) return "⚫ ဆင်းချိန် " + formatExactTime(ts);
       return "⚫ Offline";
     }
 
@@ -226,13 +228,11 @@
         return st.audioCtx;
       } catch (e) { return null; }
     }
-
     document.addEventListener("pointerdown", () => { if (st.soundOn) ensureAudio(); }, { passive: true });
 
     function stopRingLoop() {
       if (st.ringTimer) { clearInterval(st.ringTimer); st.ringTimer = null; }
     }
-
     function startRingLoop(mode) {
       stopRingLoop();
       const ringOnce = () => {
@@ -243,17 +243,14 @@
           const now = ctx.currentTime;
           const freqs = mode === "incoming" ? [880, 1174.66, 880, 1174.66] : [587.33, 587.33];
           freqs.forEach((f, i) => {
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
+            const osc = ctx.createOscillator(), g = ctx.createGain();
             osc.type = mode === "incoming" ? "triangle" : "sine";
             osc.frequency.setValueAtTime(f, now + i * 0.14);
             g.gain.setValueAtTime(0.001, now + i * 0.14);
             g.gain.exponentialRampToValueAtTime(mode === "incoming" ? 0.22 : 0.14, now + i * 0.14 + 0.02);
             g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.14 + 0.13);
-            osc.connect(g);
-            g.connect(ctx.destination);
-            osc.start(now + i * 0.14);
-            osc.stop(now + i * 0.14 + 0.14);
+            osc.connect(g); g.connect(ctx.destination);
+            osc.start(now + i * 0.14); osc.stop(now + i * 0.14 + 0.14);
           });
         } catch (e) {}
       };
@@ -266,12 +263,13 @@
       const ov = document.getElementById("nightOverlay");
       if (ov) ov.classList.toggle("hidden", !st.nightMode);
       playSong("notif");
-      toast(st.nightMode ? "Night Mode ဖွင့်ပြီး" : "ပုံမှန် အမည်းအောက်ခံသို့ ပြန်ပြောင်းပြီး");
+      toast(st.nightMode ? "Night Mode ဖွင့်ပြီး" : "Night Mode ပိတ်ပြီး");
     }
 
     function toggleSound() {
       st.soundOn = !st.soundOn;
-      document.getElementById("soundBtn").textContent = st.soundOn ? "🔊" : "🔇";
+      const b = document.getElementById("soundBtn");
+      if (b) b.textContent = st.soundOn ? "🔊" : "🔇";
       if (!st.soundOn) stopRingLoop();
       else { ensureAudio(); playSong("notif"); }
       toast(st.soundOn ? "အသံပိုင်း ဖွင့်ပြီး" : "အသံပိုင်း ပိတ်ပြီး");
@@ -292,29 +290,25 @@
           [523.25, 783.99];
         const wave = kind === "angry" ? "sawtooth" : (kind === "haha" || kind === "like" ? "triangle" : "sine");
         seq.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
+          const osc = ctx.createOscillator(), gain = ctx.createGain();
           osc.type = wave;
           osc.frequency.setValueAtTime(freq, now + idx * 0.08);
           gain.gain.setValueAtTime(0.001, now + idx * 0.08);
-          gain.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.08 + 0.015);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.25);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now + idx * 0.08);
-          osc.stop(now + idx * 0.08 + 0.27);
+          gain.gain.exponentialRampToValueAtTime(0.16, now + idx * 0.08 + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.24);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.26);
         });
       } catch (e) {}
     }
 
-    const uInfo = id => id === st.me.id ? st.me : (st.users[id] || { id, name: id, bio: "", photo: "", blueMark: false, friends: [], following: [], color: "from-slate-500 to-slate-600", createdAt: Date.now() });
+    const uInfo = id => id === st.me.id ? st.me : (st.users[id] || { id: id || "PPW", name: id || "User", bio: "", photo: "", blueMark: false, friends: [], following: [], color: COLORS[0], createdAt: Date.now() });
     const isNewUser = id => (Date.now() - (uInfo(id).createdAt || Date.now())) < 7 * 86400000;
     function blueBadge(u) {
-      if (!u || !u.blueMark) return "";
-      return `<span title="အတည်ပြု ယုံကြည်စိတ်ချရသူ" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold shrink-0">✓</span>`;
+      return (u && u.blueMark) ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold shrink-0">✓</span>` : "";
     }
     function uRating(id) {
-      const l = Object.values(st.reviews || {}).filter(r => r.targetId === id);
+      const l = Object.values(st.reviews || {}).filter(r => r && r.targetId === id);
       if (!l.length) return { avg: "0.0", count: 0, list: [] };
       return { avg: (l.reduce((a, b) => a + (Number(b.rating) || 5), 0) / l.length).toFixed(1), count: l.length, list: l };
     }
@@ -326,7 +320,7 @@
       return c;
     }
     function avatar(u, sz = "w-11 h-11 text-base") {
-      const x = typeof u === "string" ? uInfo(u) : u;
+      const x = typeof u === "string" ? uInfo(u) : (u || st.me);
       if (x && x.photo) {
         return `<img src="${x.photo}" alt="${esc(x.name || "U")}" class="${sz} rounded-full object-cover shrink-0 shadow-sm border-2 border-emerald-500/50 bg-slate-800"/>`;
       }
@@ -334,44 +328,30 @@
     }
 
     function totalReactions(p) {
-      const rx = p.reactions || {};
-      let sum = Object.keys(p.likes || {}).length;
+      const rx = (p && p.reactions) || {};
+      let sum = Object.keys((p && p.likes) || {}).length;
       Object.values(rx).forEach(map => { sum += Object.keys(map || {}).length; });
       return sum;
     }
-
     function userReaction(p) {
-      const rx = p.reactions || {};
-      for (const r of REACTIONS) {
-        if (rx[r.key] && rx[r.key][st.me.id]) return r.key;
-      }
-      if (p.likes && p.likes[st.me.id]) return "like";
+      const rx = (p && p.reactions) || {};
+      for (const r of REACTIONS) { if (rx[r.key] && rx[r.key][st.me.id]) return r.key; }
+      if (p && p.likes && p.likes[st.me.id]) return "like";
       return null;
     }
-
-    function engagementScore(p) {
-      const rCnt = totalReactions(p);
-      const cCnt = Object.keys(p.comments || {}).length;
-      return rCnt * 3 + cCnt * 5;
-    }
-
+    function engagementScore(p) { return totalReactions(p) * 3 + Object.keys((p && p.comments) || {}).length * 5; }
     function feedScore(p) {
-      const eng = engagementScore(p);
       const ageHours = Math.max(0.2, (Date.now() - (p.createdAt || Date.now())) / 3600000);
-      const recencyBoost = 24 / (1 + ageHours * 0.25);
-      const newMemberBoost = isNewUser(p.authorId) ? 6 : 0;
-      return eng * 2.5 + recencyBoost + newMemberBoost;
+      return engagementScore(p) * 2.5 + (24 / (1 + ageHours * 0.25)) + (isNewUser(p.authorId) ? 6 : 0);
     }
-
-    function matchesCategoryOrTag(p, filterVal) {
-      if (!filterVal || filterVal === "အားလုံး" || filterVal === "စိတ်ဝင်စားမှုများ" || filterVal === "အသစ်ရောက်သူများ") return true;
+    function matchesCategoryOrTag(p, f) {
+      if (!f || f === "အားလုံး" || f === "စိတ်ဝင်စားမှုများ" || f === "အသစ်ရောက်သူများ") return true;
       const txt = ((p.text || "") + " " + (p.tags || "")).toLowerCase();
-      if (filterVal === "YouTube Account") return p.category === "YouTube Account" || txt.includes("#youtube");
-      if (filterVal === "Facebook Page") return p.category === "Facebook Page" || txt.includes("#facebook") || txt.includes("#fb");
-      if (filterVal === "TikTok Account") return p.category === "TikTok Account" || txt.includes("#tiktok");
-      return p.category === filterVal;
+      if (f === "YouTube Account") return p.category === "YouTube Account" || txt.includes("#youtube");
+      if (f === "Facebook Page") return p.category === "Facebook Page" || txt.includes("#facebook") || txt.includes("#fb");
+      if (f === "TikTok Account") return p.category === "TikTok Account" || txt.includes("#tiktok");
+      return p.category === f;
     }
-
     function hasBlockedClothing(str) {
       const low = String(str || "").toLowerCase();
       return BLOCKED_PHYSICAL.some(k => low.includes(k));
@@ -381,25 +361,14 @@
     const fbPut = (p, d) => fetch(`${DB}/${p}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
     const fbDel = p => fetch(`${DB}/${p}.json`, { method: "DELETE" });
 
-    function heartbeat() {
-      fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
-    }
-
     async function sync(init = false) {
       try {
-        heartbeat();
+        fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
         if (init) await fbPut(`users/${st.me.id}`, st.me);
         const [po, md, us, pr, rv, ap, no, ch, ty, cl] = await Promise.all([
-          fbGet("posts"),
-          fbGet("myday"),
-          fbGet("users"),
-          fbGet("presence"),
-          fbGet("reviews"),
-          fbGet("appeals"),
-          fbGet(`notifications/${st.me.id}`),
-          fbGet("chats"),
-          fbGet("typing"),
-          fbGet("calls")
+          fbGet("posts"), fbGet("myday"), fbGet("users"), fbGet("presence"),
+          fbGet("reviews"), fbGet("appeals"), fbGet(`notifications/${st.me.id}`),
+          fbGet("chats"), fbGet("typing"), fbGet("calls")
         ]);
         const rawPosts = po ? Object.values(po) : [];
         st.posts = rawPosts.filter(p => p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
@@ -420,21 +389,10 @@
         st.typing = ty || {};
         st.calls = cl || {};
 
-        if (!st.urlUserHandled) {
-          st.urlUserHandled = true;
-          const uidParam = new URLSearchParams(location.search).get("u");
-          if (uidParam && st.users[uidParam]) {
-            setTimeout(() => openUserModal(uidParam), 250);
-          }
-        }
-
-        const nextNotifs = no ? Object.values(no).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
+        const nextNotifs = no ? Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
         let newNotifSong = false;
         nextNotifs.forEach(n => {
-          if (!st.seenNotifIds[n.id]) {
-            st.seenNotifIds[n.id] = true;
-            if (!st.firstSync && !n.read) newNotifSong = true;
-          }
+          if (!st.seenNotifIds[n.id]) { st.seenNotifIds[n.id] = true; if (!st.firstSync && !n.read) newNotifSong = true; }
         });
         st.notifs = nextNotifs;
 
@@ -443,10 +401,7 @@
         Object.entries(nextChats).forEach(([rk, mObj]) => {
           if (!rk.includes(st.me.id)) return;
           Object.values(mObj || {}).forEach(m => {
-            if (!st.seenMsgIds[m.id]) {
-              st.seenMsgIds[m.id] = true;
-              if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true;
-            }
+            if (m && !st.seenMsgIds[m.id]) { st.seenMsgIds[m.id] = true; if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true; }
           });
         });
         st.chats = nextChats;
@@ -463,43 +418,35 @@
             if (c.status !== "ringing") stopRingLoop();
           }
         });
-
         st.firstSync = false;
 
-        if (incomingCall && !st.activeCall) {
-          st.activeCall = incomingCall;
-          startRingLoop("incoming");
-          openCallModal(incomingCall.id);
-        } else if (newMsgSong) {
-          playSong("message");
-        } else if (newNotifSong) {
-          playSong("notif");
-        }
+        if (incomingCall && !st.activeCall) { st.activeCall = incomingCall; startRingLoop("incoming"); openCallModal(incomingCall.id); }
+        else if (newMsgSong) playSong("message");
+        else if (newNotifSong) playSong("notif");
 
-        if (st.chatUid && !st.me.hideSeen) {
-          markRoomSeen(st.chatUid);
-        }
+        if (st.chatUid && !st.me.hideSeen) markRoomSeen(st.chatUid);
 
-        document.getElementById("syncDot").className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
-        document.getElementById("syncText").textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
+        const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        if (txt) txt.textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
+
         const unread = st.notifs.filter(n => !n.read).length;
         const nb = document.getElementById("notifBadge");
-        if (unread > 0) { nb.textContent = unread > 9 ? "9+" : unread; nb.classList.remove("hidden"); } else nb.classList.add("hidden");
+        if (nb) {
+          if (unread > 0) { nb.textContent = unread > 9 ? "9+" : unread; nb.classList.remove("hidden"); }
+          else nb.classList.add("hidden");
+        }
 
         const activeEl = document.activeElement;
         const tag = activeEl ? activeEl.tagName : "";
         const isTypingMsg = activeEl && activeEl.id === "msgInp";
-        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) {
-          render();
-          if (st.chatUid) renderMsgs();
-        } else if (st.chatUid && !isTypingMsg) {
-          renderMsgs();
-        } else if (st.chatUid) {
-          renderTypingBanner();
-        }
+        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) { render(); if (st.chatUid) renderMsgs(); }
+        else if (st.chatUid && !isTypingMsg) renderMsgs();
+        else if (st.chatUid) renderTypingBanner();
       } catch (e) {
-        document.getElementById("syncDot").className = "w-2.5 h-2.5 rounded-full bg-amber-400";
-        document.getElementById("syncText").textContent = "ချိတ်ဆက်နေဆဲ...";
+        const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400";
+        if (txt) txt.textContent = "ချိတ်ဆက်နေဆဲ...";
       }
     }
 
@@ -517,43 +464,28 @@
       if (a) { a.classList.remove("text-slate-400"); a.classList.add("text-emerald-400"); }
       if (t === "notifications") {
         st.notifs.filter(n => !n.read).forEach(n => { n.read = true; fbPut(`notifications/${st.me.id}/${n.id}/read`, true).catch(() => {}); });
-        document.getElementById("notifBadge").classList.add("hidden");
+        const nb = document.getElementById("notifBadge"); if (nb) nb.classList.add("hidden");
       }
       render();
     }
 
     function getFilteredPosts() {
       let list = [...st.posts];
-      if (st.cat === "စိတ်ဝင်စားမှုများ") {
-        list.sort((a, b) => engagementScore(b) - engagementScore(a) || (b.createdAt || 0) - (a.createdAt || 0));
-      } else if (st.cat === "အသစ်ရောက်သူများ") {
-        list = list.filter(p => isNewUser(p.authorId)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      } else if (st.cat !== "အားလုံး") {
-        list = list.filter(p => matchesCategoryOrTag(p, st.cat)).sort((a, b) => feedScore(b) - feedScore(a));
-      } else {
-        list.sort((a, b) => feedScore(b) - feedScore(a));
-      }
+      if (st.cat === "စိတ်ဝင်စားမှုများ") list.sort((a, b) => engagementScore(b) - engagementScore(a) || (b.createdAt || 0) - (a.createdAt || 0));
+      else if (st.cat === "အသစ်ရောက်သူများ") list = list.filter(p => isNewUser(p.authorId)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      else if (st.cat !== "အားလုံး") list = list.filter(p => matchesCategoryOrTag(p, st.cat)).sort((a, b) => feedScore(b) - feedScore(a));
+      else list.sort((a, b) => feedScore(b) - feedScore(a));
       return list;
     }
 
     function renderFriendsGrid(uid, limit = 6) {
       const u = uInfo(uid);
-      const fIds = Array.isArray(u.friends) ? u.friends : [];
-      const shown = fIds.slice(0, limit);
-      if (!shown.length) {
-        return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center text-sm text-slate-400">မိတ်ဆွေစာရင်း မရှိသေးပါ</div>`;
-      }
-      return `
-        <div class="grid grid-cols-3 gap-2.5">
-          ${shown.map(fid => {
-            const fu = uInfo(fid);
-            return `
-              <div onclick="openUserModal('${fu.id}')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-2xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer transition">
-                ${avatar(fu, "w-14 h-14 text-base")}
-                <span class="text-xs font-bold text-slate-100 truncate w-full text-center flex items-center justify-center gap-0.5">${esc(fu.name)} ${blueBadge(fu)}</span>
-              </div>`;
-          }).join("")}
-        </div>`;
+      const shown = (Array.isArray(u.friends) ? u.friends : []).slice(0, limit);
+      if (!shown.length) return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center text-sm text-slate-400">မိတ်ဆွေစာရင်း မရှိသေးပါ</div>`;
+      return `<div class="grid grid-cols-3 gap-2.5">${shown.map(fid => {
+        const fu = uInfo(fid);
+        return `<div onclick="openUserModal('${fu.id}')" class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer">${avatar(fu, "w-14 h-14 text-base")}<span class="text-xs font-bold text-slate-100 truncate w-full text-center flex items-center justify-center gap-0.5">${esc(fu.name)} ${blueBadge(fu)}</span></div>`;
+      }).join("")}</div>`;
     }
 
     function renderMyDayStrip() {
@@ -566,13 +498,7 @@
             </button>
             ${st.myday.map(d => {
               const du = uInfo(d.authorId);
-              return `
-                <button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1.5 shrink-0 max-w-[72px]">
-                  <div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">
-                    ${avatar(du, "w-14 h-14 text-base")}
-                  </div>
-                  <span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span>
-                </button>`;
+              return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1.5 shrink-0 max-w-[72px]"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base")}</div><span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`;
             }).join("")}
           </div>
         </div>`;
@@ -580,95 +506,512 @@
 
     function render() {
       const el = document.getElementById("mainContent");
-      if (st.tab === "home") {
-        const list = getFilteredPosts();
-        el.innerHTML = `
-          ${renderMyDayStrip()}
-          <!-- အလယ်တည့်တည့် ပို့စ်တင်အဝိုင်း -->
-          <div class="bg-[#0f172a] px-4 py-3.5 border-b border-slate-800 flex flex-col items-center gap-2">
-            <button onclick="openComposerModal()" class="relative group flex items-center justify-center">
-              ${avatar(st.me, "w-14 h-14 text-lg")}
-              <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 text-white text-sm font-bold flex items-center justify-center border-2 border-[#0f172a] shadow">+</span>
-            </button>
-            <button onclick="openComposerModal()" class="text-xs font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-4 py-1.5 rounded-full">Page / YouTube / TikTok ပို့စ်တင်ရန်</button>
-          </div>
-          <div class="bg-[#0f172a] px-3 py-2.5 border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            ${FEED_FILTERS.map(c => `<button onclick="st.cat='${c}';playSong('notif');render()" class="px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap ${st.cat === c ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">${c}</button>`).join("")}
-          </div>
-          <div class="px-3.5 pt-2.5 flex items-center justify-between text-xs text-slate-400 font-medium">
-            <span>🔥 စိတ်ဝင်စားမှုများလေ လူတွေဆီ ပိုရောက်လေ</span>
-            <button onclick="openRulesModal()" class="text-emerald-400 font-bold underline">စည်းမျဉ်းများ</button>
-          </div>
-          <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် Account ရောင်းဝယ်မှုပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
-      } else if (st.tab === "explore") {
-        const q = st.q.trim().toLowerCase();
-        const res = st.posts.filter(p => !q || (p.text || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q) || (p.price || "").toLowerCase().includes(q) || (uInfo(p.authorId).name || "").toLowerCase().includes(q));
-        el.innerHTML = `
-          <div class="p-3.5 space-y-3">
-            <input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="#youtube, #facebook, #tiktok သို့မဟုတ် Account အမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"/>
-            <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
-            <div class="space-y-3">${res.map(postCard).join("")}</div>
-          </div>`;
-      } else if (st.tab === "chats") {
-        const rooms = Object.entries(st.chats || {}).filter(([k]) => k.includes(st.me.id));
-        const others = Object.values(st.users).filter(u => u && u.id !== st.me.id);
-        el.innerHTML = `
-          <div class="p-3.5 space-y-4">
-            <div class="flex items-center justify-between px-1">
-              <h2 class="text-base font-bold text-white">မက်ဆေ့ချ် Box</h2>
-              <span class="text-xs font-semibold text-slate-400">${rooms.length} ဦး</span>
+      if (!el) return;
+      try {
+        if (st.tab === "home") {
+          const list = getFilteredPosts();
+          el.innerHTML = `
+            ${renderMyDayStrip()}
+            <div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800 flex flex-col items-center gap-2">
+              <div onclick="openComposerModal()" class="cursor-pointer">${avatar(st.me, "w-14 h-14 text-lg")}</div>
+              <button onclick="openComposerModal()" class="w-full text-center bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-sm px-4 py-2.5 rounded-full font-medium">Page / YouTube / TikTok Account ရောင်းဝယ်တင်ရန်...</button>
             </div>
-            <div class="space-y-2.5">
-              ${rooms.length ? rooms.map(([k, mObj], idx) => {
-                const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid);
-                const ms = Object.values(mObj || {}).filter(m => !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
-                const last = ms[ms.length - 1];
-                const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500));
-                const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.video ? "🎬 Short Video (၁၅စက္ကန့်)" : (last.audio ? "🎙️ အသံမက်ဆေ့ချ်" : "📷 ဓာတ်ပုံ")))) : "စကားစပြောရန် နှိပ်ပါ");
-                return `<div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer active:bg-slate-800">
-                  <span class="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
-                  ${avatar(o, "w-12 h-12 text-base")}
+            <div class="bg-[#0f172a] px-3 py-2.5 border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
+              ${FEED_FILTERS.map(c => `<button onclick="st.cat='${c}';playSong('notif');render()" class="px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap ${st.cat === c ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">${c}</button>`).join("")}
+            </div>
+            <div class="px-3.5 pt-2.5 flex items-center justify-between text-xs text-slate-400 font-medium">
+              <span>🔥 စိတ်ဝင်စားမှုများလေ လူတွေဆီ ပိုရောက်လေ</span>
+              <button onclick="openRulesModal()" class="text-emerald-400 font-bold underline">စည်းမျဉ်းများ</button>
+            </div>
+            <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် Account ရောင်းဝယ်မှုပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
+        } else if (st.tab === "explore") {
+          const q = st.q.trim().toLowerCase();
+          const res = st.posts.filter(p => !q || (p.text || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q) || (p.price || "").toLowerCase().includes(q) || (uInfo(p.authorId).name || "").toLowerCase().includes(q));
+          el.innerHTML = `
+            <div class="p-3.5 space-y-3">
+              <input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="#youtube, #facebook, #tiktok ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm"/>
+              <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
+              <div class="space-y-3">${res.map(postCard).join("")}</div>
+            </div>`;
+        } else if (st.tab === "chats") {
+          const rooms = Object.entries(st.chats || {}).filter(([k]) => k.includes(st.me.id));
+          const others = Object.values(st.users).filter(u => u && u.id !== st.me.id);
+          el.innerHTML = `
+            <div class="p-3.5 space-y-4">
+              <div class="flex items-center justify-between px-1"><h2 class="text-base font-bold text-white">မက်ဆေ့ချ် Box</h2><span class="text-xs text-slate-400">${rooms.length} ဦး</span></div>
+              <div class="space-y-2.5">
+                ${rooms.length ? rooms.map(([k, mObj], idx) => {
+                  const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid);
+                  const ms = Object.values(mObj || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
+                  const last = ms[ms.length - 1];
+                  const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500));
+                  const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.video ? "🎬 Short Video" : (last.audio ? "🎙️ အသံ" : "📷 ဓာတ်ပုံ")))) : "စကားစပြောရန် နှိပ်ပါ");
+                  return `<div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer"><span class="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>${avatar(o, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="flex items-center justify-between"><span class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span><span class="text-xs text-slate-400">${last ? ago(last.createdAt) : ""}</span></div><div class="text-xs ${isTyping ? "text-emerald-400 font-bold" : "text-slate-400"} truncate mt-0.5">${esc(preview)}</div></div></div>`;
+                }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">စာပို့ထားသူ မရှိသေးပါ</div>`}
+              </div>
+              ${others.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><h3 class="text-sm font-bold text-slate-300 px-1">စာပို့ / ဖုန်းခေါ်နိုင်သူများ</h3><div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">${others.map(u => `<button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[90px] shrink-0">${avatar(u, "w-12 h-12 text-base")}<span class="text-xs font-bold text-white truncate w-full text-center">${esc(u.name)}</span><span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span></button>`).join("")}</div></div>` : ""}
+            </div>`;
+        } else if (st.tab === "friends") {
+          const q = st.fq.trim().toLowerCase();
+          const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
+          el.innerHTML = `
+            <div class="p-3.5 space-y-4">
+              <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white"><div class="text-xs text-emerald-100">သင့် User ID</div><div class="flex items-center justify-between mt-1"><span class="text-base font-bold">${esc(st.me.id)}</span><button onclick="copyProfileLink()" class="px-3.5 py-1.5 rounded-xl bg-white/20 text-xs font-bold">Link ကူးမည်</button></div></div>
+              <input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID သို့မဟုတ် နာမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm"/>
+              <div class="space-y-2.5">${users.length ? users.map(u => {
+                const isF = (st.me.friends || []).includes(u.id);
+                return `<div class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2"><div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400 font-mono">${esc(u.id)}</div></div></div><button onclick="openChat('${u.id}')" class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button><button onclick="toggleFriend('${u.id}')" class="px-3 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button></div>`;
+              }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div>
+            </div>`;
+        } else if (st.tab === "notifications") {
+          el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm text-slate-100"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center text-sm text-slate-400 border border-slate-800">အကြောင်းကြားစာ မရှိသေးပါ</div>`}</div>`;
+        } else if (st.tab === "profile") {
+          const r = uRating(st.me.id);
+          const mine = st.posts.filter(p => p.authorId === st.me.id);
+          const fCount = (st.me.friends || []).length;
+          const followingCount = (st.me.following || []).length;
+          const followerCount = followersCount(st.me.id);
+          el.innerHTML = `
+            <div class="p-3.5 space-y-4">
+              <div class="bg-[#0f172a] rounded-2xl p-4 border border-slate-800 space-y-4 relative">
+                <button onclick="openSettingsModal()" class="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-base" title="Settings">⚙️</button>
+                <div class="flex items-center gap-3.5 pr-10">
+                  <label class="relative cursor-pointer shrink-0">
+                    ${avatar(st.me, "w-20 h-20 text-2xl")}
+                    <span class="absolute bottom-0 left-0 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px] shadow border-2 border-[#0f172a]">📷</span>
+                    <input type="file" accept="image/*" onchange="onPickAvatar(event)" class="hidden"/>
+                  </label>
                   <div class="min-w-0 flex-1">
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span>
-                      <span class="text-xs text-slate-400">${last ? ago(last.createdAt) : ""}</span>
-                    </div>
-                    <div class="text-xs ${isTyping ? "text-emerald-400 font-bold" : "text-slate-400"} truncate mt-0.5">${esc(preview)}</div>
+                    <h2 class="text-base font-bold text-white truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</h2>
+                    <div class="text-xs font-mono text-slate-400">${esc(st.me.id)}</div>
+                    <p class="text-xs text-slate-300 mt-1 line-clamp-2">${esc(st.me.bio || "")}</p>
                   </div>
-                </div>`;
-              }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">စာပို့ထားသူ မရှိသေးပါ — အောက်က အသုံးပြုသူများကို နှိပ်ပြီး စတင်စာပို့နိုင်ပါတယ်</div>`}
-            </div>
-            ${others.length ? `
-              <div class="space-y-2.5 pt-2 border-t border-slate-800">
-                <h3 class="text-sm font-bold text-slate-300 px-1">စာပို့ / ဖုန်းခေါ်နိုင်သူများ</h3>
-                <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
-                  ${others.map(u => `
-                    <button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[92px] shrink-0">
-                      ${avatar(u, "w-12 h-12 text-base")}
-                      <span class="text-xs font-bold text-white truncate w-full text-center flex items-center justify-center gap-0.5">${esc(u.name)} ${blueBadge(u)}</span>
-                      <span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span>
-                    </button>`).join("")}
                 </div>
-              </div>` : ""}
-          </div>`;
-      } else if (st.tab === "friends") {
-        const q = st.fq.trim().toLowerCase();
-        const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
-        el.innerHTML = `
-          <div class="p-3.5 space-y-4">
-            <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white">
-              <div class="text-xs text-emerald-100 font-medium">သင့် User ID</div>
-              <div class="flex items-center justify-between mt-1"><span class="text-base font-bold">${esc(st.me.id)}</span><button onclick="copyProfileLink()" class="px-3.5 py-1.5 rounded-xl bg-white/20 text-xs font-bold">📋 Link ကူးမည်</button></div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="copyProfileLink()" class="py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">📋 Profile Link ကူးမည်</button>
+                  <button onclick="openSettingsModal()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">⚙️ ဆက်တင် / Blue Mark</button>
+                </div>
+
+                <div class="grid grid-cols-4 gap-2 pt-1 text-center">
+                  <div class="flex flex-col items-center gap-1"><div class="w-11 h-11 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-bold text-sm flex items-center justify-center">${fCount}</div><span class="text-[11px] text-slate-300 font-semibold">Friends</span></div>
+                  <div class="flex flex-col items-center gap-1"><div class="w-11 h-11 rounded-full bg-blue-500/15 border border-blue-500/40 text-blue-300 font-bold text-sm flex items-center justify-center">${followingCount}</div><span class="text-[11px] text-slate-300 font-semibold">Following</span></div>
+                  <div class="flex flex-col items-center gap-1"><div class="w-11 h-11 rounded-full bg-teal-500/15 border border-teal-500/40 text-teal-300 font-bold text-sm flex items-center justify-center">${followerCount}</div><span class="text-[11px] text-slate-300 font-semibold">Follower</span></div>
+                  <div class="flex flex-col items-center gap-1"><div class="w-11 h-11 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold text-xs flex items-center justify-center">★ ${r.avg}</div><span class="text-[11px] text-slate-300 font-semibold">အဆင့်</span></div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-800">
+                  <button onclick="st.profileSubTab='posts';render()" class="py-2 rounded-xl text-xs font-bold ${st.profileSubTab === "posts" ? "bg-emerald-600 text-white" : "bg-slate-900 text-slate-400"}">ပို့စ် (${mine.length})</button>
+                  <button onclick="st.profileSubTab='friends';render()" class="py-2 rounded-xl text-xs font-bold ${st.profileSubTab === "friends" ? "bg-emerald-600 text-white" : "bg-slate-900 text-slate-400"}">မိတ်ဆွေ (${fCount})</button>
+                  <button onclick="st.profileSubTab='reviews';render()" class="py-2 rounded-xl text-xs font-bold ${st.profileSubTab === "reviews" ? "bg-emerald-600 text-white" : "bg-slate-900 text-slate-400"}">သုံးသပ်ချက် (${r.count})</button>
+                </div>
+              </div>
+
+              ${st.profileSubTab === "posts" ? `<div class="space-y-3">${mine.length ? mine.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">ပို့စ်မရှိသေးပါ</div>`}</div>` : ""}
+              ${st.profileSubTab === "friends" ? `<div class="bg-[#0f172a] rounded-2xl p-4 border border-slate-800 space-y-2.5"><div class="text-sm font-bold text-slate-200">မိတ်ဆွေများ (${fCount} ယောက်)</div>${renderFriendsGrid(st.me.id, 6)}</div>` : ""}
+              ${st.profileSubTab === "reviews" ? `<div class="bg-[#0f172a] rounded-2xl p-4 border border-slate-800 space-y-2">${r.list.length ? r.list.map(x => `<div class="bg-slate-900 p-3 rounded-xl text-xs"><span class="font-bold text-white">${esc(uInfo(x.authorId).name)}</span> <span class="text-amber-400">${"★".repeat(x.rating || 5)}</span><div class="text-slate-300 mt-1">${esc(x.text)}</div></div>`).join("") : `<div class="text-center text-sm text-slate-400 py-4">သုံးသပ်ချက် မရှိသေးပါ</div>`}</div>` : ""}
+            </div>`;
+        }
+      } catch (err) {
+        el.innerHTML = `<div class="p-6 text-center text-sm text-rose-400">စာမျက်နှာ ဖွင့်ရာတွင် အမှားအနည်းငယ် ရှိနေပါသည် — <button onclick="location.reload()" class="underline font-bold text-emerald-400">Refresh လုပ်ပါ</button></div>`;
+      }
+    }
+
+    function openSettingsModal() {
+      const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length;
+      const myAppeal = Object.values(st.appeals || {}).filter(a => a && a.userId === st.me.id).sort((a, b) => b.createdAt - a.createdAt)[0];
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3.5 animate-slide-up max-h-[88vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="text-base font-bold text-white">⚙️ ဆက်တင် (Settings)</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
             </div>
-            <input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID (ဥပမာ PPW-123456) ဖြင့် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm"/>
-            <div class="space-y-2.5">${users.length ? users.map(u => {
-              const isF = (st.me.friends || []).includes(u.id);
-              return `<div class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2">
-                <div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400 font-mono">${esc(u.id)}</div></div></div>
-                <button onclick="openChat('${u.id}')" class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button>
-                <button onclick="toggleFriend('${u.id}')" class="px-3 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button>
-              </div>`;
-            }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div>
-          </div>`;
-      } else if (st.tab === "notifications") {
-        el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border
+            <div class="space-y-2">
+              <div class="text-xs font-bold text-slate-400">ပရိုဖိုင် ပြင်ဆင်ရန်</div>
+              <input id="pName" type="text" value="${esc(st.me.name)}" placeholder="နာမည်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <input id="pBio" type="text" value="${esc(st.me.bio || "")}" placeholder="မိတ်ဆက်စာ (Bio)" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <input id="pPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်းနံပါတ်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <button onclick="saveProfile()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">ပရိုဖိုင် သိမ်းဆည်းမည်</button>
+            </div>
+            ${!st.me.blueMark ? `
+              <div class="p-3 rounded-2xl bg-sky-950/50 border border-sky-500/30 space-y-2">
+                <div class="flex items-center justify-between"><span class="text-xs font-bold text-sky-200">Blue Mark ဝယ်ယူ / အယူခံ</span><span class="text-[11px] font-bold text-sky-300">${myAppeal ? myAppeal.status : "မတင်ရသေး"}</span></div>
+                <button onclick="openAppealModal()" class="w-full py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ Blue Mark လျှောက်မည်</button>
+              </div>` : `<div class="p-3 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-xs font-bold text-sky-300">✓ Blue Mark ရရှိပြီးဖြစ်ပါသည်</div>`}
+            ${st.me.isAdmin ? `<button onclick="openAdminModal()" class="w-full py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold">🛡️ Admin Panel (${pendingCount})</button>` : ""}
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+              <button onclick="toggleNightMode()" class="py-2 rounded-xl bg-slate-800 text-amber-300 text-xs font-bold">🌙 Night Mode</button>
+              <button onclick="toggleHideSeen()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</button>
+              <button onclick="openRulesModal()" class="py-2 rounded-xl bg-slate-800 text-emerald-300 text-xs font-bold">📜 စည်းမျဉ်းများ</button>
+              ${st.me.photo ? `<button onclick="removeAvatar()" class="py-2 rounded-xl bg-rose-500/20 text-rose-300 text-xs font-bold">ပရိုဖိုင်ပုံ ဖျက်</button>` : `<button onclick="copyProfileLink()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">📋 Link ကူးမည်</button>`}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function copyProfileLink() {
+      const link = `${APP_URL}?u=${st.me.id}`;
+      if (navigator.clipboard) navigator.clipboard.writeText(link);
+      playSong("notif");
+      toast("Profile Link ကူးပြီးပါပြီ");
+    }
+
+    function postCard(p) {
+      const au = uInfo(p.authorId), rt = uRating(p.authorId), myRx = userReaction(p);
+      const rxCounts = {};
+      REACTIONS.forEach(r => { rxCounts[r.key] = Object.keys((p.reactions && p.reactions[r.key]) || {}).length; });
+      if (!rxCounts.like && p.likes) rxCounts.like = Object.keys(p.likes).length;
+      const totRx = Math.max(totalReactions(p), Object.values(rxCounts).reduce((a, b) => a + b, 0));
+      const cmts = p.comments ? Object.values(p.comments).filter(Boolean).sort((a, b) => a.createdAt - b.createdAt) : [], exp = !!st.openCmt[p.id], own = p.authorId === st.me.id;
+      const eng = engagementScore(p), rTarget = st.replyTo[p.id];
+      return `
+        <article class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-sm overflow-hidden">
+          <div class="p-3.5 pb-2 flex items-center justify-between">
+            <div onclick="openUserModal('${p.authorId}')" class="flex items-center gap-2.5 cursor-pointer">
+              ${avatar(au, "w-11 h-11 text-base")}
+              <div>
+                <div class="flex items-center gap-1 flex-wrap"><span class="text-sm font-bold text-white">${esc(au.name)}</span>${blueBadge(au)}${isNewUser(p.authorId) ? `<span class="text-[11px] font-bold text-emerald-300 bg-emerald-500/15 px-1.5 rounded-full">အသစ်</span>` : ""}${rt.count ? `<span class="text-[11px] font-bold text-amber-300 bg-amber-500/15 px-1.5 rounded">★ ${rt.avg}</span>` : ""}</div>
+                <div class="text-xs text-slate-400">${ago(p.createdAt)} • <span class="text-emerald-400 font-semibold">${esc(p.category)}</span> ${eng > 0 ? `• <span class="text-orange-400 font-bold">🔥 ${eng}</span>` : ""}</div>
+              </div>
+            </div>
+            ${own ? `<button onclick="delPost('${p.id}')" class="text-xs text-rose-300 font-bold px-2.5 py-1.5 rounded-lg bg-rose-500/15">✕</button>` : `<button onclick="openChat('${p.authorId}')" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-300 text-xs font-bold">💬 စာပို့</button>`}
+          </div>
+          <div class="px-3.5 pb-1.5 flex items-center gap-1.5 flex-wrap">
+            ${p.price ? `<span class="inline-block px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold">${esc(p.price)}</span>` : ""}
+            ${p.condition ? `<span class="inline-block px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold">${esc(p.condition)}</span>` : ""}
+          </div>
+          ${p.text ? `<div class="px-3.5 pb-3 text-sm leading-relaxed text-slate-100 whitespace-pre-line">${esc(p.text)}</div>` : ""}
+          ${p.image ? `<img src="${p.image}" class="w-full max-h-96 object-cover bg-slate-900" loading="lazy"/>` : ""}
+          ${totRx > 0 ? `<div class="px-3.5 py-1.5 text-xs text-slate-300 flex items-center gap-2 border-t border-slate-800"><span>${REACTIONS.map(r => rxCounts[r.key] ? `${r.icon} ${rxCounts[r.key]}` : "").filter(Boolean).join("  ")}</span><span class="ml-auto font-semibold text-slate-400">စုစုပေါင်း ${totRx}</span></div>` : ""}
+          <div class="px-2 py-2 border-t border-slate-800 grid grid-cols-4 gap-1 text-xs">
+            ${REACTIONS.map(r => `<button onclick="setReaction('${p.id}','${r.key}')" class="py-2 px-1 rounded-xl font-bold border flex items-center justify-center gap-1 ${myRx === r.key ? r.activeClass : "bg-slate-800/80 text-slate-200 border-transparent"}"><span>${r.icon}</span><span class="truncate">${r.label}</span></button>`).join("")}
+          </div>
+          <div class="px-3.5 pb-2.5"><button onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];playSong('notif');render()" class="w-full py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-200">💬 မှတ်ချက်များ ${cmts.length ? `(${cmts.length})` : ""}</button></div>
+          ${exp ? `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 space-y-2.5">
+            ${cmts.map(c => {
+              const cu = uInfo(c.authorId);
+              return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-xs space-y-1">${c.replyToName ? `<div class="text-xs text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-semibold">↩ ${esc(c.replyToName)} ကို ပြန်ဖြေသည်</div>` : ""}<div class="flex items-start justify-between gap-2"><div class="flex items-start gap-2 min-w-0">${avatar(cu, "w-7 h-7 text-xs")}<div class="text-sm text-slate-100 break-words"><span class="font-bold text-white">${esc(cu.name)}</span>: ${esc(c.text)}</div></div><button onclick="setCmtReply('${p.id}','${esc(cu.name)}')" class="text-xs text-emerald-400 font-bold shrink-0">↩ Reply</button></div></div>`;
+            }).join("")}
+            ${rTarget ? `<div class="flex items-center justify-between text-xs bg-emerald-500/15 text-emerald-300 px-3 py-1.5 rounded-xl"><span>↩ <b>${esc(rTarget)}</b> ကို Reply ပြန်နေသည်</span><button onclick="delete st.replyTo['${p.id}'];render()" class="font-bold">✕</button></div>` : ""}
+            <div class="flex items-center gap-2">${avatar(st.me, "w-8 h-8 text-xs")}<input id="ci-${p.id}" type="text" placeholder="မှတ်ချက်ရေးရန်..." onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-3.5 py-2 text-xs"/><button onclick="addCmt('${p.id}')" class="px-3.5 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">ပို့</button></div>
+          </div>` : ""}
+        </article>`;
+    }
+
+    function setReaction(pid, rKey) {
+      const p = st.posts.find(x => x.id === pid); if (!p) return;
+      if (!p.reactions) p.reactions = {};
+      REACTIONS.forEach(r => { if (!p.reactions[r.key]) p.reactions[r.key] = {}; });
+      const prev = userReaction(p);
+      REACTIONS.forEach(r => { if (p.reactions[r.key] && p.reactions[r.key][st.me.id]) { delete p.reactions[r.key][st.me.id]; fbDel(`posts/${pid}/reactions/${r.key}/${st.me.id}`).catch(() => {}); } });
+      if (p.likes && p.likes[st.me.id]) { delete p.likes[st.me.id]; fbDel(`posts/${pid}/likes/${st.me.id}`).catch(() => {}); }
+      if (prev !== rKey) {
+        p.reactions[rKey][st.me.id] = true; playSong(rKey);
+        const rObj = REACTIONS.find(x => x.key === rKey);
+        notify(p.authorId, `က သင့်ပို့စ်ကို ${rObj ? rObj.icon + " " + rObj.label : "Reaction"} ပေးလိုက်ပါသည်`);
+        fbPut(`posts/${pid}/reactions/${rKey}/${st.me.id}`, true).catch(() => {});
+      } else playSong("notif");
+      render();
+    }
+
+    function openMyDayModal() {
+      st.mydayImg = null;
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div>
+            <textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea>
+            <div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div>
+            <div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div>
+          </div>
+        </div>`;
+    }
+    function onPickMyDayImg(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"), mw = 720; let w = im.width, h = im.height; if (w > mw) { h = Math.round(h * mw / w); w = mw; } c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h); st.mydayImg = c.toDataURL("image/jpeg", 0.72); document.getElementById("mdImgPrev").src = st.mydayImg; document.getElementById("mdImgBox").classList.remove("hidden"); }; im.src = ev.target.result; };
+      r.readAsDataURL(f);
+    }
+    function submitMyDay() {
+      const text = (document.getElementById("mdTxt").value || "").trim();
+      if (!text && !st.mydayImg) return toast("MyDay ပုံ သို့မဟုတ် စာသား ထည့်ပေးပါ");
+      const id = "MD-" + Date.now(), d = { id, authorId: st.me.id, text, image: st.mydayImg || "", createdAt: Date.now() };
+      st.myday.unshift(d); playSong("like"); closeModal(); render(); toast("MyDay တင်ပြီးပါပြီ");
+      fbPut(`myday/${id}`, d).catch(() => {});
+    }
+    function viewMyDay(id) {
+      const d = st.myday.find(x => x.id === id); if (!d) return;
+      const au = uInfo(d.authorId); playSong("notif");
+      document.getElementById("modalRoot").innerHTML = `<div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between"><div onclick="openUserModal('${au.id}')" class="flex items-center gap-2.5 cursor-pointer">${avatar(au, "w-10 h-10 text-sm")}<div><div class="text-sm font-bold text-white">${esc(au.name)}</div><div class="text-xs text-slate-400">${ago(d.createdAt)}</div></div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>${d.image ? `<div class="flex justify-center"><img src="${d.image}" class="w-56 h-56 rounded-full object-cover border-4 border-emerald-500/40"/></div>` : ""}${d.text ? `<p class="text-sm text-slate-100 text-center">${esc(d.text)}</p>` : ""}</div></div>`;
+    }
+
+    function setCmtReply(pid, name) { st.replyTo[pid] = name; render(); setTimeout(() => { const i = document.getElementById("ci-" + pid); if (i) i.focus(); }, 50); }
+    function onPickAvatar(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"), sz = 240, ms = Math.min(im.width, im.height); c.width = sz; c.height = sz; c.getContext("2d").drawImage(im, Math.floor((im.width - ms) / 2), Math.floor((im.height - ms) / 2), ms, ms, 0, 0, sz, sz); st.me.photo = c.toDataURL("image/jpeg", 0.78); saveMe(); st.users[st.me.id] = st.me; playSong("like"); render(); toast("ပရိုဖိုင်ပုံ ပြောင်းပြီးပါပြီ"); fbPut(`users/${st.me.id}`, st.me).catch(() => {}); }; im.src = ev.target.result; };
+      r.readAsDataURL(f);
+    }
+    function removeAvatar() { st.me.photo = ""; saveMe(); st.users[st.me.id] = st.me; closeModal(); render(); toast("ပရိုဖိုင်ပုံ ဖျက်ပြီးပါပြီ"); fbPut(`users/${st.me.id}`, st.me).catch(() => {}); }
+    function saveProfile() {
+      const n = (document.getElementById("pName").value || "").trim(); if (!n) return toast("နာမည် ထည့်ပေးပါ");
+      st.me.name = n; st.me.bio = (document.getElementById("pBio").value || "").trim(); st.me.phone = (document.getElementById("pPhone").value || "").trim();
+      saveMe(); st.users[st.me.id] = st.me; playSong("like"); closeModal(); render(); toast("သိမ်းဆည်းပြီးပါပြီ");
+      fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+    }
+    function toggleFriend(id) {
+      const l = st.me.friends || [], i = l.indexOf(id);
+      if (i >= 0) { l.splice(i, 1); toast("မိတ်ဆွေစာရင်းမှ ဖယ်ရှားပြီး"); }
+      else { l.push(id); toast("Friend Add လုပ်ပြီး"); notify(id, "က သင့်ကို Friend Add လုပ်လိုက်ပါသည်"); playSong("like"); }
+      st.me.friends = l; saveMe(); render(); fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+    }
+    function toggleFollow(id) {
+      if (!Array.isArray(st.me.following)) st.me.following = [];
+      const i = st.me.following.indexOf(id);
+      if (i >= 0) { st.me.following.splice(i, 1); toast("Unfollow လုပ်ပြီး"); }
+      else { st.me.following.push(id); toast("Following လုပ်ပြီး"); notify(id, "က သင့်ကို Follow လုပ်လိုက်ပါသည်"); playSong("like"); }
+      saveMe(); render(); fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+    }
+
+    function openComposerModal() {
+      st.img = null;
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">Account ပို့စ်တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button></div>
+            <div class="flex flex-col items-center gap-1.5">
+              <label class="w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-400 cursor-pointer flex items-center justify-center bg-slate-800 relative">
+                ${avatar(st.me, "w-16 h-16 text-lg")}
+                <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">📷</span>
+                <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
+              </label>
+              <span class="text-xs text-slate-400">ပုံရွေးရန် အဝိုင်းကို နှိပ်ပါ</span>
+            </div>
+            <textarea id="postTxt" rows="3" placeholder="#youtube, #facebook, #tiktok စသဖြင့် ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea>
+            <div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-700"><img id="imgPrev" src="" class="w-full max-h-56 object-cover"/><button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
+              <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="Full Ownership">Full Ownership</option><option value="Admin / Access">Admin / Access</option><option value="ဝယ်ယူလိုသည်">ဝယ်ယူလိုသည်</option></select>
+            </div>
+            <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="">-- Account အမျိုးအစား ရွေးပါ --</option>${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
+            <button onclick="submitPost()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold">တင်မည်</button>
+          </div>
+        </div>`;
+    }
+    function onPickImg(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"), mw = 720; let w = im.width, h = im.height; if (w > mw) { h = Math.round(h * mw / w); w = mw; } c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h); st.img = c.toDataURL("image/jpeg", 0.72); document.getElementById("imgPrev").src = st.img; document.getElementById("imgBox").classList.remove("hidden"); }; im.src = ev.target.result; };
+      r.readAsDataURL(f);
+    }
+    function submitPost() {
+      const text = (document.getElementById("postTxt").value || "").trim(), price = (document.getElementById("postPrice").value || "").trim(), condition = document.getElementById("postCond").value, category = document.getElementById("postCat").value;
+      if (!category) return toast("Account အမျိုးအစား ရွေးပေးပါ");
+      if (!text && !st.img) return toast("Account အကြောင်း သို့မဟုတ် ပုံ ထည့်ပေးပါ");
+      if (hasBlockedClothing(text)) return toast("အဝတ်အစားစသည့် ရုပ်ပစ္စည်းများ ခွင့်မပြုပါ");
+      const tags = (text.match(/#[\w\u1000-\u109F]+/g) || []).join(" "), id = "P-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+      const p = { id, authorId: st.me.id, text, tags, image: st.img || "", price, condition, category, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
+      st.posts.unshift(p); playSong("like"); closeModal(); render(); toast("Account ပို့စ်တင်ပြီးပါပြီ");
+      fbPut(`users/${st.me.id}`, st.me).catch(() => {}); fbPut(`posts/${id}`, p).catch(() => {});
+    }
+    function delPost(id) { st.posts = st.posts.filter(p => p.id !== id); render(); toast("ပို့စ်ဖျက်ပြီးပါပြီ"); fbDel(`posts/${id}`).catch(() => {}); }
+    function addCmt(id) {
+      const inp = document.getElementById("ci-" + id); if (!inp) return;
+      const text = inp.value.trim(); if (!text) return;
+      const p = st.posts.find(x => x.id === id); if (!p) return; if (!p.comments) p.comments = {};
+      const replyToName = st.replyTo[id] || "", cid = "C-" + Date.now(), c = { id: cid, authorId: st.me.id, text, replyToName, createdAt: Date.now() };
+      p.comments[cid] = c; delete st.replyTo[id]; inp.value = ""; playSong("notif"); render();
+      notify(p.authorId, "က မှတ်ချက်ရေးခဲ့သည်: " + text.slice(0, 20));
+      fbPut(`posts/${id}/comments/${cid}`, c).catch(() => {});
+    }
+
+    function openAppealModal() {
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-sky-300">Blue Mark လျှောက်လွှာ</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><p class="text-xs text-slate-300"><b>${ADMIN_NAME}</b> ထံ တိုက်ရိုက်ပို့ပေးပါမည်။</p><input id="apPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်း / Telegram" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/><input id="apProof" type="text" placeholder="Page / Account လင့်ခ်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/><textarea id="apReason" rows="3" placeholder="အကြောင်းပြချက်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs resize-none"></textarea><button onclick="submitAppeal()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ ပို့မည်</button></div></div>`;
+    }
+    function submitAppeal() {
+      const phone = (document.getElementById("apPhone").value || "").trim(), proof = (document.getElementById("apProof").value || "").trim(), reason = (document.getElementById("apReason").value || "").trim();
+      if (!phone || !reason) return toast("ဖုန်းနှင့် အကြောင်းပြချက် ထည့်ပါ");
+      const id = "AP-" + Date.now(), ap = { id, userId: st.me.id, userName: st.me.name, phone, proof, reason, reviewer: ADMIN_NAME, status: "pending", createdAt: Date.now() };
+      st.appeals[id] = ap; st.me.appealStatus = "pending"; saveMe(); playSong("like"); closeModal(); render(); toast("လျှောက်လွှာ ပို့ပြီးပါပြီ");
+      fbPut(`appeals/${id}`, ap).catch(() => {}); fbPut(`users/${st.me.id}/appealStatus`, "pending").catch(() => {});
+    }
+    function openAdminModal() {
+      const list = Object.values(st.appeals || {}).filter(Boolean).sort((a, b) => b.createdAt - a.createdAt);
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-sm font-bold text-white">Blue Mark စစ်ဆေးရေး</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>${list.length ? list.map(a => `<div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs"><div class="flex justify-between"><span class="font-bold text-white">${esc(a.userName)}</span><span class="text-amber-300 font-bold">${esc(a.status)}</span></div><div class="text-slate-300">📞 ${esc(a.phone)}</div><p class="text-slate-200">${esc(a.reason)}</p><div class="flex gap-2"><button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ ပေးမည်</button><button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold">✕ ပယ်ချ</button></div></div>`).join("") : `<p class="text-xs text-slate-400 text-center py-6">လျှောက်လွှာ မရှိသေးပါ</p>`}</div></div>`;
+    }
+    function decideAppeal(aid, uid, status) {
+      if (st.appeals[aid]) st.appeals[aid].status = status;
+      if (st.users[uid]) st.users[uid].blueMark = status === "approved";
+      if (uid === st.me.id) { st.me.blueMark = status === "approved"; st.me.appealStatus = status; saveMe(); }
+      fbPut(`appeals/${aid}/status`, status).catch(() => {}); fbPut(`users/${uid}/blueMark`, status === "approved").catch(() => {});
+      notify(uid, status === "approved" ? "က Blue Mark အတည်ပြုပေးလိုက်ပါသည် ✓" : "က Blue Mark ပယ်ချခဲ့ပါသည်");
+      playSong("like"); openAdminModal(); render();
+    }
+    function openRulesModal() {
+      playSong("notif");
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">စည်းမျဉ်းစည်းကမ်းများ</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="space-y-2">${RULES.map((r, i) => `<div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-200"><span class="font-bold text-emerald-400 mr-1">${i + 1}.</span>${esc(r)}</div>`).join("")}</div><button onclick="closeModal()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">နားလည်ပါပြီ</button></div></div>`;
+    }
+    function openUserModal(uid) {
+      const u = uInfo(uid), r = uRating(uid), isF = (st.me.friends || []).includes(uid), isFol = (st.me.following || []).includes(uid), own = uid === st.me.id;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-emerald-300">${esc(onlineText(uid))}</span><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="flex items-center gap-3">${avatar(u, "w-16 h-16 text-xl")}<div><h3 class="text-base font-bold text-white flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><div class="text-xs font-mono text-slate-400">${esc(u.id)}</div><p class="text-xs text-slate-300">${esc(u.bio || "")}</p></div></div><div class="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2 rounded-2xl"><div><div class="text-sm font-bold text-white">${(u.friends || []).length}</div><div class="text-[11px] text-slate-400">Friends</div></div><div><div class="text-sm font-bold text-white">${(u.following || []).length}</div><div class="text-[11px] text-slate-400">Following</div></div><div><div class="text-sm font-bold text-white">${followersCount(uid)}</div><div class="text-[11px] text-slate-400">Follower</div></div><div><div class="text-sm font-bold text-amber-300">★ ${r.avg}</div><div class="text-[11px] text-slate-400">အဆင့်</div></div></div>${!own ? `<div class="grid grid-cols-3 gap-2"><button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button><button onclick="toggleFollow('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isFol ? "bg-sky-500/20 text-sky-300" : "bg-sky-600 text-white"}">${isFol ? "Following ✓" : "+ Follow"}</button><button onclick="openChat('${u.id}')" class="py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">💬 စာပို့</button></div>` : ""}<div class="space-y-2"><div class="text-xs font-bold text-slate-300">မိတ်ဆွေများ (${(u.friends || []).length})</div>${renderFriendsGrid(uid, 6)}</div></div></div>`;
+    }
+
+    const roomId = (a, b) => [a, b].sort().join("__");
+    function startVoiceCall(oid) {
+      const cid = "CALL-" + Date.now(), callObj = { id: cid, fromId: st.me.id, fromName: st.me.name, toId: oid, status: "ringing", createdAt: Date.now() };
+      st.activeCall = callObj; st.calls[cid] = callObj; startRingLoop("outgoing"); notify(oid, "က ဖုန်းခေါ်နေပါသည် 📞"); fbPut(`calls/${cid}`, callObj).catch(() => {}); openCallModal(cid);
+    }
+    function openCallModal(cid) {
+      const c = st.activeCall || st.calls[cid]; if (!c) return;
+      const o = uInfo(c.fromId === st.me.id ? c.toId : c.fromId), isIn = c.toId === st.me.id && c.status === "ringing";
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-6 text-center space-y-5"><div class="flex justify-center">${avatar(o, "w-20 h-20 text-2xl")}</div><div><h3 class="text-lg font-bold text-white">${esc(o.name)}</h3><p class="text-sm text-emerald-400 font-semibold mt-1">${c.status === "connected" ? "🎙️ ဖုန်းပြောနေပါသည်..." : (isIn ? "🔔 ဖုန်းဝင်လာပါသည်..." : "📞 ခေါ်ဆိုနေပါသည်...")}</p></div><div class="flex justify-center gap-4">${isIn ? `<button onclick="answerCall('${c.id}')" class="px-5 py-3 rounded-full bg-emerald-600 text-white text-xs font-bold">✓ လက်ခံ</button>` : ""}<button onclick="endCall('${c.id}')" class="px-5 py-3 rounded-full bg-rose-600 text-white text-xs font-bold">✕ ဖုန်းချ</button></div></div></div>`;
+    }
+    function answerCall(cid) { stopRingLoop(); if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "connected"; playSong("like"); fbPut(`calls/${cid}/status`, "connected").catch(() => {}); openCallModal(cid); }
+    function endCall(cid) { stopRingLoop(); if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "ended"; playSong("angry"); fbPut(`calls/${cid}/status`, "ended").catch(() => {}); st.activeCall = null; document.getElementById("modalRoot").innerHTML = ""; }
+
+    function toggleHideSeen() {
+      st.me.hideSeen = !st.me.hideSeen; saveMe(); playSong("notif");
+      toast(st.me.hideSeen ? "Seen ပိတ်ပြီး" : "Seen ဖွင့်ပြီး");
+      if (!st.me.hideSeen && st.chatUid) markRoomSeen(st.chatUid);
+      if (st.chatUid) openChat(st.chatUid);
+    }
+    function markRoomSeen(oid) {
+      if (!oid || st.me.hideSeen) return;
+      const rid = roomId(st.me.id, oid), room = st.chats[rid]; if (!room) return;
+      Object.values(room).forEach(m => { if (m && m.senderId !== st.me.id && !m.seenAt) { m.seenAt = Date.now(); fbPut(`chats/${rid}/${m.id}/seenAt`, m.seenAt).catch(() => {}); } });
+    }
+    function openDeleteMsgMenu(mid) {
+      if (!st.chatUid) return;
+      const rid = roomId(st.me.id, st.chatUid), m = (st.chats[rid] || {})[mid]; if (!m) return;
+      const bar = document.getElementById("msgActionBar"); if (!bar) return;
+      bar.innerHTML = `<div class="px-3 py-2 bg-slate-900 border-t border-slate-700 flex items-center justify-between gap-2 text-xs"><span class="text-slate-300 font-bold">ဖျက်ရန်:</span><div class="flex gap-1.5"><button onclick="deleteForMe('${mid}')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-200 font-bold">မိမိဘက်ဖျက်</button>${m.senderId === st.me.id ? `<button onclick="deleteForEveryone('${mid}')" class="px-2.5 py-1.5 rounded-xl bg-rose-600 text-white font-bold">Everyone ဖျက်</button>` : ""}<button onclick="document.getElementById('msgActionBar').innerHTML=''" class="px-2 text-slate-400">✕</button></div></div>`;
+    }
+    function deleteForMe(mid) {
+      const rid = roomId(st.me.id, st.chatUid), m = (st.chats[rid] || {})[mid]; if (!m) return;
+      if (!m.deletedFor) m.deletedFor = {}; m.deletedFor[st.me.id] = true;
+      document.getElementById("msgActionBar").innerHTML = ""; renderMsgs();
+      fbPut(`chats/${rid}/${mid}/deletedFor/${st.me.id}`, true).catch(() => {});
+    }
+    function deleteForEveryone(mid) {
+      const rid = roomId(st.me.id, st.chatUid), m = (st.chats[rid] || {})[mid]; if (!m) return;
+      m.deletedForAll = true; m.text = "ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ"; m.image = ""; m.audio = ""; m.video = "";
+      document.getElementById("msgActionBar").innerHTML = ""; renderMsgs();
+      fbPut(`chats/${rid}/${mid}`, m).catch(() => {});
+    }
+    function sendTyping(oid) { const rid = roomId(st.me.id, oid); if (!st.typing[rid]) st.typing[rid] = {}; st.typing[rid][st.me.id] = Date.now(); fbPut(`typing/${rid}/${st.me.id}`, Date.now()).catch(() => {}); }
+    function renderTypingBanner() {
+      const tb = document.getElementById("typingBanner"); if (!tb || !st.chatUid) return;
+      const tObj = st.typing[roomId(st.me.id, st.chatUid)] || {};
+      const active = Object.entries(tObj).some(([uid, ts]) => uid !== st.me.id && (Date.now() - Number(ts || 0) < 4500));
+      if (active) { tb.innerHTML = `<span class="inline-flex text-xs font-bold text-emerald-300 bg-emerald-500/15 px-3 py-1 rounded-full">${esc(uInfo(st.chatUid).name)} စာရိုက်နေပါသည်...</span>`; tb.classList.remove("hidden"); }
+      else tb.classList.add("hidden");
+    }
+    function toggleStickerBar() { st.showStickers = !st.showStickers; const sb = document.getElementById("stickerBar"); if (sb) sb.classList.toggle("hidden", !st.showStickers); }
+    function sendStickerIcon(ic) { if (!st.chatUid) return; playSong("love"); sendChatPayload({ text: ic, image: "", audio: "", video: "" }); st.showStickers = false; const sb = document.getElementById("stickerBar"); if (sb) sb.classList.add("hidden"); }
+
+    function openChat(oid) {
+      st.chatUid = oid; st.chatImg = null; st.chatVideo = null; st.showStickers = false; const o = uInfo(oid);
+      if (!st.me.hideSeen) markRoomSeen(oid);
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0b1120] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col h-[88vh] animate-slide-up overflow-hidden">
+            <div class="p-3 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between gap-2">
+              <div onclick="openUserModal('${o.id}')" class="flex items-center gap-2 cursor-pointer min-w-0">${avatar(o, "w-10 h-10 text-sm")}<div class="min-w-0"><div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</div><div class="text-[11px] text-emerald-300 truncate">${esc(onlineText(o.id))}</div></div></div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="toggleHideSeen()" class="px-2 py-1.5 rounded-full text-[11px] font-bold bg-slate-800 text-slate-200">${st.me.hideSeen ? "Seen ပိတ်" : "Seen ပြ"}</button>
+                <button onclick="startVoiceCall('${o.id}')" class="px-2.5 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold">📞</button>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+              </div>
+            </div>
+            <div id="msgBox" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-[#05080f]"></div>
+            <div id="typingBanner" class="hidden px-3 py-1 bg-[#05080f]"></div>
+            <div id="msgActionBar"></div>
+            <div id="stickerBar" class="hidden p-2 bg-[#0f172a] border-t border-slate-800 grid grid-cols-6 gap-1.5">${STICKER_ICONS.map(ic => `<button onclick="sendStickerIcon('${ic}')" class="bg-slate-900 border border-slate-700 rounded-xl py-2 text-2xl">${ic}</button>`).join("")}</div>
+            <div id="chatAttachPreview" class="hidden px-3 py-2 bg-[#0f172a] border-t border-slate-800 flex items-center justify-between"><div id="chatAttachLabel" class="flex items-center gap-2 text-xs text-emerald-300 font-bold"></div><button onclick="clearChatAttach()" class="text-xs text-rose-400 font-bold">✕</button></div>
+            <div class="p-2 bg-[#0f172a] border-t border-slate-800 flex items-center gap-1">
+              <button onclick="toggleStickerBar()" class="w-8 h-8 rounded-full bg-slate-800 text-amber-300 text-sm shrink-0">😄</button>
+              <label class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-sm flex items-center justify-center cursor-pointer shrink-0">📷<input type="file" accept="image/*" onchange="onPickChatImg(event)" class="hidden"/></label>
+              <label class="w-8 h-8 rounded-full bg-slate-800 text-sky-300 text-sm flex items-center justify-center cursor-pointer shrink-0">🎬<input type="file" accept="video/*" onchange="onPickShortVideo(event)" class="hidden"/></label>
+              <button onclick="toggleVoiceRec()" id="voiceBtn" class="w-8 h-8 rounded-full bg-slate-800 text-emerald-300 text-sm shrink-0">🎙️</button>
+              <input id="msgInp" type="text" placeholder="စာရိုက်ပါ..." oninput="sendTyping('${oid}')" onkeydown="if(event.key==='Enter')sendMsg()" class="flex-1 min-w-0 bg-slate-900 text-white border border-slate-700 rounded-full px-3 py-2 text-sm focus:outline-none"/>
+              <button onclick="sendMsg()" class="px-3.5 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">ပို့</button>
+            </div>
+          </div>
+        </div>`;
+      renderMsgs();
+    }
+
+    function clearChatAttach() { st.chatImg = null; st.chatVideo = null; const p = document.getElementById("chatAttachPreview"); if (p) p.classList.add("hidden"); }
+    function onPickChatImg(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return; st.chatVideo = null;
+      const r = new FileReader();
+      r.onload = ev => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"), mw = 640; let w = im.width, h = im.height; if (w > mw) { h = Math.round(h * mw / w); w = mw; } c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h); st.chatImg = c.toDataURL("image/jpeg", 0.72); document.getElementById("chatAttachLabel").innerHTML = `<img src="${st.chatImg}" class="w-9 h-9 rounded-lg object-cover"/><span>ဓာတ်ပုံ</span>`; document.getElementById("chatAttachPreview").classList.remove("hidden"); }; im.src = ev.target.result; };
+      r.readAsDataURL(f);
+    }
+    function onPickShortVideo(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 4.5 * 1024 * 1024) { e.target.value = ""; return toast("၁၅ စက္ကန့်အတွင်း Short Video သာ ပို့နိုင်ပါသည်"); }
+      const url = URL.createObjectURL(f), vid = document.createElement("video");
+      vid.preload = "metadata";
+      vid.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        if (vid.duration > 15.5) { e.target.value = ""; return toast("Short Video ၁၅ စက္ကန့်စာပဲ လက်ခံပါသည်"); }
+        const reader = new FileReader();
+        reader.onload = ev => { st.chatImg = null; st.chatVideo = ev.target.result; document.getElementById("chatAttachLabel").innerHTML = `<span>🎬 Video (${Math.round(vid.duration)}s)</span>`; document.getElementById("chatAttachPreview").classList.remove("hidden"); };
+        reader.readAsDataURL(f);
+      };
+      vid.src = url;
+    }
+    async function toggleVoiceRec() {
+      const btn = document.getElementById("voiceBtn");
+      if (st.recorder && st.recorder.state === "recording") { st.recorder.stop(); if (btn) btn.className = "w-8 h-8 rounded-full bg-slate-800 text-emerald-300 text-sm shrink-0"; return; }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return toast("အသံသွင်းစနစ် မရနိုင်ပါ");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        st.audioChunks = []; const rec = new MediaRecorder(stream); st.recorder = rec;
+        rec.ondataavailable = e => { if (e.data && e.data.size > 0) st.audioChunks.push(e.data); };
+        rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); const r = new FileReader(); r.onloadend = () => { if (st.chatUid) sendChatPayload({ text: "", image: "", audio: r.result, video: "" }); }; r.readAsDataURL(new Blob(st.audioChunks, { type: "audio/webm" })); };
+        rec.start(); toast("အသံသွင်းနေပါသည်... ပို့ရန် 🎙️ ကို ထပ်နှိပ်ပါ");
+        if (btn) btn.className = "w-8 h-8 rounded-full bg-rose-600 text-white text-sm animate-pulse shrink-0";
+      } catch (e) { toast("မိုက်ခရိုဖုန်း ခွင့်ပြုချက် လိုအပ်ပါသည်"); }
+    }
+    function renderMsgs() {
+      const box = document.getElementById("msgBox"); if (!box || !st.chatUid) return;
+      const ms = Object.values(st.chats[roomId(st.me.id, st.chatUid)] || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
+      const otherHideSeen = !!(uInfo(st.chatUid) && uInfo(st.chatUid).hideSeen);
+      box.innerHTML = ms.length ? ms.map((m, i) => {
+        const me = m.senderId === st.me.id, isPureSticker = !m.deletedForAll && !m.image && !m.audio && !m.video && STICKER_ICONS.includes((m.text || "").trim());
+        const tick = me ? (m.seenAt && !otherHideSeen ? `<span class="text-sky-300 font-bold">✓✓</span>` : `<span class="text-emerald-200 font-bold">✓</span>`) : "";
+        return `<div class="flex items-end gap-1.5 ${me ? "justify-end" : "justify-start"}">${!me ? `<span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}<div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-5xl py-1 px-2" : `max-w-[78%] px-3.5 py-2 rounded-2xl text-sm space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img src="${m.image}" class="rounded-xl max-h-48 object-cover"/>` : ""}${m.video ? `<video controls playsinline src="${m.video}" class="rounded-xl max-h-52 w-56 bg-black"></video>` : ""}${m.audio ? `<audio controls src="${m.audio}" class="w-48 h-8"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}${me ? `<div class="text-[10px] text-right">${tick}</div>` : ""}</div>${me ? `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}</div>`;
+      }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+      box.scrollTop = box.scrollHeight;
+      renderTypingBanner();
+    }
+    function sendChatPayload({ text, image, audio, video }) {
+      if (!st.chatUid) return;
+      const rid = roomId(st.me.id, st.chatUid), mid = "M-" + Date.now();
+      const m = { id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "", video: video || "", seenAt: 0, deletedFor: {}, deletedForAll: false, createdAt: Date.now() };
+      if (!st.chats[rid]) st.chats[rid] = {}; st.chats[rid][mid] = m;
+      clearChatAttach(); fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {}); renderMsgs();
+      notify(st.chatUid, "က စာပို့လိုက်သည်"); fbPut(`chats/${rid}/${mid}`, m).catch(() => {});
+    }
+    function sendMsg() {
+      const inp = document.getElementById("msgInp"); if (!inp || !st.chatUid) return;
+      const text = inp.value.trim(); if (!text && !st.chatImg && !st.chatVideo) return;
+      sendChatPayload({ text, image: st.chatImg || "", audio: "", video: st.chatVideo || "" }); inp.value = "";
+    }
+    function closeModal() {
+      stopRingLoop();
+      if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
+      if (st.recorder && st.recorder.state === "recording") { try { st.recorder.stop(); } catch (e) {} }
+      st.chatUid = null; st.activeCall = null; st.showStickers = false;
+      const mr = document.getElementById("modalRoot"); if (mr) mr.innerHTML = "";
+    }
+
+    render();
+    sync(true);
+    setInterval(() => sync(false), 2000);
+  </script>
+</body>
+</html>
