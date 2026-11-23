@@ -88,7 +88,7 @@
   <script>
     const DB = "https://phay-phay-wae-default-rtdb.asia-southeast1.firebasedatabase.app";
     const ADMIN_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
-    const TRADE_CATS = ["ဖုန်းနှင့်အီလက်ထရောနစ်", "ဖက်ရှင်နှင့်အလှကုန်", "အိမ်သုံးပစ္စည်း", "အစားအသောက်", "ကား/ဆိုင်ကယ်", "ဝန်ဆောင်မှု"];
+    const TRADE_CATS = ["Facebook Page", "YouTube Account", "TikTok Account", "Instagram / RedNote", "Monetized Page / Channel"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
     const COLORS = ["from-emerald-500 to-teal-600", "from-blue-500 to-indigo-600", "from-amber-500 to-orange-600", "from-rose-500 to-pink-600", "from-purple-500 to-violet-600"];
     const REACTIONS = [
@@ -98,24 +98,25 @@
       { key: "angry", icon: "😡", label: "စိတ်ဆိုး", activeClass: "text-orange-200 bg-orange-900/70 border-orange-400/50" }
     ];
     const STICKER_ICONS = ["🛍️", "✨", "🎉", "🙏", "🚀", "💙", "🤝", "🎁", "🥰", "🔥", "💯", "👍"];
+    const BLOCKED_PHYSICAL = ["အဝတ်အစား", "ရှပ်အင်္ကျီ", "ဘောင်းဘီ", "ဖိနပ်", "ထဘီ", "ပုဆိုး", "shirt", "pants", "clothes", "dress", "shoes"];
     const RULES = [
-      "ရောင်းဝယ်မှုနှင့် ပစ္စည်းအကြောင်း ပို့စ်များကိုသာ တင်ရမည်။ ရောင်းဝယ်မှုနှင့် မသက်ဆိုင်သော Spam / အကြောင်းမဲ့ပို့စ်များ ခွင့်မပြုပါ။",
-      "ပစ္စည်းအခြေအနေ (အသစ် / တစ်ပတ်ရစ်)၊ ဈေးနှုန်းနှင့် ဆက်သွယ်ရန် အချက်အလက် မှန်ကန်ရမည်။",
-      "လိမ်လည်မှု၊ အတုအပပစ္စည်း၊ တရားမဝင်ပစ္စည်းနှင့် ယုံကြည်မှုပျက်စီးစေသော အပြုအမူများ လုံးဝခွင့်မပြုပါ။",
+      "Facebook Page၊ YouTube Account၊ TikTok Account စသည့် အကောင့်/ပိုင်ဆိုင်မှု ရောင်းဝယ်မှုများကိုသာ တင်ရမည်။ အဝတ်အစားနှင့် မသက်ဆိုင်သော ရုပ်ပိုင်းဆိုင်ရာပစ္စည်းများ ခွင့်မပြုပါ။",
+      "အမျိုးအစားအလိုက် #youtube၊ #facebook၊ #tiktok စသဖြင့် # ခံပြီး ထည့်သွင်းပါက Category မှ တစ်ချက်နှိပ်ပြီး ရှာဖွေနိုင်မည်။",
+      "အကောင့်လွှဲပြောင်းမှု (Admin/Email/Recovery) နှင့် လိမ်လည်မှု/ယုံကြည်မှုပျက်စီးစေသော အပြုအမူများ လုံးဝခွင့်မပြုပါ။",
       "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — ယုံကြည်ရကြောင်း အထောက်အထားဖြင့် ကိုပိုင်ဇော်ထက်ထံ အယူခံဝင် စစ်ဆေးခံရမည်။",
       "ပို့စ်တစ်ခုတွင် Reaction နှင့် မှတ်ချက် (Comment) များလေ လူတွေဆီ ပိုမိုရောက်ရှိမည်။"
     ];
 
     function getUser() {
       try {
-        const s = JSON.parse(localStorage.getItem("ppw_user_v5"));
+        const s = JSON.parse(localStorage.getItem("ppw_user_v6"));
         if (s && s.id) return s;
       } catch (e) {}
       const n = Math.floor(100000 + Math.random() * 900000);
       const u = {
         id: "PPW-" + n,
         name: "အသုံးပြုသူ #" + String(n).slice(-4),
-        bio: "ဖြေးဖြေး ဝယ် မှာ စိတ်ချလက်ချ ရောင်းဝယ်နေပါတယ်။",
+        bio: "ဖြေးဖြေး ဝယ် မှာ Page / Account များ စိတ်ချလက်ချ ရောင်းဝယ်နေပါတယ်။",
         phone: "",
         photo: "",
         blueMark: false,
@@ -126,7 +127,7 @@
         following: [],
         createdAt: Date.now()
       };
-      try { localStorage.setItem("ppw_user_v5", JSON.stringify(u)); } catch (e) {}
+      try { localStorage.setItem("ppw_user_v6", JSON.stringify(u)); } catch (e) {}
       return u;
     }
 
@@ -165,7 +166,7 @@
       audioChunks: []
     };
 
-    const saveMe = () => { try { localStorage.setItem("ppw_user_v5", JSON.stringify(st.me)); } catch (e) {} };
+    const saveMe = () => { try { localStorage.setItem("ppw_user_v6", JSON.stringify(st.me)); } catch (e) {} };
     const esc = s => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     function toast(m) {
       const el = document.getElementById("toast"); el.textContent = m; el.classList.remove("hidden");
@@ -293,6 +294,20 @@
       return eng * 2.5 + recencyBoost + newMemberBoost;
     }
 
+    function matchesCategoryOrTag(p, filterVal) {
+      if (!filterVal || filterVal === "အားလုံး" || filterVal === "စိတ်ဝင်စားမှုများ" || filterVal === "အသစ်ရောက်သူများ") return true;
+      const txt = ((p.text || "") + " " + (p.tags || "")).toLowerCase();
+      if (filterVal === "YouTube Account") return p.category === "YouTube Account" || txt.includes("#youtube");
+      if (filterVal === "Facebook Page") return p.category === "Facebook Page" || txt.includes("#facebook") || txt.includes("#fb");
+      if (filterVal === "TikTok Account") return p.category === "TikTok Account" || txt.includes("#tiktok");
+      return p.category === filterVal;
+    }
+
+    function hasBlockedClothing(str) {
+      const low = String(str || "").toLowerCase();
+      return BLOCKED_PHYSICAL.some(k => low.includes(k));
+    }
+
     const fbGet = p => fetch(`${DB}/${p}.json`).then(r => r.json());
     const fbPut = (p, d) => fetch(`${DB}/${p}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
     const fbDel = p => fetch(`${DB}/${p}.json`, { method: "DELETE" });
@@ -312,7 +327,7 @@
           fbGet("calls")
         ]);
         const rawPosts = po ? Object.values(po) : [];
-        st.posts = rawPosts.filter(p => p && TRADE_CATS.includes(p.category) && (p.text || p.image));
+        st.posts = rawPosts.filter(p => p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
         const dayCutoff = Date.now() - 24 * 3600000;
         st.myday = md ? Object.values(md).filter(d => d && (d.createdAt || 0) >= dayCutoff).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
         st.users = us || {};
@@ -425,7 +440,7 @@
       } else if (st.cat === "အသစ်ရောက်သူများ") {
         list = list.filter(p => isNewUser(p.authorId)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       } else if (st.cat !== "အားလုံး") {
-        list = list.filter(p => p.category === st.cat).sort((a, b) => feedScore(b) - feedScore(a));
+        list = list.filter(p => matchesCategoryOrTag(p, st.cat)).sort((a, b) => feedScore(b) - feedScore(a));
       } else {
         list.sort((a, b) => feedScore(b) - feedScore(a));
       }
@@ -482,7 +497,7 @@
           ${renderMyDayStrip()}
           <div class="bg-[#0f172a] p-3.5 border-b border-slate-800 flex items-center gap-3">
             <div onclick="switchTab('profile')" class="cursor-pointer">${avatar(st.me, "w-12 h-12 text-base")}</div>
-            <button onclick="openComposerModal()" class="flex-1 text-left bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-sm px-4 py-3 rounded-full font-medium">ရောင်းချင် / ဝယ်ချင်တဲ့ ပစ္စည်းတင်ရန်...</button>
+            <button onclick="openComposerModal()" class="flex-1 text-left bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-sm px-4 py-3 rounded-full font-medium">Page / YouTube / TikTok Account ရောင်းဝယ်တင်ရန်...</button>
             <button onclick="openComposerModal()" class="p-3 rounded-full bg-emerald-500/20 text-emerald-300"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
           </div>
           <div class="bg-[#0f172a] px-3 py-2.5 border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -492,14 +507,14 @@
             <span>🔥 စိတ်ဝင်စားမှုများလေ လူတွေဆီ ပိုရောက်လေ</span>
             <button onclick="openRulesModal()" class="text-emerald-400 font-bold underline">စည်းမျဉ်းများ</button>
           </div>
-          <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် ရောင်းဝယ်မှုပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
+          <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် Account ရောင်းဝယ်မှုပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
       } else if (st.tab === "explore") {
         const q = st.q.trim().toLowerCase();
         const res = st.posts.filter(p => !q || (p.text || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q) || (p.price || "").toLowerCase().includes(q) || (uInfo(p.authorId).name || "").toLowerCase().includes(q));
         el.innerHTML = `
           <div class="p-3.5 space-y-3">
-            <input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="ပစ္စည်းအမည်၊ ရောင်းသူ သို့မဟုတ် အမျိုးအစား ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"/>
-            <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => p.category === c).length} ခု</div></button>`).join("")}</div>
+            <input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="#youtube, #facebook, #tiktok သို့မဟုတ် Account အမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"/>
+            <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
             <div class="space-y-3">${res.map(postCard).join("")}</div>
           </div>`;
       } else if (st.tab === "chats") {
@@ -652,7 +667,7 @@
               <input id="pPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်းနံပါတ် (Optional)" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
               <button onclick="saveProfile()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold">ပရိုဖိုင် သိမ်းဆည်းမည်</button>
             </div>
-            <div class="space-y-3"><h3 class="text-sm font-bold text-slate-300 px-1">ကျွန်ုပ်၏ ရောင်းဝယ်မှု ပို့စ်များ (${mine.length})</h3>${mine.map(postCard).join("")}</div>
+            <div class="space-y-3"><h3 class="text-sm font-bold text-slate-300 px-1">ကျွန်ုပ်၏ Account ပို့စ်များ (${mine.length})</h3>${mine.map(postCard).join("")}</div>
           </div>`;
       }
     }
@@ -708,16 +723,26 @@
             <button onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];playSong('notif');render()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200">💬 မှတ်ချက်များ ${cmts.length ? `(${cmts.length})` : ""}</button>
           </div>
           ${exp ? `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 space-y-2.5">
-            ${cmts.map(c => `
-              <div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-xs space-y-1">
-                ${c.replyToName ? `<div class="text-xs text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-semibold">↩ ${esc(c.replyToName)} ၏ မှတ်ချက်ကို ပြန်ဖြေသည်</div>` : ""}
-                <div class="flex items-start justify-between gap-2">
-                  <div class="text-sm text-slate-100"><span class="font-bold text-white">${esc(uInfo(c.authorId).name)}:</span> ${esc(c.text)}</div>
-                  <button onclick="setCmtReply('${p.id}','${esc(uInfo(c.authorId).name)}')" class="text-xs text-emerald-400 font-bold shrink-0">↩ Reply</button>
-                </div>
-              </div>`).join("")}
+            ${cmts.map(c => {
+              const cu = uInfo(c.authorId);
+              return `
+                <div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-xs space-y-1.5">
+                  ${c.replyToName ? `<div class="flex items-center gap-1.5 text-xs text-emerald-300 bg-emerald-500/15 px-2 py-1 rounded font-semibold"><span>↩ ${esc(c.replyToName)} ကို ပြန်ဖြေသည်</span></div>` : ""}
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-start gap-2 min-w-0">
+                      ${avatar(cu, "w-7 h-7 text-xs")}
+                      <div class="text-sm text-slate-100 break-words"><span class="font-bold text-white flex items-center gap-1 inline-flex">${esc(cu.name)} ${blueBadge(cu)}</span>: ${esc(c.text)}</div>
+                    </div>
+                    <button onclick="setCmtReply('${p.id}','${esc(cu.name)}')" class="text-xs text-emerald-400 font-bold shrink-0">↩ Reply</button>
+                  </div>
+                </div>`;
+            }).join("")}
             ${rTarget ? `<div class="flex items-center justify-between text-xs bg-emerald-500/15 text-emerald-300 px-3 py-1.5 rounded-xl"><span>↩ <b>${esc(rTarget)}</b> ကို Reply ပြန်နေသည်</span><button onclick="delete st.replyTo['${p.id}'];render()" class="font-bold">✕</button></div>` : ""}
-            <div class="flex gap-2"><input id="ci-${p.id}" type="text" placeholder="${rTarget ? esc(rTarget) + " ကို ပြန်ဖြေရန်..." : "မှတ်ချက်ရေးရန်..."}" onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-3.5 py-2 text-xs"/><button onclick="addCmt('${p.id}')" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">ပို့</button></div>
+            <div class="flex items-center gap-2">
+              ${avatar(st.me, "w-8 h-8 text-xs")}
+              <input id="ci-${p.id}" type="text" placeholder="${rTarget ? esc(rTarget) + " ကို ပြန်ဖြေရန်..." : "မှတ်ချက်ရေးရန်..."}" onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-3.5 py-2 text-xs"/>
+              <button onclick="addCmt('${p.id}')" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">ပို့</button>
+            </div>
           </div>` : ""}
         </article>`;
     }
@@ -891,31 +916,31 @@
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-800">
               <button onclick="closeModal()" class="text-xs font-bold text-slate-300">✕ ပိတ်မည်</button>
-              <h3 class="text-base font-bold text-white">ရောင်းဝယ်မှု ပို့စ်တင်ရန်</h3>
+              <h3 class="text-base font-bold text-white">Account ရောင်းဝယ်ပို့စ်တင်ရန်</h3>
               <button onclick="submitPost()" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">တင်မည်</button>
             </div>
             <div class="text-xs text-emerald-200 bg-emerald-500/15 border border-emerald-500/30 rounded-xl px-3 py-2 font-medium">
-              ရောင်းဝယ်မှုနှင့် သက်ဆိုင်သော ပို့စ်များသာ တင်ရမည်။ Reaction နှင့် မှတ်ချက်များလေ လူတွေဆီ ပိုရောက်လေ ဖြစ်ပါသည်။
+              Page / YouTube / TikTok Account ရောင်းဝယ်မှုသာ တင်ရမည်။ #youtube, #facebook, #tiktok စသဖြင့် # ခံပြီး ရေးနိုင်ပါသည်။ အဝတ်အစားစသည့် ရုပ်ပစ္စည်းများ ခွင့်မပြုပါ။
             </div>
-            <textarea id="postTxt" rows="4" placeholder="ရောင်းချင် / ဝယ်ချင်တဲ့ ပစ္စည်းအကြောင်း၊ အခြေအနေနှင့် ဆက်သွယ်ရန် ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm focus:outline-none resize-none"></textarea>
+            <textarea id="postTxt" rows="4" placeholder="ဥပမာ - #youtube 10k Subscribers Channel ရောင်းမည်... အသေးစိတ်ရေးပါ" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm focus:outline-none resize-none"></textarea>
             <div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-700">
               <img id="imgPrev" src="" class="w-full max-h-60 object-cover"/>
               <button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button>
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (ဥပမာ ၂၅,၀၀၀ ကျပ်)" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
+              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (ဥပမာ ၁၅၀,၀၀၀ ကျပ်)" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
               <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
-                <option value="အသစ်">အသစ် (New)</option>
-                <option value="ကောင်း / တစ်ပတ်ရစ်">ကောင်း / တစ်ပတ်ရစ်</option>
+                <option value="Full Ownership">Full Ownership</option>
+                <option value="Admin / Access">Admin / Access</option>
                 <option value="ဝယ်ယူလိုသည်">ဝယ်ယူလိုသည်</option>
               </select>
             </div>
             <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
-              <option value="">-- ရောင်းဝယ်မှု အမျိုးအစား ရွေးပါ --</option>
+              <option value="">-- Account အမျိုးအစား ရွေးပါ --</option>
               ${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}
             </select>
             <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold cursor-pointer">
-              <span>📷 ဓာတ်ပုံရွေးမည်</span>
+              <span>📷 Screenshot / ပုံရွေးမည်</span>
               <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
             </label>
           </div>
@@ -945,11 +970,13 @@
       const price = document.getElementById("postPrice").value.trim();
       const condition = document.getElementById("postCond").value;
       const category = document.getElementById("postCat").value;
-      if (!category) return toast("ရောင်းဝယ်မှု အမျိုးအစား ရွေးပေးပါ");
-      if (!text && !st.img) return toast("ပစ္စည်းအကြောင်း သို့မဟုတ် ဓာတ်ပုံ ထည့်ပေးပါ");
+      if (!category) return toast("Account အမျိုးအစား ရွေးပေးပါ");
+      if (!text && !st.img) return toast("Account အကြောင်း သို့မဟုတ် ပုံ ထည့်ပေးပါ");
+      if (hasBlockedClothing(text)) return toast("အဝတ်အစားစသည့် ရုပ်ပစ္စည်းများ တင်ခွင့်မပြုပါ");
+      const tags = (text.match(/#[\w\u1000-\u109F]+/g) || []).join(" ");
       const id = "P-" + Date.now() + "-" + Math.floor(Math.random() * 999);
-      const p = { id, authorId: st.me.id, text, image: st.img || "", price, condition, category, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
-      st.posts.unshift(p); playSong("like"); closeModal(); render(); toast("ရောင်းဝယ်မှု ပို့စ်တင်ပြီးပါပြီ");
+      const p = { id, authorId: st.me.id, text, tags, image: st.img || "", price, condition, category, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
+      st.posts.unshift(p); playSong("like"); closeModal(); render(); toast("Account ပို့စ်တင်ပြီးပါပြီ");
       fbPut(`users/${st.me.id}`, st.me).catch(() => {});
       fbPut(`posts/${id}`, p).catch(() => toast("အင်တာနက် စစ်ဆေးပေးပါ"));
     }
@@ -984,7 +1011,7 @@
               အယူခံလွှာကို <b>${ADMIN_NAME}</b> ထံ တိုက်ရိုက်ပေးပို့မည်ဖြစ်သည်။ ယုံကြည်စိတ်ချရကြောင်း အချက်အလက်များ မှန်ကန်စွာ ထည့်သွင်းပါ။
             </p>
             <input id="apPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဆက်သွယ်ရန် ဖုန်းနံပါတ်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/>
-            <input id="apProof" type="text" placeholder="ရောင်းဝယ်မှု အတွေ့အကြုံ / လိပ်စာ သို့မဟုတ် အထောက်အထား" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/>
+            <input id="apProof" type="text" placeholder="Page / Account ရောင်းဝယ်မှု အတွေ့အကြုံ သို့မဟုတ် အထောက်အထား" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/>
             <textarea id="apReason" rows="3" placeholder="မည်သည့်အတွက် ယုံကြည်စိတ်ချရကြောင်း ရှင်းပြပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs resize-none"></textarea>
             <button onclick="submitAppeal()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ အယူခံပို့မည်</button>
           </div>
