@@ -11,75 +11,75 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Plus Jakarta Sans', 'Noto Sans Myanmar', sans-serif; background: #f1f5f9; color: #0f172a; margin: 0; }
+    body { font-family: 'Plus Jakarta Sans', 'Noto Sans Myanmar', sans-serif; font-size: 15px; background: #e2e8f0; color: #0f172a; margin: 0; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes slideUp { from { transform: translateY(100%); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
     .animate-slide-up { animation: slideUp .2s ease-out forwards; }
   </style>
 </head>
-<body class="bg-slate-100">
-  <div id="app" class="max-w-md mx-auto min-h-screen bg-slate-50 shadow-xl flex flex-col relative pb-20">
-    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+<body class="bg-slate-200">
+  <div id="app" class="max-w-md mx-auto min-h-screen bg-slate-100 shadow-xl flex flex-col relative pb-24">
+    <header class="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-sm">
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shadow-sm">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
-            <h1 class="text-base font-bold text-slate-900 leading-tight">ဖြေးဖြေး ဝယ်</h1>
-            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">APK WEB</span>
+            <h1 class="text-lg font-bold text-slate-900 leading-tight">ဖြေးဖြေး ဝယ်</h1>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">APK</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span id="syncText" class="text-[11px] text-slate-500 font-medium">ချိတ်ဆက်ပြီး</span>
+            <span id="syncDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span id="syncText" class="text-xs text-slate-500 font-medium">ချိတ်ဆက်ပြီး</span>
           </div>
         </div>
       </div>
       <div class="flex items-center gap-1.5">
-        <button onclick="toggleSound()" id="soundBtn" class="p-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700" title="အသံဖွင့်/ပိတ်">🔊</button>
-        <button onclick="openRulesModal()" class="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700" title="စည်းမျဉ်းစည်းကမ်း">
+        <button onclick="toggleSound()" id="soundBtn" class="p-2.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-base" title="အသံဖွင့်/ပိတ်">🔊</button>
+        <button onclick="openRulesModal()" class="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700" title="စည်းမျဉ်းစည်းကမ်း">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </button>
-        <button onclick="switchTab('chats')" class="relative p-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700" title="မက်ဆေ့ချ်များ">
+        <button onclick="switchTab('chats')" class="relative p-2.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700" title="မက်ဆေ့ချ်များ">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         </button>
-        <button onclick="switchTab('notifications')" class="relative p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700" title="အကြောင်းကြားစာ">
+        <button onclick="switchTab('notifications')" class="relative p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700" title="အကြောင်းကြားစာ">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+          <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">0</span>
         </button>
       </div>
     </header>
 
     <main id="mainContent" class="flex-1 overflow-y-auto"></main>
 
-    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-200 px-1 py-1.5 flex items-center justify-around z-30">
+    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-200 px-1 py-2 flex items-center justify-around z-30 shadow">
       <button onclick="switchTab('home')" id="nav-home" class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-emerald-600">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span class="text-[10px] font-semibold">ပင်မ</span>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="text-xs font-bold">ပင်မ</span>
       </button>
       <button onclick="switchTab('explore')" id="nav-explore" class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-slate-500">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <span class="text-[10px] font-medium">ရှာဖွေရန်</span>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span class="text-xs font-semibold">ရှာဖွေ</span>
       </button>
-      <button onclick="openComposerModal()" class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200 active:scale-95 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+      <button onclick="openComposerModal()" class="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200 active:scale-95 transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
       </button>
       <button onclick="switchTab('chats')" id="nav-chats" class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-slate-500">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        <span class="text-[10px] font-medium">စာတို</span>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <span class="text-xs font-semibold">စာတို</span>
       </button>
       <button onclick="switchTab('friends')" id="nav-friends" class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-slate-500">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span class="text-[10px] font-medium">သူငယ်ချင်း</span>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="text-xs font-semibold">မိတ်ဆွေ</span>
       </button>
       <button onclick="switchTab('profile')" id="nav-profile" class="nav-btn flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl text-slate-500">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        <span class="text-[10px] font-medium">ပရိုဖိုင်</span>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span class="text-xs font-semibold">ပရိုဖိုင်</span>
       </button>
     </nav>
 
-    <div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg whitespace-nowrap"></div>
+    <div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg whitespace-nowrap"></div>
     <div id="modalRoot"></div>
   </div>
 
@@ -89,17 +89,33 @@
     const TRADE_CATS = ["ဖုန်းနှင့်အီလက်ထရောနစ်", "ဖက်ရှင်နှင့်အလှကုန်", "အိမ်သုံးပစ္စည်း", "အစားအသောက်", "ကား/ဆိုင်ကယ်", "ဝန်ဆောင်မှု"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
     const COLORS = ["from-emerald-500 to-teal-600", "from-blue-500 to-indigo-600", "from-amber-500 to-orange-600", "from-rose-500 to-pink-600", "from-purple-500 to-violet-600"];
+    const REACTIONS = [
+      { key: "like", icon: "👍", label: "ကြိုက်တယ်", activeClass: "text-blue-700 bg-blue-100 border-blue-200" },
+      { key: "haha", icon: "😂", label: "Haha", activeClass: "text-amber-700 bg-amber-100 border-amber-200" },
+      { key: "love", icon: "❤️", label: "အသည်း", activeClass: "text-rose-700 bg-rose-100 border-rose-200" },
+      { key: "angry", icon: "😡", label: "စိတ်ဆိုး", activeClass: "text-orange-800 bg-orange-100 border-orange-200" }
+    ];
+    const MYANMAR_STICKERS = [
+      { emoji: "🛍️", tag: "ဈေးကောင်း", text: "ဈေးလေး နည်းနည်းလျှော့ပေးပါဦးဗျာ 🥰" },
+      { emoji: "✨", tag: "စစ်မှန်တယ်", text: "ပစ္စည်းစစ်စစ်ကြီးနော် စိတ်ချလက်ချ ✨" },
+      { emoji: "🎉", tag: "အရမ်းတန်", text: "ဒီဈေးနဲ့ဆို အရမ်းတန်နေပြီဗျို့ 🎉" },
+      { emoji: "🙏", tag: "ကြိုဆိုပါတယ်", text: "မင်္ဂလာပါ ဈေးဝယ်သူရှင့် ဘာလိုချင်လဲခင်ဗျာ 🙏" },
+      { emoji: "🚀", tag: "မြန်ဆန်တယ်", text: "အမြန်ပို့ပေးမယ်နော် စောင့်နေပေးပါ 🚀" },
+      { emoji: "💙", tag: "ယုံကြည်ရ", text: "ဖြေးဖြေး ဝယ် မှာ ယုံကြည်စိတ်ချရပါတယ် 💙" },
+      { emoji: "🤝", tag: "ညှိနှိုင်း", text: "ဆိုင်ရှင်နဲ့ ညှိနှိုင်းလို့ရပါတယ် ခင်ဗျာ 🤝" },
+      { emoji: "🎁", tag: "လက်ဆောင်", text: "ဝယ်သူအတွက် အထူးအစီအစဉ်လေး ရှိတယ်နော် 🎁" }
+    ];
     const RULES = [
       "ရောင်းဝယ်မှုနှင့် ပစ္စည်းအကြောင်း ပို့စ်များကိုသာ တင်ရမည်။ ရောင်းဝယ်မှုနှင့် မသက်ဆိုင်သော Spam / အကြောင်းမဲ့ပို့စ်များ ခွင့်မပြုပါ။",
       "ပစ္စည်းအခြေအနေ (အသစ် / တစ်ပတ်ရစ်)၊ ဈေးနှုန်းနှင့် ဆက်သွယ်ရန် အချက်အလက် မှန်ကန်ရမည်။",
       "လိမ်လည်မှု၊ အတုအပပစ္စည်း၊ တရားမဝင်ပစ္စည်းနှင့် ယုံကြည်မှုပျက်စီးစေသော အပြုအမူများ လုံးဝခွင့်မပြုပါ။",
       "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — ယုံကြည်ရကြောင်း အထောက်အထားဖြင့် ကိုပိုင်ဇော်ထက်ထံ အယူခံဝင် စစ်ဆေးခံရမည်။",
-      "ပို့စ်တစ်ခုတွင် စိတ်ဝင်စားမှု (Like) နှင့် မှတ်ချက် (Comment) များလေ လူတွေဆီ ပိုမိုရောက်ရှိမည်။"
+      "ပို့စ်တစ်ခုတွင် Reaction နှင့် မှတ်ချက် (Comment) များလေ လူတွေဆီ ပိုမိုရောက်ရှိမည်။"
     ];
 
     function getUser() {
       try {
-        const s = JSON.parse(localStorage.getItem("ppw_user_v3"));
+        const s = JSON.parse(localStorage.getItem("ppw_user_v4"));
         if (s && s.id) return s;
       } catch (e) {}
       const n = Math.floor(100000 + Math.random() * 900000);
@@ -114,9 +130,10 @@
         isAdmin: false,
         color: COLORS[n % COLORS.length],
         friends: [],
+        following: [],
         createdAt: Date.now()
       };
-      try { localStorage.setItem("ppw_user_v3", JSON.stringify(u)); } catch (e) {}
+      try { localStorage.setItem("ppw_user_v4", JSON.stringify(u)); } catch (e) {}
       return u;
     }
 
@@ -138,6 +155,7 @@
       img: null,
       chatImg: null,
       chatUid: null,
+      showStickers: false,
       soundOn: true,
       seenMsgIds: {},
       seenNotifIds: {},
@@ -146,7 +164,7 @@
       audioChunks: []
     };
 
-    const saveMe = () => { try { localStorage.setItem("ppw_user_v3", JSON.stringify(st.me)); } catch (e) {} };
+    const saveMe = () => { try { localStorage.setItem("ppw_user_v4", JSON.stringify(st.me)); } catch (e) {} };
     const esc = s => String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
     function toast(m) {
       const el = document.getElementById("toast"); el.textContent = m; el.classList.remove("hidden");
@@ -163,7 +181,7 @@
     function toggleSound() {
       st.soundOn = !st.soundOn;
       document.getElementById("soundBtn").textContent = st.soundOn ? "🔊" : "🔇";
-      toast(st.soundOn ? "Noti Song အသံ ဖွင့်လိုက်ပါပြီ" : "Noti Song အသံ ပိတ်လိုက်ပါပြီ");
+      toast(st.soundOn ? "အသံစနစ် ဖွင့်လိုက်ပါပြီ" : "အသံစနစ် ပိတ်လိုက်ပါပြီ");
       if (st.soundOn) playSong("notif");
     }
 
@@ -174,35 +192,49 @@
         if (!AC) return;
         const ctx = new AC();
         const now = ctx.currentTime;
-        const notes = kind === "message" ? [659.25, 880, 1046.5] : [523.25, 783.99];
-        notes.forEach((freq, idx) => {
+        const seq =
+          kind === "message" ? [659.25, 880, 1046.5] :
+          kind === "like" ? [587.33, 880] :
+          kind === "haha" ? [698.46, 880, 1174.66] :
+          kind === "love" ? [523.25, 659.25, 783.99, 1046.5] :
+          kind === "angry" ? [246.94, 185.0] :
+          [523.25, 783.99];
+        const wave = kind === "angry" ? "sawtooth" : (kind === "haha" || kind === "like" ? "triangle" : "sine");
+        seq.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = kind === "message" ? "sine" : "triangle";
-          osc.frequency.setValueAtTime(freq, now + idx * 0.09);
-          gain.gain.setValueAtTime(0.001, now + idx * 0.09);
-          gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.09 + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.09 + 0.28);
+          osc.type = wave;
+          osc.frequency.setValueAtTime(freq, now + idx * 0.075);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.075);
+          gain.gain.exponentialRampToValueAtTime(0.16, now + idx * 0.075 + 0.018);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.075 + 0.24);
           osc.connect(gain);
           gain.connect(ctx.destination);
-          osc.start(now + idx * 0.09);
-          osc.stop(now + idx * 0.09 + 0.3);
+          osc.start(now + idx * 0.075);
+          osc.stop(now + idx * 0.075 + 0.26);
         });
       } catch (e) {}
     }
 
-    const uInfo = id => id === st.me.id ? st.me : (st.users[id] || { id, name: id, bio: "", photo: "", blueMark: false, color: "from-slate-500 to-slate-600", createdAt: Date.now() });
+    const uInfo = id => id === st.me.id ? st.me : (st.users[id] || { id, name: id, bio: "", photo: "", blueMark: false, friends: [], following: [], color: "from-slate-500 to-slate-600", createdAt: Date.now() });
     const isNewUser = id => (Date.now() - (uInfo(id).createdAt || Date.now())) < 7 * 86400000;
     function blueBadge(u) {
       if (!u || !u.blueMark) return "";
-      return `<span title="အတည်ပြု ယုံကြည်စိတ်ချရသူ" class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-sky-500 text-white text-[10px] font-bold shrink-0">✓</span>`;
+      return `<span title="အတည်ပြု ယုံကြည်စိတ်ချရသူ" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold shrink-0">✓</span>`;
     }
     function uRating(id) {
       const l = Object.values(st.reviews || {}).filter(r => r.targetId === id);
       if (!l.length) return { avg: "0.0", count: 0, list: [] };
       return { avg: (l.reduce((a, b) => a + (Number(b.rating) || 5), 0) / l.length).toFixed(1), count: l.length, list: l };
     }
-    function avatar(u, sz = "w-10 h-10 text-sm") {
+    function followersCount(id) {
+      let c = 0;
+      Object.values(st.users || {}).forEach(u => {
+        if (u && u.id !== id && Array.isArray(u.following) && u.following.includes(id)) c++;
+      });
+      return c;
+    }
+    function avatar(u, sz = "w-11 h-11 text-base") {
       const x = typeof u === "string" ? uInfo(u) : u;
       if (x && x.photo) {
         return `<img src="${x.photo}" alt="${esc(x.name || "U")}" class="${sz} rounded-full object-cover shrink-0 shadow-sm border-2 border-emerald-500/40 bg-slate-100"/>`;
@@ -210,10 +242,26 @@
       return `<div class="${sz} rounded-full bg-gradient-to-br ${x.color || COLORS[0]} text-white font-bold flex items-center justify-center shrink-0 shadow-sm">${esc((x.name || "U").trim().charAt(0).toUpperCase())}</div>`;
     }
 
+    function totalReactions(p) {
+      const rx = p.reactions || {};
+      let sum = Object.keys(p.likes || {}).length;
+      Object.values(rx).forEach(map => { sum += Object.keys(map || {}).length; });
+      return sum;
+    }
+
+    function userReaction(p) {
+      const rx = p.reactions || {};
+      for (const r of REACTIONS) {
+        if (rx[r.key] && rx[r.key][st.me.id]) return r.key;
+      }
+      if (p.likes && p.likes[st.me.id]) return "like";
+      return null;
+    }
+
     function engagementScore(p) {
-      const lCnt = Object.keys(p.likes || {}).length;
+      const rCnt = totalReactions(p);
       const cCnt = Object.keys(p.comments || {}).length;
-      return lCnt * 3 + cCnt * 5;
+      return rCnt * 3 + cCnt * 5;
     }
 
     function feedScore(p) {
@@ -282,7 +330,7 @@
         if (newMsgSong) playSong("message");
         else if (newNotifSong) playSong("notif");
 
-        document.getElementById("syncDot").className = "w-2 h-2 rounded-full bg-emerald-500";
+        document.getElementById("syncDot").className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
         document.getElementById("syncText").textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
         const unread = st.notifs.filter(n => !n.read).length;
         const nb = document.getElementById("notifBadge");
@@ -300,7 +348,7 @@
           renderTypingBanner();
         }
       } catch (e) {
-        document.getElementById("syncDot").className = "w-2 h-2 rounded-full bg-amber-500";
+        document.getElementById("syncDot").className = "w-2.5 h-2.5 rounded-full bg-amber-500";
         document.getElementById("syncText").textContent = "ချိတ်ဆက်နေဆဲ...";
       }
     }
@@ -337,31 +385,51 @@
       return list;
     }
 
+    function renderFriendsGrid(uid, limit = 6) {
+      const u = uInfo(uid);
+      const fIds = Array.isArray(u.friends) ? u.friends : [];
+      const shown = fIds.slice(0, limit);
+      if (!shown.length) {
+        return `<div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-center text-xs text-slate-500">မိတ်ဆွေစာရင်း မရှိသေးပါ</div>`;
+      }
+      return `
+        <div class="grid grid-cols-3 gap-2.5">
+          ${shown.map(fid => {
+            const fu = uInfo(fid);
+            return `
+              <div onclick="openUserModal('${fu.id}')" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-2xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer transition">
+                ${avatar(fu, "w-14 h-14 text-base")}
+                <span class="text-xs font-bold text-slate-800 truncate w-full text-center flex items-center justify-center gap-0.5">${esc(fu.name)} ${blueBadge(fu)}</span>
+              </div>`;
+          }).join("")}
+        </div>`;
+    }
+
     function render() {
       const el = document.getElementById("mainContent");
       if (st.tab === "home") {
         const list = getFilteredPosts();
         el.innerHTML = `
           <div class="bg-white p-3.5 border-b border-slate-200 flex items-center gap-3">
-            <div onclick="switchTab('profile')" class="cursor-pointer">${avatar(st.me)}</div>
-            <button onclick="openComposerModal()" class="flex-1 text-left bg-slate-100 hover:bg-slate-200/70 text-slate-500 text-sm px-4 py-2.5 rounded-full">ရောင်းချင် / ဝယ်ချင်တဲ့ ပစ္စည်းတင်ရန်...</button>
-            <button onclick="openComposerModal()" class="p-2.5 rounded-full bg-emerald-50 text-emerald-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
+            <div onclick="switchTab('profile')" class="cursor-pointer">${avatar(st.me, "w-12 h-12 text-base")}</div>
+            <button onclick="openComposerModal()" class="flex-1 text-left bg-slate-100 hover:bg-slate-200/70 text-slate-600 text-sm px-4 py-3 rounded-full font-medium">ရောင်းချင် / ဝယ်ချင်တဲ့ ပစ္စည်းတင်ရန်...</button>
+            <button onclick="openComposerModal()" class="p-3 rounded-full bg-emerald-50 text-emerald-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
           </div>
           <div class="bg-white px-3 py-2.5 border-b border-slate-200 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            ${FEED_FILTERS.map(c => `<button onclick="st.cat='${c}';render()" class="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${st.cat === c ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}">${c}</button>`).join("")}
+            ${FEED_FILTERS.map(c => `<button onclick="st.cat='${c}';render()" class="px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap ${st.cat === c ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-700"}">${c}</button>`).join("")}
           </div>
-          <div class="px-3.5 pt-2.5 flex items-center justify-between text-[11px] text-slate-500">
+          <div class="px-3.5 pt-2.5 flex items-center justify-between text-xs text-slate-600 font-medium">
             <span>🔥 စိတ်ဝင်စားမှုများလေ လူတွေဆီ ပိုရောက်လေ</span>
-            <button onclick="openRulesModal()" class="text-emerald-700 font-semibold underline">စည်းမျဉ်းများ</button>
+            <button onclick="openRulesModal()" class="text-emerald-700 font-bold underline">စည်းမျဉ်းများ</button>
           </div>
-          <div class="p-3 space-y-3">${list.length ? list.map(postCard).join("") : `<div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-xs text-slate-500">ဤကဏ္ဍတွင် ရောင်းဝယ်မှုပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
+          <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-sm text-slate-500">ဤကဏ္ဍတွင် ရောင်းဝယ်မှုပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
       } else if (st.tab === "explore") {
         const q = st.q.trim().toLowerCase();
         const res = st.posts.filter(p => !q || (p.text || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q) || (p.price || "").toLowerCase().includes(q) || (uInfo(p.authorId).name || "").toLowerCase().includes(q));
         el.innerHTML = `
           <div class="p-3.5 space-y-3">
-            <input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="ပစ္စည်းအမည်၊ ရောင်းသူ သို့မဟုတ် အမျိုးအစား ရှာရန်..." class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500"/>
-            <div class="grid grid-cols-2 gap-2">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-white p-3 rounded-2xl border border-slate-200 text-left"><div class="text-xs font-bold">${c}</div><div class="text-[11px] text-slate-500">ပို့စ် ${st.posts.filter(p => p.category === c).length} ခု</div></button>`).join("")}</div>
+            <input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="ပစ္စည်းအမည်၊ ရောင်းသူ သို့မဟုတ် အမျိုးအစား ရှာရန်..." class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"/>
+            <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-white p-3.5 rounded-2xl border border-slate-200 text-left"><div class="text-sm font-bold text-slate-800">${c}</div><div class="text-xs text-slate-500 mt-0.5">ပို့စ် ${st.posts.filter(p => p.category === c).length} ခု</div></button>`).join("")}</div>
             <div class="space-y-3">${res.map(postCard).join("")}</div>
           </div>`;
       } else if (st.tab === "chats") {
@@ -370,37 +438,37 @@
         el.innerHTML = `
           <div class="p-3.5 space-y-4">
             <div class="flex items-center justify-between px-1">
-              <h2 class="text-sm font-bold text-slate-800">မက်ဆေ့ချ် Box</h2>
-              <span class="text-[11px] text-slate-500">${rooms.length} ဦး</span>
+              <h2 class="text-base font-bold text-slate-900">မက်ဆေ့ချ် Box</h2>
+              <span class="text-xs font-semibold text-slate-500">${rooms.length} ဦး</span>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-2.5">
               ${rooms.length ? rooms.map(([k, mObj], idx) => {
                 const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid);
                 const ms = Object.values(mObj || {}).sort((a, b) => a.createdAt - b.createdAt), last = ms[ms.length - 1];
                 const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500));
                 const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.text || (last.audio ? "🎙️ အသံမက်ဆေ့ချ်" : "📷 ဓာတ်ပုံ")) : "စကားစပြောရန် နှိပ်ပါ");
-                return `<div onclick="openChat('${oid}')" class="bg-white p-3 rounded-2xl border border-slate-200 flex items-center gap-3 cursor-pointer active:bg-slate-50">
-                  <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
-                  ${avatar(o, "w-11 h-11 text-sm")}
+                return `<div onclick="openChat('${oid}')" class="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center gap-3 cursor-pointer active:bg-slate-50">
+                  <span class="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
+                  ${avatar(o, "w-12 h-12 text-base")}
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center justify-between">
                       <span class="text-sm font-bold truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span>
-                      <span class="text-[10px] text-slate-400">${last ? ago(last.createdAt) : ""}</span>
+                      <span class="text-xs text-slate-400">${last ? ago(last.createdAt) : ""}</span>
                     </div>
-                    <div class="text-xs ${isTyping ? "text-emerald-600 font-semibold" : "text-slate-500"} truncate mt-0.5">${esc(preview)}</div>
+                    <div class="text-xs ${isTyping ? "text-emerald-600 font-bold" : "text-slate-600"} truncate mt-0.5">${esc(preview)}</div>
                   </div>
                 </div>`;
-              }).join("") : `<div class="bg-white rounded-2xl p-6 text-center text-xs text-slate-500 border border-slate-200">စာပို့ထားသူ မရှိသေးပါ — အောက်က အသုံးပြုသူများကို နှိပ်ပြီး စတင်စာပို့နိုင်ပါတယ်</div>`}
+              }).join("") : `<div class="bg-white rounded-2xl p-6 text-center text-sm text-slate-500 border border-slate-200">စာပို့ထားသူ မရှိသေးပါ — အောက်က အသုံးပြုသူများကို နှိပ်ပြီး စတင်စာပို့နိုင်ပါတယ်</div>`}
             </div>
             ${others.length ? `
-              <div class="space-y-2 pt-2 border-t border-slate-200">
-                <h3 class="text-xs font-bold text-slate-500 px-1">စာပို့နိုင်သော အသုံးပြုသူများ</h3>
+              <div class="space-y-2.5 pt-2 border-t border-slate-200">
+                <h3 class="text-sm font-bold text-slate-700 px-1">စာပို့နိုင်သော အသုံးပြုသူများ</h3>
                 <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
                   ${others.map(u => `
-                    <button onclick="openChat('${u.id}')" class="bg-white p-2.5 rounded-2xl border border-slate-200 flex flex-col items-center gap-1.5 min-w-[84px] shrink-0">
-                      ${avatar(u, "w-11 h-11 text-sm")}
-                      <span class="text-[11px] font-semibold truncate w-full text-center flex items-center justify-center gap-0.5">${esc(u.name)} ${blueBadge(u)}</span>
-                      <span class="text-[10px] text-emerald-600 font-bold">စာပို့မည်</span>
+                    <button onclick="openChat('${u.id}')" class="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center gap-1.5 min-w-[92px] shrink-0">
+                      ${avatar(u, "w-12 h-12 text-base")}
+                      <span class="text-xs font-bold truncate w-full text-center flex items-center justify-center gap-0.5">${esc(u.name)} ${blueBadge(u)}</span>
+                      <span class="text-xs text-emerald-600 font-bold">စာပို့မည်</span>
                     </button>`).join("")}
                 </div>
               </div>` : ""}
@@ -411,101 +479,125 @@
         el.innerHTML = `
           <div class="p-3.5 space-y-4">
             <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-4 text-white">
-              <div class="text-xs text-emerald-100">သင့် User ID</div>
-              <div class="flex items-center justify-between mt-1"><span class="text-lg font-bold">${esc(st.me.id)}</span><button onclick="copyId('${st.me.id}')" class="px-3 py-1.5 rounded-xl bg-white/20 text-xs font-semibold">ID ကူးမည်</button></div>
+              <div class="text-xs text-emerald-100 font-medium">သင့် User ID</div>
+              <div class="flex items-center justify-between mt-1"><span class="text-lg font-bold">${esc(st.me.id)}</span><button onclick="copyId('${st.me.id}')" class="px-3.5 py-1.5 rounded-xl bg-white/20 text-xs font-bold">ID ကူးမည်</button></div>
             </div>
-            <input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID (ဥပမာ PPW-123456) ဖြင့် ရှာရန်..." class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-sm"/>
-            <div class="space-y-2">${users.length ? users.map(u => {
+            <input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID (ဥပမာ PPW-123456) ဖြင့် ရှာရန်..." class="w-full bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm"/>
+            <div class="space-y-2.5">${users.length ? users.map(u => {
               const isF = (st.me.friends || []).includes(u.id);
               return `<div class="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
-                <div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u)}<div class="min-w-0"><div class="text-sm font-bold truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-[11px] text-slate-500 font-mono">${esc(u.id)}</div></div></div>
-                <button onclick="openChat('${u.id}')" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold">စာပို့</button>
-                <button onclick="toggleFriend('${u.id}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold ${isF ? "bg-slate-100 text-slate-700" : "bg-emerald-600 text-white"}">${isF ? "သူငယ်ချင်း ✓" : "+ အပ်မည်"}</button>
+                <div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-sm font-bold truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-500 font-mono">${esc(u.id)}</div></div></div>
+                <button onclick="openChat('${u.id}')" class="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">စာပို့</button>
+                <button onclick="toggleFriend('${u.id}')" class="px-3 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-100 text-slate-700" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Friend Add"}</button>
               </div>`;
-            }).join("") : `<div class="bg-white rounded-2xl p-6 text-center text-xs text-slate-500 border border-slate-200">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div>
+            }).join("") : `<div class="bg-white rounded-2xl p-6 text-center text-sm text-slate-500 border border-slate-200">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div>
           </div>`;
       } else if (st.tab === "notifications") {
-        el.innerHTML = `<div class="p-3.5 space-y-2"><h2 class="text-sm font-bold px-1">အကြောင်းကြားစာများ</h2>${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-white p-3 rounded-2xl border border-slate-200 flex items-center gap-3 cursor-pointer">${avatar(n.fromId)}<div><p class="text-xs"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-[10px] text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-white rounded-2xl p-8 text-center text-xs text-slate-500 border border-slate-200">အကြောင်းကြားစာ မရှိသေးပါ</div>`}</div>`;
+        el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold px-1">အကြောင်းကြားစာများ</h2>${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-white rounded-2xl p-8 text-center text-sm text-slate-500 border border-slate-200">အကြောင်းကြားစာ မရှိသေးပါ</div>`}</div>`;
       } else if (st.tab === "profile") {
         const r = uRating(st.me.id);
         const mine = st.posts.filter(p => p.authorId === st.me.id);
+        const fCount = (st.me.friends || []).length;
+        const followingCount = (st.me.following || []).length;
+        const followerCount = followersCount(st.me.id);
         const myAppeal = Object.values(st.appeals || {}).filter(a => a.userId === st.me.id).sort((a, b) => b.createdAt - a.createdAt)[0];
         const pendingCount = Object.values(st.appeals || {}).filter(a => a.status === "pending").length;
         el.innerHTML = `
           <div class="p-3.5 space-y-4">
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 space-y-3.5">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 space-y-4">
               <div class="flex items-center gap-3.5">
                 <label class="relative cursor-pointer shrink-0">
-                  ${avatar(st.me, "w-16 h-16 text-xl")}
-                  <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow border-2 border-white">📷</span>
+                  ${avatar(st.me, "w-20 h-20 text-2xl")}
+                  <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow border-2 border-white">📷</span>
                   <input type="file" accept="image/*" onchange="onPickAvatar(event)" class="hidden"/>
                 </label>
                 <div class="min-w-0 flex-1">
-                  <h2 class="text-base font-bold truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</h2>
-                  <div class="text-xs font-mono text-slate-500">${esc(st.me.id)} <button onclick="copyId('${st.me.id}')" class="text-emerald-600 font-sans font-semibold ml-1">ကူးမည်</button></div>
-                  <div class="text-[11px] font-semibold mt-0.5 ${st.me.blueMark ? "text-sky-600" : "text-slate-500"}">
+                  <h2 class="text-lg font-bold truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</h2>
+                  <div class="text-xs font-mono text-slate-500">${esc(st.me.id)} <button onclick="copyId('${st.me.id}')" class="text-emerald-600 font-sans font-bold ml-1">ကူးမည်</button></div>
+                  <div class="text-xs font-bold mt-1 ${st.me.blueMark ? "text-sky-600" : "text-slate-600"}">
                     ${st.me.blueMark ? "✓ Blue Mark ရရှိပြီး (ယုံကြည်စိတ်ချရသူ)" : "Blue Mark မရှိသေးပါ (အယူခံဝင်နိုင်သည်)"}
                   </div>
                 </div>
               </div>
 
-              <div class="grid grid-cols-4 gap-2 pt-1">
+              <!-- အဝိုင်းလေးများဖြင့် Stats (Friends / Following / Follower / ပို့စ် / အဆင့်) -->
+              <div class="grid grid-cols-5 gap-1.5 pt-1">
                 <div class="flex flex-col items-center gap-1">
-                  <div class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-sm flex items-center justify-center">${mine.length}</div>
-                  <span class="text-[10px] text-slate-600 font-medium">ပို့စ်များ</span>
+                  <div class="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold text-sm flex items-center justify-center">${fCount}</div>
+                  <span class="text-[11px] text-slate-700 font-bold">Friends</span>
+                </div>
+                <div class="flex flex-col items-center gap-1">
+                  <div class="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-bold text-sm flex items-center justify-center">${followingCount}</div>
+                  <span class="text-[11px] text-slate-700 font-bold">Following</span>
+                </div>
+                <div class="flex flex-col items-center gap-1">
+                  <div class="w-12 h-12 rounded-full bg-teal-50 border border-teal-200 text-teal-700 font-bold text-sm flex items-center justify-center">${followerCount}</div>
+                  <span class="text-[11px] text-slate-700 font-bold">Follower</span>
+                </div>
+                <div class="flex flex-col items-center gap-1">
+                  <div class="w-12 h-12 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-bold text-sm flex items-center justify-center">${mine.length}</div>
+                  <span class="text-[11px] text-slate-700 font-bold">ပို့စ်</span>
                 </div>
                 <div class="flex flex-col items-center gap-1">
                   <div class="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-bold text-xs flex items-center justify-center">★ ${r.avg}</div>
-                  <span class="text-[10px] text-slate-600 font-medium">အဆင့် (${r.count})</span>
+                  <span class="text-[11px] text-slate-700 font-bold">အဆင့်</span>
                 </div>
-                <div class="flex flex-col items-center gap-1">
-                  <div class="w-12 h-12 rounded-full ${(st.me.friends || []).length ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-slate-100 border-slate-200 text-slate-600"} border font-bold text-sm flex items-center justify-center">${(st.me.friends || []).length}</div>
-                  <span class="text-[10px] text-slate-600 font-medium">မိတ်ဆွေ</span>
+              </div>
+
+              <!-- မိတ်ဆွေ ၆ ယောက် (၃ ယောက် ၂ တန်း) -->
+              <div class="space-y-2 pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-bold text-slate-800">မိတ်ဆွေများ (${fCount} ယောက်)</h3>
+                  <button onclick="switchTab('friends')" class="text-xs text-emerald-700 font-bold">အားလုံးကြည့်ရန်</button>
                 </div>
-                <div class="flex flex-col items-center gap-1">
-                  <div class="w-12 h-12 rounded-full ${st.me.blueMark ? "bg-sky-500 text-white" : "bg-slate-100 border border-slate-200 text-slate-600"} font-bold text-xs flex items-center justify-center">${st.me.blueMark ? "✓" : "—"}</div>
-                  <span class="text-[10px] text-slate-600 font-medium">Blue Mark</span>
-                </div>
+                ${renderFriendsGrid(st.me.id, 6)}
               </div>
 
               <div class="flex items-center gap-2">
-                <label class="flex-1 text-center py-2 px-3 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold cursor-pointer">
+                <label class="flex-1 text-center py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold cursor-pointer">
                   📷 ပရိုဖိုင်ပုံ ပြောင်းမည်
                   <input type="file" accept="image/*" onchange="onPickAvatar(event)" class="hidden"/>
                 </label>
-                ${st.me.photo ? `<button onclick="removeAvatar()" class="py-2 px-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold">ပုံဖျက်</button>` : ""}
+                ${st.me.photo ? `<button onclick="removeAvatar()" class="py-2.5 px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">ပုံဖျက်</button>` : ""}
               </div>
 
               ${!st.me.blueMark ? `
-                <div class="p-3 rounded-2xl bg-sky-50/80 border border-sky-200 space-y-2">
+                <div class="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-sky-900">Blue Mark ယုံကြည်ရကြောင်း အယူခံ</span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-sky-700 border border-sky-200">
+                    <span class="text-sm font-bold text-sky-900">Blue Mark ယုံကြည်ရကြောင်း အယူခံ</span>
+                    <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white text-sky-700 border border-sky-200">
                       ${myAppeal ? (myAppeal.status === "approved" ? "အတည်ပြုပြီး" : myAppeal.status === "rejected" ? "ပယ်ချခံရ" : "စစ်ဆေးဆဲ") : "မတင်ရသေး"}
                     </span>
                   </div>
-                  <p class="text-[11px] text-sky-800 leading-relaxed">လူတိုင်းကို အလိုအလျောက် မပေးပါ။ စိတ်ချယုံကြည်ရကြောင်း အချက်အလက်ဖြင့် <b>${ADMIN_NAME}</b> ဆီ အယူခံဝင်ပြီး ဝယ်ယူ/ရောင်းချမှု ယုံကြည်မှု ရယူနိုင်ပါသည်။</p>
-                  <button onclick="openAppealModal()" class="w-full py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ Blue Mark အယူခံဝင်မည်</button>
+                  <p class="text-xs text-sky-800 leading-relaxed">လူတိုင်းကို အလိုအလျောက် မပေးပါ။ ယုံကြည်စိတ်ချရကြောင်း အချက်အလက်ဖြင့် <b>${ADMIN_NAME}</b> ဆီ အယူခံဝင်နိုင်ပါသည်။</p>
+                  <button onclick="openAppealModal()" class="w-full py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ Blue Mark အယူခံဝင်မည်</button>
                 </div>` : ""}
 
               ${st.me.isAdmin ? `
-                <button onclick="openAdminModal()" class="w-full py-2 rounded-xl bg-slate-900 text-white text-xs font-bold flex items-center justify-center gap-2">
+                <button onclick="openAdminModal()" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold flex items-center justify-center gap-2">
                   <span>🛡️ အယူခံ စစ်ဆေးရန် (Admin Panel)</span>
-                  ${pendingCount ? `<span class="px-2 py-0.5 rounded-full bg-rose-500 text-[10px]">${pendingCount}</span>` : ""}
+                  ${pendingCount ? `<span class="px-2 py-0.5 rounded-full bg-rose-500 text-xs">${pendingCount}</span>` : ""}
                 </button>` : ""}
 
-              <input id="pName" type="text" value="${esc(st.me.name)}" placeholder="နာမည်" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"/>
-              <input id="pBio" type="text" value="${esc(st.me.bio || "")}" placeholder="မိတ်ဆက်စာ" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"/>
-              <input id="pPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်းနံပါတ် (Optional)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm"/>
-              <button onclick="saveProfile()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">ပရိုဖိုင် သိမ်းဆည်းမည်</button>
+              <input id="pName" type="text" value="${esc(st.me.name)}" placeholder="နာမည်" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <input id="pBio" type="text" value="${esc(st.me.bio || "")}" placeholder="မိတ်ဆက်စာ" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <input id="pPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်းနံပါတ် (Optional)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <button onclick="saveProfile()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold">ပရိုဖိုင် သိမ်းဆည်းမည်</button>
             </div>
-            <div class="space-y-2.5"><h3 class="text-xs font-bold text-slate-500 px-1">ကျွန်ုပ်၏ ရောင်းဝယ်မှု ပို့စ်များ (${mine.length})</h3>${mine.map(postCard).join("")}</div>
+            <div class="space-y-3"><h3 class="text-sm font-bold text-slate-700 px-1">ကျွန်ုပ်၏ ရောင်းဝယ်မှု ပို့စ်များ (${mine.length})</h3>${mine.map(postCard).join("")}</div>
           </div>`;
       }
     }
 
     function postCard(p) {
-      const au = uInfo(p.authorId), rt = uRating(p.authorId), lk = p.likes || {}, lCnt = Object.keys(lk).length, isLk = !!lk[st.me.id];
+      const au = uInfo(p.authorId), rt = uRating(p.authorId);
+      const myRx = userReaction(p);
+      const rxCounts = {};
+      REACTIONS.forEach(r => {
+        rxCounts[r.key] = Object.keys((p.reactions && p.reactions[r.key]) || {}).length;
+      });
+      if (!rxCounts.like && p.likes) rxCounts.like = Object.keys(p.likes).length;
+      const totRx = Math.max(totalReactions(p), Object.values(rxCounts).reduce((a, b) => a + b, 0));
       const cmts = p.comments ? Object.values(p.comments).sort((a, b) => a.createdAt - b.createdAt) : [], exp = !!st.openCmt[p.id], own = p.authorId === st.me.id;
       const eng = engagementScore(p);
       const rTarget = st.replyTo[p.id];
@@ -513,42 +605,83 @@
         <article class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="p-3.5 pb-2 flex items-center justify-between">
             <div onclick="openUserModal('${p.authorId}')" class="flex items-center gap-2.5 cursor-pointer">
-              ${avatar(au)}
+              ${avatar(au, "w-12 h-12 text-base")}
               <div>
                 <div class="flex items-center gap-1 flex-wrap">
-                  <span class="text-sm font-bold">${esc(au.name)}</span>
+                  <span class="text-sm font-bold text-slate-900">${esc(au.name)}</span>
                   ${blueBadge(au)}
-                  ${isNewUser(p.authorId) ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 rounded-full">အသစ်ရောက်သူ</span>` : ""}
-                  ${rt.count ? `<span class="text-[11px] font-semibold text-amber-600 bg-amber-50 px-1.5 rounded">★ ${rt.avg}</span>` : ""}
+                  ${isNewUser(p.authorId) ? `<span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">အသစ်</span>` : ""}
+                  ${rt.count ? `<span class="text-xs font-bold text-amber-700 bg-amber-50 px-1.5 rounded">★ ${rt.avg}</span>` : ""}
                 </div>
-                <div class="text-[11px] text-slate-500">${ago(p.createdAt)} • <span class="text-emerald-700 font-medium">${esc(p.category)}</span> ${eng > 0 ? `• <span class="text-orange-600 font-semibold">🔥 ${eng}</span>` : ""}</div>
+                <div class="text-xs text-slate-500">${ago(p.createdAt)} • <span class="text-emerald-700 font-semibold">${esc(p.category)}</span> ${eng > 0 ? `• <span class="text-orange-600 font-bold">🔥 ${eng}</span>` : ""}</div>
               </div>
             </div>
-            ${own ? `<button onclick="delPost('${p.id}')" class="text-xs text-rose-500 font-semibold px-2 py-1">ဖျက်</button>` : `<button onclick="openChat('${p.authorId}')" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold">💬 စာပို့မည်</button>`}
+            ${own ? `<button onclick="delPost('${p.id}')" class="text-xs text-rose-600 font-bold px-2.5 py-1.5 rounded-lg bg-rose-50">ဖျက်</button>` : `<button onclick="openChat('${p.authorId}')" class="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">💬 စာပို့</button>`}
           </div>
           <div class="px-3.5 pb-1.5 flex items-center gap-1.5 flex-wrap">
-            ${p.price ? `<span class="inline-block px-2.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">${esc(p.price)}</span>` : ""}
-            ${p.condition ? `<span class="inline-block px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-semibold">${esc(p.condition)}</span>` : ""}
+            ${p.price ? `<span class="inline-block px-3 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">${esc(p.price)}</span>` : ""}
+            ${p.condition ? `<span class="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-bold">${esc(p.condition)}</span>` : ""}
           </div>
-          ${p.text ? `<div class="px-3.5 pb-3 text-sm text-slate-800 whitespace-pre-line">${esc(p.text)}</div>` : ""}
+          ${p.text ? `<div class="px-3.5 pb-3 text-sm leading-relaxed text-slate-800 whitespace-pre-line">${esc(p.text)}</div>` : ""}
           ${p.image ? `<img src="${p.image}" class="w-full max-h-96 object-cover bg-slate-100" loading="lazy"/>` : ""}
-          <div class="px-3 py-2 border-t border-slate-100 flex text-xs">
-            <button onclick="likePost('${p.id}')" class="flex-1 py-1.5 rounded-xl font-semibold ${isLk ? "text-rose-600 bg-rose-50" : "text-slate-600"}">♥ စိတ်ဝင်စားတယ် ${lCnt ? `(${lCnt})` : ""}</button>
-            <button onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];render()" class="flex-1 py-1.5 rounded-xl font-semibold text-slate-600">💬 မှတ်ချက် ${cmts.length ? `(${cmts.length})` : ""}</button>
+          ${totRx > 0 ? `<div class="px-3.5 py-1.5 text-xs text-slate-600 flex items-center gap-2 border-t border-slate-100">
+            <span>${REACTIONS.map(r => rxCounts[r.key] ? `${r.icon} ${rxCounts[r.key]}` : "").filter(Boolean).join("  ")}</span>
+            <span class="ml-auto font-semibold">စုစုပေါင်း ${totRx}</span>
+          </div>` : ""}
+          <div class="px-2 py-2 border-t border-slate-100 grid grid-cols-4 gap-1 text-xs">
+            ${REACTIONS.map(r => {
+              const active = myRx === r.key;
+              return `<button onclick="setReaction('${p.id}','${r.key}')" class="py-2 px-1 rounded-xl font-bold border flex items-center justify-center gap-1 ${active ? r.activeClass : "bg-slate-50 text-slate-700 border-transparent"}">
+                <span class="text-sm">${r.icon}</span><span>${r.label}</span>
+              </button>`;
+            }).join("")}
           </div>
-          ${exp ? `<div class="bg-slate-50 px-3.5 py-3 border-t border-slate-100 space-y-2">
+          <div class="px-3.5 pb-2.5">
+            <button onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];render()" class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200/70 text-xs font-bold text-slate-700">💬 မှတ်ချက်များ ${cmts.length ? `(${cmts.length})` : ""}</button>
+          </div>
+          ${exp ? `<div class="bg-slate-50 px-3.5 py-3 border-t border-slate-100 space-y-2.5">
             ${cmts.map(c => `
-              <div class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs space-y-1">
-                ${c.replyToName ? `<div class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">↩ ${esc(c.replyToName)} ၏ မှတ်ချက်ကို ပြန်ဖြေသည်</div>` : ""}
+              <div class="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs space-y-1">
+                ${c.replyToName ? `<div class="text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold">↩ ${esc(c.replyToName)} ၏ မှတ်ချက်ကို ပြန်ဖြေသည်</div>` : ""}
                 <div class="flex items-start justify-between gap-2">
-                  <div><span class="font-bold">${esc(uInfo(c.authorId).name)}:</span> ${esc(c.text)}</div>
-                  <button onclick="setCmtReply('${p.id}','${esc(uInfo(c.authorId).name)}')" class="text-[10px] text-emerald-700 font-bold shrink-0">↩ Reply</button>
+                  <div class="text-sm"><span class="font-bold">${esc(uInfo(c.authorId).name)}:</span> ${esc(c.text)}</div>
+                  <button onclick="setCmtReply('${p.id}','${esc(uInfo(c.authorId).name)}')" class="text-xs text-emerald-700 font-bold shrink-0">↩ Reply</button>
                 </div>
               </div>`).join("")}
-            ${rTarget ? `<div class="flex items-center justify-between text-[11px] bg-emerald-50 text-emerald-800 px-3 py-1 rounded-xl"><span>↩ <b>${esc(rTarget)}</b> ကို Reply ပြန်နေသည်</span><button onclick="delete st.replyTo['${p.id}'];render()" class="font-bold">✕</button></div>` : ""}
-            <div class="flex gap-2"><input id="ci-${p.id}" type="text" placeholder="${rTarget ? esc(rTarget) + " ကို ပြန်ဖြေရန်..." : "မှတ်ချက်ရေးရန်..."}" onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-white border border-slate-200 rounded-full px-3 py-1.5 text-xs"/><button onclick="addCmt('${p.id}')" class="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-semibold">ပို့</button></div>
+            ${rTarget ? `<div class="flex items-center justify-between text-xs bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-xl"><span>↩ <b>${esc(rTarget)}</b> ကို Reply ပြန်နေသည်</span><button onclick="delete st.replyTo['${p.id}'];render()" class="font-bold">✕</button></div>` : ""}
+            <div class="flex gap-2"><input id="ci-${p.id}" type="text" placeholder="${rTarget ? esc(rTarget) + " ကို ပြန်ဖြေရန်..." : "မှတ်ချက်ရေးရန်..."}" onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-white border border-slate-200 rounded-full px-3.5 py-2 text-xs"/><button onclick="addCmt('${p.id}')" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">ပို့</button></div>
           </div>` : ""}
         </article>`;
+    }
+
+    function setReaction(pid, rKey) {
+      const p = st.posts.find(x => x.id === pid);
+      if (!p) return;
+      if (!p.reactions) p.reactions = {};
+      REACTIONS.forEach(r => {
+        if (!p.reactions[r.key]) p.reactions[r.key] = {};
+      });
+      const prev = userReaction(p);
+      REACTIONS.forEach(r => {
+        if (p.reactions[r.key] && p.reactions[r.key][st.me.id]) {
+          delete p.reactions[r.key][st.me.id];
+          fbDel(`posts/${pid}/reactions/${r.key}/${st.me.id}`).catch(() => {});
+        }
+      });
+      if (p.likes && p.likes[st.me.id]) {
+        delete p.likes[st.me.id];
+        fbDel(`posts/${pid}/likes/${st.me.id}`).catch(() => {});
+      }
+      if (prev !== rKey) {
+        p.reactions[rKey][st.me.id] = true;
+        playSong(rKey);
+        const rObj = REACTIONS.find(x => x.key === rKey);
+        notify(p.authorId, `က သင့်ပို့စ်ကို ${rObj ? rObj.icon + " " + rObj.label : "Reaction"} ပေးလိုက်ပါသည်`);
+        fbPut(`posts/${pid}/reactions/${rKey}/${st.me.id}`, true).catch(() => {});
+      } else {
+        playSong("notif");
+      }
+      render();
     }
 
     function setCmtReply(pid, name) {
@@ -595,9 +728,17 @@
 
     async function toggleFriend(id) {
       const l = st.me.friends || [], i = l.indexOf(id);
-      if (i >= 0) { l.splice(i, 1); toast("သူငယ်ချင်းမှ ဖယ်ရှားပြီးပါပြီ"); }
-      else { l.push(id); toast("သူငယ်ချင်း အပ်လိုက်ပါပြီ"); notify(id, "က သင့်ကို သူငယ်ချင်းအဖြစ် ထည့်လိုက်ပါသည်"); }
+      if (i >= 0) { l.splice(i, 1); toast("မိတ်ဆွေစာရင်းမှ ဖယ်ရှားပြီးပါပြီ"); }
+      else { l.push(id); toast("Friend Add လုပ်ပြီးပါပြီ"); notify(id, "က သင့်ကို Friend Add လုပ်လိုက်ပါသည်"); playSong("like"); }
       st.me.friends = l; saveMe(); render(); fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+    }
+
+    async function toggleFollow(id) {
+      if (!Array.isArray(st.me.following)) st.me.following = [];
+      const idx = st.me.following.indexOf(id);
+      if (idx >= 0) { st.me.following.splice(idx, 1); toast("Unfollow လုပ်ပြီးပါပြီ"); }
+      else { st.me.following.push(id); toast("Following လုပ်ပြီးပါပြီ"); notify(id, "က သင့်ကို Follow လုပ်လိုက်ပါသည်"); playSong("like"); }
+      saveMe(); render(); fbPut(`users/${st.me.id}`, st.me).catch(() => {});
     }
 
     function openComposerModal() {
@@ -606,12 +747,12 @@
         <div class="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
           <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-              <button onclick="closeModal()" class="text-xs font-semibold text-slate-500">ပိတ်မည်</button>
-              <h3 class="text-sm font-bold">ရောင်းဝယ်မှု ပို့စ်တင်ရန်</h3>
-              <button onclick="submitPost()" class="px-4 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold">တင်မည်</button>
+              <button onclick="closeModal()" class="text-xs font-bold text-slate-600">ပိတ်မည်</button>
+              <h3 class="text-base font-bold">ရောင်းဝယ်မှု ပို့စ်တင်ရန်</h3>
+              <button onclick="submitPost()" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">တင်မည်</button>
             </div>
-            <div class="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-              ရောင်းဝယ်မှုနှင့် သက်ဆိုင်သော ပို့စ်များသာ တင်ရမည်။ စိတ်ဝင်စားမှုများလေ လူတွေဆီ ပိုရောက်လေ ဖြစ်ပါသည်။
+            <div class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 font-medium">
+              ရောင်းဝယ်မှုနှင့် သက်ဆိုင်သော ပို့စ်များသာ တင်ရမည်။ Reaction နှင့် မှတ်ချက်များလေ လူတွေဆီ ပိုရောက်လေ ဖြစ်ပါသည်။
             </div>
             <textarea id="postTxt" rows="4" placeholder="ရောင်းချင် / ဝယ်ချင်တဲ့ ပစ္စည်းအကြောင်း၊ အခြေအနေနှင့် ဆက်သွယ်ရန် ရေးပါ..." class="w-full text-sm focus:outline-none resize-none"></textarea>
             <div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-200">
@@ -619,18 +760,18 @@
               <button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white text-xs">✕</button>
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (ဥပမာ ၂၅,၀၀၀ ကျပ်)" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"/>
-              <select id="postCond" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (ဥပမာ ၂၅,၀၀၀ ကျပ်)" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs"/>
+              <select id="postCond" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold">
                 <option value="အသစ်">အသစ် (New)</option>
                 <option value="ကောင်း / တစ်ပတ်ရစ်">ကောင်း / တစ်ပတ်ရစ်</option>
                 <option value="ဝယ်ယူလိုသည်">ဝယ်ယူလိုသည်</option>
               </select>
             </div>
-            <select id="postCat" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+            <select id="postCat" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold">
               <option value="">-- ရောင်းဝယ်မှု အမျိုးအစား ရွေးပါ --</option>
               ${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}
             </select>
-            <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold cursor-pointer">
+            <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold cursor-pointer">
               <span>📷 ဓာတ်ပုံရွေးမည်</span>
               <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
             </label>
@@ -664,20 +805,13 @@
       if (!category) return toast("ရောင်းဝယ်မှု အမျိုးအစား ရွေးပေးပါ");
       if (!text && !st.img) return toast("ပစ္စည်းအကြောင်း သို့မဟုတ် ဓာတ်ပုံ ထည့်ပေးပါ");
       const id = "P-" + Date.now() + "-" + Math.floor(Math.random() * 999);
-      const p = { id, authorId: st.me.id, text, image: st.img || "", price, condition, category, likes: {}, comments: {}, createdAt: Date.now() };
+      const p = { id, authorId: st.me.id, text, image: st.img || "", price, condition, category, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
       st.posts.unshift(p); closeModal(); render(); toast("ရောင်းဝယ်မှု ပို့စ်တင်ပြီးပါပြီ");
       fbPut(`users/${st.me.id}`, st.me).catch(() => {});
       fbPut(`posts/${id}`, p).catch(() => toast("အင်တာနက် စစ်ဆေးပေးပါ"));
     }
 
     function delPost(id) { st.posts = st.posts.filter(p => p.id !== id); render(); toast("ပို့စ်ဖျက်ပြီးပါပြီ"); fbDel(`posts/${id}`).catch(() => {}); }
-
-    function likePost(id) {
-      const p = st.posts.find(x => x.id === id); if (!p) return; if (!p.likes) p.likes = {};
-      if (p.likes[st.me.id]) { delete p.likes[st.me.id]; fbDel(`posts/${id}/likes/${st.me.id}`).catch(() => {}); }
-      else { p.likes[st.me.id] = true; notify(p.authorId, "က သင့်ပို့စ်ကို စိတ်ဝင်စားပါသည်"); fbPut(`posts/${id}/likes/${st.me.id}`, true).catch(() => {}); }
-      render();
-    }
 
     function addCmt(id) {
       const inp = document.getElementById("ci-" + id); if (!inp) return;
@@ -699,16 +833,16 @@
         <div class="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
           <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[88vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 class="text-sm font-bold text-sky-900">Blue Mark ယုံကြည်ရကြောင်း အယူခံ</h3>
-              <button onclick="closeModal()" class="w-7 h-7 rounded-full bg-slate-100 text-xs font-bold">✕</button>
+              <h3 class="text-base font-bold text-sky-900">Blue Mark ယုံကြည်ရကြောင်း အယူခံ</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-xs font-bold">✕</button>
             </div>
             <p class="text-xs text-slate-600 leading-relaxed">
               အယူခံလွှာကို <b>${ADMIN_NAME}</b> ထံ တိုက်ရိုက်ပေးပို့မည်ဖြစ်သည်။ ယုံကြည်စိတ်ချရကြောင်း အချက်အလက်များ မှန်ကန်စွာ ထည့်သွင်းပါ။
             </p>
-            <input id="apPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဆက်သွယ်ရန် ဖုန်းနံပါတ်" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"/>
-            <input id="apProof" type="text" placeholder="ရောင်းဝယ်မှု အတွေ့အကြုံ / လိပ်စာ သို့မဟုတ် အထောက်အထား" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"/>
-            <textarea id="apReason" rows="3" placeholder="မည်သည့်အတွက် ယုံကြည်စိတ်ချရကြောင်း ရှင်းပြပါ..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs resize-none"></textarea>
-            <button onclick="submitAppeal()" class="w-full py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ အယူခံပို့မည်</button>
+            <input id="apPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဆက်သွယ်ရန် ဖုန်းနံပါတ်" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs"/>
+            <input id="apProof" type="text" placeholder="ရောင်းဝယ်မှု အတွေ့အကြုံ / လိပ်စာ သို့မဟုတ် အထောက်အထား" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs"/>
+            <textarea id="apReason" rows="3" placeholder="မည်သည့်အတွက် ယုံကြည်စိတ်ချရကြောင်း ရှင်းပြပါ..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs resize-none"></textarea>
+            <button onclick="submitAppeal()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ အယူခံပို့မည်</button>
           </div>
         </div>`;
     }
@@ -733,7 +867,7 @@
           <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[88vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 class="text-sm font-bold">Blue Mark အယူခံ စစ်ဆေးရေး (${ADMIN_NAME})</h3>
-              <button onclick="closeModal()" class="w-7 h-7 rounded-full bg-slate-100 text-xs font-bold">✕</button>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-xs font-bold">✕</button>
             </div>
             ${list.length ? list.map(a => `
               <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
@@ -744,8 +878,8 @@
                 <div>📞 ${esc(a.phone)} ${a.proof ? `• ${esc(a.proof)}` : ""}</div>
                 <p class="text-slate-700">${esc(a.reason)}</p>
                 <div class="flex gap-2 pt-1">
-                  <button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-1.5 rounded-xl bg-sky-600 text-white font-bold">✓ Blue Mark ပေးမည်</button>
-                  <button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-1.5 rounded-xl bg-rose-500 text-white font-bold">✕ ပယ်ချမည်</button>
+                  <button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ Blue Mark ပေးမည်</button>
+                  <button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-500 text-white font-bold">✕ ပယ်ချမည်</button>
                 </div>
               </div>`).join("") : `<p class="text-xs text-slate-400 text-center py-6">အယူခံလွှာ မရှိသေးပါ</p>`}
           </div>
@@ -769,34 +903,55 @@
         <div class="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
           <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[88vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 class="text-sm font-bold text-slate-900">ဖြေးဖြေး ဝယ် စည်းမျဉ်းစည်းကမ်းများ</h3>
-              <button onclick="closeModal()" class="w-7 h-7 rounded-full bg-slate-100 text-xs font-bold">✕</button>
+              <h3 class="text-base font-bold text-slate-900">ဖြေးဖြေး ဝယ် စည်းမျဉ်းစည်းကမ်းများ</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-xs font-bold">✕</button>
             </div>
             <div class="space-y-2">
               ${RULES.map((r, i) => `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed"><span class="font-bold text-emerald-700 mr-1">${i + 1}.</span>${esc(r)}</div>`).join("")}
             </div>
-            <button onclick="closeModal()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">နားလည်ပါပြီ</button>
+            <button onclick="closeModal()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-xs font-bold">နားလည်ပါပြီ</button>
           </div>
         </div>`;
     }
 
     function openUserModal(uid) {
-      const u = uInfo(uid), r = uRating(uid), isF = (st.me.friends || []).includes(uid), own = uid === st.me.id;
+      const u = uInfo(uid), r = uRating(uid);
+      const isF = (st.me.friends || []).includes(uid);
+      const isFol = (st.me.following || []).includes(uid);
+      const fCount = (u.friends || []).length;
+      const folCount = (u.following || []).length;
+      const erCount = followersCount(uid);
+      const own = uid === st.me.id;
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
           <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3.5 animate-slide-up max-h-[88vh] overflow-y-auto">
-            <div class="flex justify-between"><span class="text-xs font-mono text-slate-500">${esc(u.id)}</span><button onclick="closeModal()" class="w-7 h-7 rounded-full bg-slate-100 text-xs font-bold">✕</button></div>
-            <div class="flex items-center gap-3">${avatar(u, "w-14 h-14 text-lg")}<div><h3 class="text-base font-bold flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><p class="text-xs text-slate-500">${esc(u.bio || "")}</p>${u.phone ? `<p class="text-xs text-emerald-700 font-semibold">📞 ${esc(u.phone)}</p>` : ""}</div></div>
-            ${!own ? `<div class="grid grid-cols-2 gap-2">
-              <button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-100 text-slate-700" : "bg-emerald-600 text-white"}">${isF ? "သူငယ်ချင်း ✓" : "+ သူငယ်ချင်းအပ်"}</button>
-              <button onclick="openChat('${u.id}')" class="py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">💬 စာပို့မည်</button>
+            <div class="flex justify-between items-center"><span class="text-xs font-mono text-slate-500">${esc(u.id)}</span><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-xs font-bold">✕</button></div>
+            <div class="flex items-center gap-3.5">${avatar(u, "w-16 h-16 text-xl")}<div><h3 class="text-lg font-bold flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><p class="text-xs text-slate-600">${esc(u.bio || "")}</p>${u.phone ? `<p class="text-xs text-emerald-700 font-bold mt-0.5">📞 ${esc(u.phone)}</p>` : ""}</div></div>
+
+            <div class="grid grid-cols-4 gap-2 text-center bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+              <div><div class="text-sm font-bold text-slate-900">${fCount}</div><div class="text-[11px] text-slate-500 font-semibold">Friends</div></div>
+              <div><div class="text-sm font-bold text-slate-900">${folCount}</div><div class="text-[11px] text-slate-500 font-semibold">Following</div></div>
+              <div><div class="text-sm font-bold text-slate-900">${erCount}</div><div class="text-[11px] text-slate-500 font-semibold">Follower</div></div>
+              <div><div class="text-sm font-bold text-amber-600">★ ${r.avg}</div><div class="text-[11px] text-slate-500 font-semibold">အဆင့်</div></div>
+            </div>
+
+            ${!own ? `<div class="grid grid-cols-3 gap-2">
+              <button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2.5 px-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-100 text-slate-800" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Friend Add"}</button>
+              <button onclick="toggleFollow('${u.id}');openUserModal('${u.id}')" class="py-2.5 px-2 rounded-xl text-xs font-bold ${isFol ? "bg-sky-100 text-sky-800" : "bg-sky-600 text-white"}">${isFol ? "Following ✓" : "+ Follow"}</button>
+              <button onclick="openChat('${u.id}')" class="py-2.5 px-2 rounded-xl bg-slate-900 text-white text-xs font-bold">💬 စာပို့</button>
             </div>` : ""}
+
+            <div class="space-y-2 pt-1">
+              <div class="text-xs font-bold text-slate-700">${esc(u.name)} ၏ မိတ်ဆွေများ (${fCount} ယောက် — နှိပ်ဝင်ကြည့်နိုင်သည်)</div>
+              ${renderFriendsGrid(uid, 6)}
+            </div>
+
             <div class="pt-2 border-t border-slate-100 space-y-2">
               <div class="text-xs font-bold">သုံးသပ်ချက်များ (★ ${r.avg} • ${r.count} ခု)</div>
               ${!own ? `<div class="flex gap-1.5">
-                <select id="rvStar" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold text-amber-600"><option value="5">5★</option><option value="4">4★</option><option value="3">3★</option><option value="2">2★</option><option value="1">1★</option></select>
-                <input id="rvTxt" type="text" placeholder="သုံးသပ်ချက်ရေးရန်..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs"/>
-                <button onclick="addReview('${u.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500 text-white text-xs font-bold">ပို့</button>
+                <select id="rvStar" class="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold text-amber-600"><option value="5">5★</option><option value="4">4★</option><option value="3">3★</option><option value="2">2★</option><option value="1">1★</option></select>
+                <input id="rvTxt" type="text" placeholder="သုံးသပ်ချက်ရေးရန်..." class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"/>
+                <button onclick="addReview('${u.id}')" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs font-bold">ပို့</button>
               </div>` : ""}
               <div class="space-y-1.5 max-h-36 overflow-y-auto">${r.list.map(x => `<div class="bg-slate-50 p-2 rounded-xl text-xs"><span class="font-bold">${esc(uInfo(x.authorId).name)}</span> <span class="text-amber-500">${"★".repeat(x.rating || 5)}</span><div class="text-slate-600">${esc(x.text)}</div></div>`).join("")}</div>
             </div>
@@ -827,35 +982,62 @@
       const tObj = st.typing[rid] || {};
       const active = Object.entries(tObj).some(([uid, ts]) => uid !== st.me.id && (Date.now() - Number(ts || 0) < 4500));
       if (active) {
-        tb.innerHTML = `<span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full"><span>${esc(uInfo(st.chatUid).name)}</span><span>စာရိုက်နေပါသည်...</span></span>`;
+        tb.innerHTML = `<span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full"><span>${esc(uInfo(st.chatUid).name)}</span><span>စာရိုက်နေပါသည်...</span></span>`;
         tb.classList.remove("hidden");
       } else {
         tb.classList.add("hidden");
       }
     }
 
+    function toggleStickerBar() {
+      st.showStickers = !st.showStickers;
+      const sb = document.getElementById("stickerBar");
+      if (sb) sb.classList.toggle("hidden", !st.showStickers);
+    }
+
+    function sendSticker(idx) {
+      const item = MYANMAR_STICKERS[idx];
+      if (!item || !st.chatUid) return;
+      playSong("love");
+      sendChatPayload({ text: `${item.emoji} [${item.tag}] ${item.text}`, image: "", audio: "" });
+      st.showStickers = false;
+      const sb = document.getElementById("stickerBar");
+      if (sb) sb.classList.add("hidden");
+    }
+
     function openChat(oid) {
-      st.chatUid = oid; st.chatImg = null; const o = uInfo(oid);
+      st.chatUid = oid; st.chatImg = null; st.showStickers = false; const o = uInfo(oid);
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-          <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col h-[84vh] animate-slide-up overflow-hidden">
+          <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col h-[86vh] animate-slide-up overflow-hidden">
             <div class="p-3.5 border-b border-slate-200 flex items-center justify-between">
-              <div class="flex items-center gap-2.5">${avatar(o, "w-9 h-9 text-xs")}<div><div class="text-xs font-bold flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</div><div class="text-[10px] text-slate-400 font-mono">${esc(o.id)}</div></div></div>
-              <button onclick="closeModal()" class="w-7 h-7 rounded-full bg-slate-100 text-xs font-bold">✕</button>
+              <div onclick="openUserModal('${o.id}')" class="flex items-center gap-2.5 cursor-pointer">${avatar(o, "w-10 h-10 text-sm")}<div><div class="text-sm font-bold flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</div><div class="text-xs text-slate-400 font-mono">${esc(o.id)}</div></div></div>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-xs font-bold">✕</button>
             </div>
             <div id="msgBox" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 bg-slate-50"></div>
             <div id="typingBanner" class="hidden px-3.5 py-1 bg-slate-50"></div>
+            <div id="stickerBar" class="hidden p-2.5 bg-emerald-50/70 border-t border-emerald-200 grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+              ${MYANMAR_STICKERS.map((s, idx) => `
+                <button onclick="sendSticker(${idx})" class="bg-white hover:bg-emerald-50 border border-emerald-200 rounded-2xl p-2 text-left flex items-center gap-2 shadow-xs">
+                  <span class="text-2xl shrink-0">${s.emoji}</span>
+                  <div class="min-w-0">
+                    <div class="text-[11px] font-bold text-emerald-800">${esc(s.tag)}</div>
+                    <div class="text-[11px] text-slate-700 leading-snug line-clamp-2">${esc(s.text)}</div>
+                  </div>
+                </button>`).join("")}
+            </div>
             <div id="chatImgPreview" class="hidden px-3.5 py-2 bg-white border-t border-slate-100 flex items-center justify-between">
-              <div class="flex items-center gap-2"><img id="chatImgThumb" src="" class="w-11 h-11 rounded-lg object-cover border"/><span class="text-xs text-slate-600 font-medium">ဓာတ်ပုံ ပို့ရန် အဆင်သင့်</span></div>
-              <button onclick="st.chatImg=null;document.getElementById('chatImgPreview').classList.add('hidden')" class="text-xs text-rose-500 font-bold">ဖျက်</button>
+              <div class="flex items-center gap-2"><img id="chatImgThumb" src="" class="w-12 h-12 rounded-lg object-cover border"/><span class="text-xs text-slate-700 font-bold">ဓာတ်ပုံ ပို့ရန် အဆင်သင့်</span></div>
+              <button onclick="st.chatImg=null;document.getElementById('chatImgPreview').classList.add('hidden')" class="text-xs text-rose-600 font-bold">ဖျက်</button>
             </div>
             <div class="p-2.5 bg-white border-t border-slate-200 flex items-center gap-1.5">
-              <label class="p-2 rounded-full bg-slate-100 text-slate-700 cursor-pointer text-sm" title="ပုံပို့ရန်">
+              <button onclick="toggleStickerBar()" class="p-2.5 rounded-full bg-amber-50 text-amber-700 text-base font-bold" title="မြန်မာ စတစ်ကာ">😄</button>
+              <label class="p-2.5 rounded-full bg-slate-100 text-slate-700 cursor-pointer text-base" title="ပုံပို့ရန်">
                 📷<input type="file" accept="image/*" onchange="onPickChatImg(event)" class="hidden"/>
               </label>
-              <button onclick="toggleVoiceRec()" id="voiceBtn" class="p-2 rounded-full bg-slate-100 text-slate-700 text-sm" title="အသံမက်ဆေ့ချ်">🎙️</button>
-              <input id="msgInp" type="text" placeholder="စာရိုက်ပါ..." oninput="sendTyping('${oid}')" onkeydown="if(event.key==='Enter')sendMsg()" class="flex-1 bg-slate-100 rounded-full px-3.5 py-2 text-xs focus:outline-none"/>
-              <button onclick="sendMsg()" class="px-3.5 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold">ပို့</button>
+              <button onclick="toggleVoiceRec()" id="voiceBtn" class="p-2.5 rounded-full bg-slate-100 text-slate-700 text-base" title="အသံမက်ဆေ့ချ်">🎙️</button>
+              <input id="msgInp" type="text" placeholder="စာရိုက်ပါ..." oninput="sendTyping('${oid}')" onkeydown="if(event.key==='Enter')sendMsg()" class="flex-1 bg-slate-100 rounded-full px-3.5 py-2.5 text-sm focus:outline-none"/>
+              <button onclick="sendMsg()" class="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-xs font-bold">ပို့</button>
             </div>
           </div>
         </div>`;
@@ -884,7 +1066,7 @@
       const btn = document.getElementById("voiceBtn");
       if (st.recorder && st.recorder.state === "recording") {
         st.recorder.stop();
-        if (btn) btn.className = "p-2 rounded-full bg-slate-100 text-slate-700 text-sm";
+        if (btn) btn.className = "p-2.5 rounded-full bg-slate-100 text-slate-700 text-base";
         return;
       }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -908,7 +1090,7 @@
         };
         rec.start();
         toast("အသံသွင်းနေပါသည်... ပို့ရန် 🎙️ ကို ထပ်နှိပ်ပါ");
-        if (btn) btn.className = "p-2 rounded-full bg-rose-500 text-white text-sm animate-pulse";
+        if (btn) btn.className = "p-2.5 rounded-full bg-rose-500 text-white text-base animate-pulse";
       } catch (e) {
         toast("မိုက်ခရိုဖုန်း ခွင့်ပြုချက် လိုအပ်ပါသည်");
       }
@@ -921,15 +1103,15 @@
         const me = m.senderId === st.me.id;
         return `
           <div class="flex items-end gap-1.5 ${me ? "justify-end" : "justify-start"}">
-            ${!me ? `<span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}
-            <div class="max-w-[78%] px-3.5 py-2 rounded-2xl text-xs space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-white border border-slate-200 text-slate-800"}">
+            ${!me ? `<span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}
+            <div class="max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-white border border-slate-200 text-slate-800"}">
               ${m.image ? `<img src="${m.image}" class="rounded-xl max-h-48 object-cover bg-slate-100"/>` : ""}
               ${m.audio ? `<audio controls src="${m.audio}" class="w-48 h-8"></audio>` : ""}
               ${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}
             </div>
-            ${me ? `<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}
+            ${me ? `<span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}
           </div>`;
-      }).join("") : `<p class="text-xs text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+      }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
       box.scrollTop = box.scrollHeight;
       renderTypingBanner();
     }
@@ -964,6 +1146,7 @@
         try { st.recorder.stop(); } catch (e) {}
       }
       st.chatUid = null;
+      st.showStickers = false;
       document.getElementById("modalRoot").innerHTML = "";
     }
 
