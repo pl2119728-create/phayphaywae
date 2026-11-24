@@ -11,43 +11,39 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { font-family: 'Plus Jakarta Sans', 'Noto Sans Myanmar', sans-serif; font-size: 16px; background: #05080f; color: #f8fafc; margin: 0; }
+    body { font-family: 'Plus Jakarta Sans', 'Noto Sans Myanmar', sans-serif; font-size: 16px; background: #05080f; color: #f8fafc; margin: 0; overflow-x: hidden; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes slideUp { from { transform: translateY(100%); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
     .animate-slide-up { animation: slideUp .2s ease-out forwards; }
+    @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+    .animate-slide-right { animation: slideRight .22s cubic-bezier(.16,1,.3,1) forwards; }
   </style>
 </head>
 <body class="bg-[#05080f] text-slate-100">
   <div id="nightOverlay" class="hidden fixed inset-0 z-40 pointer-events-none bg-black/35 transition-opacity"></div>
   <div id="app" class="max-w-md mx-auto min-h-screen bg-[#0b1120] shadow-2xl flex flex-col relative pb-24 border-x border-slate-800/80">
+    <!-- အရှင်းဆုံး Top Header: ဘယ် ☰ | အလယ် နာမည် | ညာ 🔔 -->
     <header class="sticky top-0 z-30 bg-[#0b1120]/95 backdrop-blur border-b border-slate-800 px-3.5 py-3 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-        </div>
+      <div class="flex items-center gap-3 min-w-0">
+        <button onclick="openSideMenu()" class="w-10 h-10 rounded-full bg-slate-800/90 hover:bg-slate-700 text-white flex items-center justify-center shrink-0 active:scale-95 transition" title="Menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
         <div class="min-w-0">
           <div class="flex items-center gap-1.5">
-            <h1 class="text-base font-bold text-white leading-tight truncate">ဖြေးဖြေး ဝယ်</h1>
+            <h1 class="text-lg font-bold text-white leading-tight truncate">ဖြေးဖြေး ဝယ်</h1>
             <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">APK</span>
           </div>
           <div class="flex items-center gap-1.5">
             <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span id="syncText" class="text-[11px] text-slate-400 font-medium">ချိတ်ဆက်ပြီး</span>
+            <span id="syncText" class="text-[11px] text-slate-400 font-medium">တိုက်ရိုက်ချိတ်ဆက်ပြီး</span>
           </div>
         </div>
       </div>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button onclick="toggleNightMode()" id="nightBtn" class="p-2 rounded-full bg-slate-800 text-amber-300 text-sm" title="Night Mode">🌙</button>
-        <button onclick="toggleSound()" id="soundBtn" class="p-2 rounded-full bg-slate-800 text-emerald-300 text-sm" title="အသံ">🔊</button>
-        <button onclick="switchTab('chats')" class="p-2 rounded-full bg-emerald-500/15 text-emerald-300" title="စာတို">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        </button>
-        <button onclick="switchTab('notifications')" class="relative p-2 rounded-full bg-slate-800 text-slate-200" title="အကြောင်းကြားစာ">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
-        </button>
-      </div>
+      <button onclick="switchTab('notifications')" class="relative w-10 h-10 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-100 flex items-center justify-center shrink-0 active:scale-95 transition" title="အကြောင်းကြားစာ">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span id="notifBadge" class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+      </button>
     </header>
 
     <main id="mainContent" class="flex-1 overflow-y-auto"></main>
@@ -79,6 +75,7 @@
     </nav>
 
     <div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg whitespace-nowrap"></div>
+    <div id="drawerRoot"></div>
     <div id="modalRoot"></div>
   </div>
 
@@ -86,6 +83,7 @@
     const DB = "https://phay-phay-wae-default-rtdb.asia-southeast1.firebasedatabase.app";
     const APP_URL = "https://pl2119728-create.github.io/phayphaywae/";
     const ADMIN_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
+    const ADMIN_PIN = "2026";
     const ACCOUNT_KEY = "ppw_main_account";
     const TRADE_CATS = ["Facebook Page", "YouTube Account", "TikTok Account", "Instagram / RedNote", "Monetized Page / Channel"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
@@ -101,7 +99,7 @@
     const RULES = [
       "Facebook Page၊ YouTube Account၊ TikTok Account စသည့် အကောင့်/ပိုင်ဆိုင်မှု ရောင်းဝယ်မှုများကိုသာ တင်ရမည်။ အဝတ်အစားနှင့် မသက်ဆိုင်သော ပစ္စည်းများ ခွင့်မပြုပါ။",
       "အမျိုးအစားအလိုက် #youtube၊ #facebook၊ #tiktok စသဖြင့် # ခံပြီး ထည့်သွင်းပါက Category မှ တစ်ချက်နှိပ် ရှာဖွေနိုင်မည်။",
-      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — Settings ထဲမှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ လျှောက်ထား/အယူခံဝင်ရမည်။",
+      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — Menu ထဲမှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ လျှောက်ထား/အယူခံဝင်ပြီး စိစစ်အတည်ပြုမှသာ ရရှိမည်။",
       "ပို့စ်တစ်ခုတွင် Reaction နှင့် မှတ်ချက် (Comment) များလေ လူတွေဆီ ပိုမိုရောက်ရှိမည်။"
     ];
 
@@ -154,6 +152,7 @@
     let st = {
       tab: "home",
       profileSubTab: "posts",
+      adminFilter: "pending",
       me: getUser(),
       posts: [],
       myday: [],
@@ -208,15 +207,20 @@
     }
     function formatExactTime(ts) {
       if (!ts) return "မသိရသေး";
-      const dt = new Date(Number(ts));
-      return dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return new Date(Number(ts)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    function isOnline(uid) {
+      if (uid === st.me.id) return true;
+      const ts = Number(st.presence[uid] || 0);
+      return !!(ts && (Date.now() - ts < 12000));
     }
     function onlineText(uid) {
-      if (uid === st.me.id) return "🟢 Online";
+      if (isOnline(uid)) return "🟢 Online";
       const ts = Number(st.presence[uid] || 0);
-      if (ts && (Date.now() - ts < 10000)) return "🟢 Online";
-      if (ts) return "⚫ ဆင်းချိန် " + formatExactTime(ts);
-      return "⚫ Offline";
+      return ts ? "⚫ ဆင်းချိန် " + formatExactTime(ts) : "⚫ Offline";
+    }
+    function onlineFriendsCount() {
+      return (st.me.friends || []).filter(fid => isOnline(fid)).length;
     }
 
     function ensureAudio() {
@@ -230,15 +234,12 @@
     }
     document.addEventListener("pointerdown", () => { if (st.soundOn) ensureAudio(); }, { passive: true });
 
-    function stopRingLoop() {
-      if (st.ringTimer) { clearInterval(st.ringTimer); st.ringTimer = null; }
-    }
+    function stopRingLoop() { if (st.ringTimer) { clearInterval(st.ringTimer); st.ringTimer = null; } }
     function startRingLoop(mode) {
       stopRingLoop();
       const ringOnce = () => {
         if (!st.soundOn) return;
-        const ctx = ensureAudio();
-        if (!ctx) return;
+        const ctx = ensureAudio(); if (!ctx) return;
         try {
           const now = ctx.currentTime;
           const freqs = mode === "incoming" ? [880, 1174.66, 880, 1174.66] : [587.33, 587.33];
@@ -268,8 +269,6 @@
 
     function toggleSound() {
       st.soundOn = !st.soundOn;
-      const b = document.getElementById("soundBtn");
-      if (b) b.textContent = st.soundOn ? "🔊" : "🔇";
       if (!st.soundOn) stopRingLoop();
       else { ensureAudio(); playSong("notif"); }
       toast(st.soundOn ? "အသံပိုင်း ဖွင့်ပြီး" : "အသံပိုင်း ပိတ်ပြီး");
@@ -277,8 +276,7 @@
 
     function playSong(kind) {
       if (!st.soundOn) return;
-      const ctx = ensureAudio();
-      if (!ctx) return;
+      const ctx = ensureAudio(); if (!ctx) return;
       try {
         const now = ctx.currentTime;
         const seq =
@@ -286,8 +284,7 @@
           kind === "like" ? [587.33, 880] :
           kind === "haha" ? [698.46, 880, 1174.66] :
           kind === "love" ? [523.25, 659.25, 783.99, 1046.5] :
-          kind === "angry" ? [220.0, 164.81] :
-          [523.25, 783.99];
+          kind === "angry" ? [220.0, 164.81] : [523.25, 783.99];
         const wave = kind === "angry" ? "sawtooth" : (kind === "haha" || kind === "like" ? "triangle" : "sine");
         seq.forEach((freq, idx) => {
           const osc = ctx.createOscillator(), gain = ctx.createGain();
@@ -304,9 +301,13 @@
 
     const uInfo = id => id === st.me.id ? st.me : (st.users[id] || { id: id || "PPW", name: id || "User", bio: "", photo: "", blueMark: false, friends: [], following: [], color: COLORS[0], createdAt: Date.now() });
     const isNewUser = id => (Date.now() - (uInfo(id).createdAt || Date.now())) < 7 * 86400000;
+
+    // Facebook-style Verified Blue Mark SVG
     function blueBadge(u) {
-      return (u && u.blueMark) ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-500 text-white text-xs font-bold shrink-0">✓</span>` : "";
+      if (!u || !u.blueMark) return "";
+      return `<svg title="အတည်ပြု ယုံကြည်စိတ်ချရသူ (Blue Mark)" class="w-4 h-4 text-sky-400 shrink-0 inline-block" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .494.083.964.237 1.4-1.272.65-2.147 2.018-2.147 3.6 0 1.495.782 2.798 1.942 3.486-.02.17-.032.34-.032.514 0 2.21 1.708 4 3.818 4 .47 0 .92-.086 1.335-.25.62 1.334 1.926 2.25 3.437 2.25 1.512 0 2.818-.916 3.437-2.25.415.163.865.248 1.336.248 2.11 0 3.818-1.79 3.818-4 0-.174-.012-.344-.033-.513 1.158-.687 1.943-1.99 1.943-3.484zm-6.616-3.334l-4.334 6.5c-.145.217-.382.334-.625.334-.143 0-.288-.04-.416-.126l-.115-.094-2.415-2.415c-.293-.293-.293-.768 0-1.06s.768-.294 1.06 0l1.77 1.767 3.825-5.74c.23-.345.696-.436 1.04-.207.346.23.44.696.21 1.04z"/></svg>`;
     }
+
     function uRating(id) {
       const l = Object.values(st.reviews || {}).filter(r => r && r.targetId === id);
       if (!l.length) return { avg: "0.0", count: 0, list: [] };
@@ -314,16 +315,12 @@
     }
     function followersCount(id) {
       let c = 0;
-      Object.values(st.users || {}).forEach(u => {
-        if (u && u.id !== id && Array.isArray(u.following) && u.following.includes(id)) c++;
-      });
+      Object.values(st.users || {}).forEach(u => { if (u && u.id !== id && Array.isArray(u.following) && u.following.includes(id)) c++; });
       return c;
     }
     function avatar(u, sz = "w-11 h-11 text-base") {
       const x = typeof u === "string" ? uInfo(u) : (u || st.me);
-      if (x && x.photo) {
-        return `<img src="${x.photo}" alt="${esc(x.name || "U")}" class="${sz} rounded-full object-cover shrink-0 shadow-sm border-2 border-emerald-500/50 bg-slate-800"/>`;
-      }
+      if (x && x.photo) return `<img src="${x.photo}" alt="${esc(x.name || "U")}" class="${sz} rounded-full object-cover shrink-0 shadow-sm border-2 border-emerald-500/50 bg-slate-800"/>`;
       return `<div class="${sz} rounded-full bg-gradient-to-br ${x.color || COLORS[0]} text-white font-bold flex items-center justify-center shrink-0 shadow-sm">${esc((x.name || "U").trim().charAt(0).toUpperCase())}</div>`;
     }
 
@@ -361,6 +358,192 @@
     const fbPut = (p, d) => fetch(`${DB}/${p}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
     const fbDel = p => fetch(`${DB}/${p}.json`, { method: "DELETE" });
 
+    // Facebook-style Side Menu Drawer
+    function openSideMenu() {
+      playSong("notif");
+      const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length;
+      const onlineFri = onlineFriendsCount();
+      document.getElementById("drawerRoot").innerHTML = `
+        <div onclick="closeSideMenu()" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex">
+          <aside onclick="event.stopPropagation()" class="w-[84%] max-w-[330px] h-full bg-[#0f172a] border-r border-slate-800 flex flex-col animate-slide-right overflow-y-auto no-scrollbar">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+              <span class="text-lg font-bold text-white">Menu</span>
+              <button onclick="closeSideMenu()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button>
+            </div>
+
+            <div class="p-3.5 space-y-3.5 flex-1">
+              <!-- Top Profile Card -->
+              <div onclick="closeSideMenu();switchTab('profile')" class="bg-[#1e293b]/80 hover:bg-[#1e293b] border border-slate-700/80 rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition">
+                ${avatar(st.me, "w-12 h-12 text-base")}
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</div>
+                  <div class="text-xs text-slate-400 font-mono truncate">${esc(st.me.id)}</div>
+                </div>
+                <span class="text-slate-400 text-sm">›</span>
+              </div>
+
+              <!-- 2-Column Facebook Style Grid -->
+              <div class="grid grid-cols-2 gap-2.5">
+                <button onclick="closeSideMenu();openAppealModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
+                  <div class="text-xl">💎</div>
+                  <div class="text-xs font-bold text-white">Blue Mark</div>
+                  <div class="text-[11px] ${st.me.blueMark ? "text-sky-400 font-bold" : "text-slate-400"}">${st.me.blueMark ? "✓ ရရှိပြီး" : "လျှောက်ထားရန်"}</div>
+                </button>
+
+                <button onclick="toggleNightMode();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
+                  <div class="text-xl">🌙</div>
+                  <div class="text-xs font-bold text-white">Night Mode</div>
+                  <div class="text-[11px] ${st.nightMode ? "text-amber-300 font-bold" : "text-slate-400"}">${st.nightMode ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div>
+                </button>
+
+                <button onclick="toggleSound();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
+                  <div class="text-xl">${st.soundOn ? "🔊" : "🔇"}</div>
+                  <div class="text-xs font-bold text-white">အသံစနစ်</div>
+                  <div class="text-[11px] ${st.soundOn ? "text-emerald-400 font-bold" : "text-slate-400"}">${st.soundOn ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div>
+                </button>
+
+                <button onclick="toggleHideSeen();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
+                  <div class="text-xl">👁️</div>
+                  <div class="text-xs font-bold text-white">Seen စနစ်</div>
+                  <div class="text-[11px] ${st.me.hideSeen ? "text-amber-300 font-bold" : "text-emerald-400 font-bold"}">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</div>
+                </button>
+
+                <button onclick="closeSideMenu();switchTab('friends')" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
+                  <div class="text-xl">👥</div>
+                  <div class="text-xs font-bold text-white">မိတ်ဆွေများ</div>
+                  <div class="text-[11px] text-emerald-400 font-semibold">${(st.me.friends || []).length} ဦး (${onlineFri} online)</div>
+                </button>
+
+                <button onclick="closeSideMenu();openAdminGate()" class="relative bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/30 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
+                  ${pendingCount && st.me.isAdmin ? `<span class="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">${pendingCount}</span>` : ""}
+                  <div class="text-xl">🛡️</div>
+                  <div class="text-xs font-bold text-sky-300">Admin စိစစ်ရေး</div>
+                  <div class="text-[11px] text-slate-400">${st.me.isAdmin ? "Blue Mark စစ်ရန်" : "Admin ဝင်ရန်"}</div>
+                </button>
+              </div>
+
+              <!-- Bottom Settings & Support List -->
+              <div class="pt-2 border-t border-slate-800 space-y-1.5">
+                <button onclick="closeSideMenu();openSettingsModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200">
+                  <span>⚙️</span><span>ပရိုဖိုင် ပြင်ဆင်ရန်</span>
+                </button>
+                <button onclick="copyProfileLink();closeSideMenu()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200">
+                  <span>📋</span><span>Profile Link ကူးမည်</span>
+                </button>
+                <button onclick="closeSideMenu();openRulesModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200">
+                  <span>📜</span><span>စည်းမျဉ်းစည်းကမ်းများ</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>`;
+    }
+
+    function closeSideMenu() {
+      const dr = document.getElementById("drawerRoot");
+      if (dr) dr.innerHTML = "";
+    }
+
+    // Admin Gate & Blue Mark Verification System
+    function openAdminGate() {
+      if (st.me.isAdmin) { openAdminModal(); return; }
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-5 space-y-3.5 animate-slide-up">
+            <div class="flex items-center justify-between">
+              <h3 class="text-base font-bold text-white">🛡️ Admin ဝင်ရောက်ရန်</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+            </div>
+            <p class="text-xs text-slate-400">Blue Mark စိစစ်ရေးစနစ်သို့ ဝင်ရောက်ရန် Admin PIN ရိုက်ထည့်ပါ (${ADMIN_NAME})</p>
+            <input id="adminPinInp" type="password" inputmode="numeric" placeholder="Admin PIN ရိုက်ထည့်ပါ..." onkeydown="if(event.key==='Enter')verifyAdminPin()" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-sm text-center tracking-widest"/>
+            <button onclick="verifyAdminPin()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-sm font-bold">အတည်ပြု ဝင်ရောက်မည်</button>
+          </div>
+        </div>`;
+      setTimeout(() => { const i = document.getElementById("adminPinInp"); if (i) i.focus(); }, 60);
+    }
+
+    function verifyAdminPin() {
+      const v = (document.getElementById("adminPinInp").value || "").trim();
+      if (v !== ADMIN_PIN) { playSong("angry"); return toast("Admin PIN မှားယွင်းနေပါသည်"); }
+      st.me.isAdmin = true;
+      st.me.blueMark = true;
+      saveMe();
+      fbPut(`users/${st.me.id}/isAdmin`, true).catch(() => {});
+      fbPut(`users/${st.me.id}/blueMark`, true).catch(() => {});
+      playSong("love");
+      toast("Admin စနစ် ဖွင့်လိုက်ပါပြီ ✓");
+      openAdminModal();
+      render();
+    }
+
+    function openAdminModal() {
+      const all = Object.values(st.appeals || {}).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const pending = all.filter(a => a.status === "pending");
+      const approved = all.filter(a => a.status === "approved");
+      const rejected = all.filter(a => a.status === "rejected");
+      const shown = st.adminFilter === "approved" ? approved : (st.adminFilter === "rejected" ? rejected : pending);
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[88vh] flex flex-col">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div>
+                <h3 class="text-base font-bold text-white">🛡️ Blue Mark စိစစ်ရေးစနစ်</h3>
+                <div class="text-[11px] text-sky-400 font-semibold">${ADMIN_NAME}</div>
+              </div>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-1.5">
+              <button onclick="st.adminFilter='pending';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "pending" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-300"}">စစ်ရန် (${pending.length})</button>
+              <button onclick="st.adminFilter='approved';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "approved" ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-300"}">ပေးပြီး (${approved.length})</button>
+              <button onclick="st.adminFilter='rejected';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "rejected" ? "bg-rose-600 text-white" : "bg-slate-800 text-slate-300"}">ပယ်ချ (${rejected.length})</button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-0.5">
+              ${shown.length ? shown.map(a => {
+                const au = uInfo(a.userId);
+                return `
+                  <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                      <div onclick="openUserModal('${a.userId}')" class="flex items-center gap-2 cursor-pointer min-w-0">
+                        ${avatar(au, "w-9 h-9 text-xs")}
+                        <div class="min-w-0">
+                          <div class="font-bold text-white truncate flex items-center gap-1">${esc(a.userName)} ${blueBadge(au)}</div>
+                          <div class="font-mono text-[11px] text-slate-400">${esc(a.userId)} • ${ago(a.createdAt)}</div>
+                        </div>
+                      </div>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.status === "approved" ? "bg-sky-500/20 text-sky-300" : (a.status === "rejected" ? "bg-rose-500/20 text-rose-300" : "bg-amber-500/20 text-amber-300")}">${esc(a.status)}</span>
+                    </div>
+                    <div class="bg-[#0f172a] rounded-xl p-2.5 space-y-1 text-slate-300">
+                      <div>📞 <span class="text-white font-semibold">${esc(a.phone)}</span></div>
+                      ${a.proof ? `<div>🔗 <span class="text-emerald-300 break-all">${esc(a.proof)}</span></div>` : ""}
+                      <div class="text-slate-200 pt-0.5">${esc(a.reason)}</div>
+                    </div>
+                    <div class="flex gap-2">
+                      ${a.status !== "approved" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ Blue Mark ပေးမည်</button>` : `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold">🚫 Blue Mark ပြန်ရုပ်သိမ်းမည်</button>`}
+                      ${a.status === "pending" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="px-4 py-2 rounded-xl bg-rose-600/80 text-white font-bold">✕ ပယ်ချ</button>` : ""}
+                    </div>
+                  </div>`;
+              }).join("") : `<div class="text-center text-sm text-slate-400 py-8">ဤစာရင်းတွင် လျှောက်လွှာ မရှိသေးပါ</div>`}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function decideAppeal(aid, uid, status) {
+      if (st.appeals[aid]) st.appeals[aid].status = status;
+      if (st.users[uid]) st.users[uid].blueMark = status === "approved";
+      if (uid === st.me.id) { st.me.blueMark = status === "approved"; st.me.appealStatus = status; saveMe(); }
+      fbPut(`appeals/${aid}/status`, status).catch(() => {});
+      fbPut(`users/${uid}/blueMark`, status === "approved").catch(() => {});
+      fbPut(`users/${uid}/appealStatus`, status).catch(() => {});
+      notify(uid, status === "approved" ? "က သင့်အကောင့်ကို Blue Mark ✓ အတည်ပြုပေးလိုက်ပါသည်!" : "က သင့် Blue Mark လျှောက်လွှာကို ပယ်ချ/ရုပ်သိမ်းခဲ့ပါသည်");
+      playSong(status === "approved" ? "love" : "angry");
+      toast(status === "approved" ? "Blue Mark ပေးပြီးပါပြီ ✓" : "ပယ်ချ/ရုပ်သိမ်းပြီးပါပြီ");
+      openAdminModal();
+      render();
+    }
+
     async function sync(init = false) {
       try {
         fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
@@ -379,7 +562,7 @@
         if (st.users[st.me.id]) {
           st.me.blueMark = !!st.users[st.me.id].blueMark;
           st.me.appealStatus = st.users[st.me.id].appealStatus || st.me.appealStatus || "none";
-          st.me.isAdmin = !!st.users[st.me.id].isAdmin;
+          if (st.users[st.me.id].isAdmin) st.me.isAdmin = true;
           if (!st.me.photo && st.users[st.me.id].photo) st.me.photo = st.users[st.me.id].photo;
           saveMe();
         }
@@ -590,7 +773,7 @@
 
                 <div class="grid grid-cols-2 gap-2">
                   <button onclick="copyProfileLink()" class="py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">📋 Profile Link ကူးမည်</button>
-                  <button onclick="openSettingsModal()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">⚙️ ဆက်တင် / Blue Mark</button>
+                  <button onclick="openSettingsModal()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">⚙️ ပရိုဖိုင် ပြင်ရန်</button>
                 </div>
 
                 <div class="grid grid-cols-4 gap-2 pt-1 text-center">
@@ -618,33 +801,19 @@
     }
 
     function openSettingsModal() {
-      const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length;
-      const myAppeal = Object.values(st.appeals || {}).filter(a => a && a.userId === st.me.id).sort((a, b) => b.createdAt - a.createdAt)[0];
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3.5 animate-slide-up max-h-[88vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 class="text-base font-bold text-white">⚙️ ဆက်တင် (Settings)</h3>
+              <h3 class="text-base font-bold text-white">⚙️ ပရိုဖိုင် ပြင်ဆင်ရန်</h3>
               <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
             </div>
-            <div class="space-y-2">
-              <div class="text-xs font-bold text-slate-400">ပရိုဖိုင် ပြင်ဆင်ရန်</div>
+            <div class="space-y-2.5">
               <input id="pName" type="text" value="${esc(st.me.name)}" placeholder="နာမည်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
               <input id="pBio" type="text" value="${esc(st.me.bio || "")}" placeholder="မိတ်ဆက်စာ (Bio)" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
               <input id="pPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်းနံပါတ်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
-              <button onclick="saveProfile()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">ပရိုဖိုင် သိမ်းဆည်းမည်</button>
-            </div>
-            ${!st.me.blueMark ? `
-              <div class="p-3 rounded-2xl bg-sky-950/50 border border-sky-500/30 space-y-2">
-                <div class="flex items-center justify-between"><span class="text-xs font-bold text-sky-200">Blue Mark ဝယ်ယူ / အယူခံ</span><span class="text-[11px] font-bold text-sky-300">${myAppeal ? myAppeal.status : "မတင်ရသေး"}</span></div>
-                <button onclick="openAppealModal()" class="w-full py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ Blue Mark လျှောက်မည်</button>
-              </div>` : `<div class="p-3 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-xs font-bold text-sky-300">✓ Blue Mark ရရှိပြီးဖြစ်ပါသည်</div>`}
-            ${st.me.isAdmin ? `<button onclick="openAdminModal()" class="w-full py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs font-bold">🛡️ Admin Panel (${pendingCount})</button>` : ""}
-            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
-              <button onclick="toggleNightMode()" class="py-2 rounded-xl bg-slate-800 text-amber-300 text-xs font-bold">🌙 Night Mode</button>
-              <button onclick="toggleHideSeen()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</button>
-              <button onclick="openRulesModal()" class="py-2 rounded-xl bg-slate-800 text-emerald-300 text-xs font-bold">📜 စည်းမျဉ်းများ</button>
-              ${st.me.photo ? `<button onclick="removeAvatar()" class="py-2 rounded-xl bg-rose-500/20 text-rose-300 text-xs font-bold">ပရိုဖိုင်ပုံ ဖျက်</button>` : `<button onclick="copyProfileLink()" class="py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold">📋 Link ကူးမည်</button>`}
+              <button onclick="saveProfile()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold">သိမ်းဆည်းမည်</button>
+              ${st.me.photo ? `<button onclick="removeAvatar()" class="w-full py-2.5 rounded-xl bg-rose-500/20 text-rose-300 text-xs font-bold">ပရိုဖိုင်ပုံ ဖျက်မည်</button>` : ""}
             </div>
           </div>
         </div>`;
@@ -691,7 +860,7 @@
           ${exp ? `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 space-y-2.5">
             ${cmts.map(c => {
               const cu = uInfo(c.authorId);
-              return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-xs space-y-1">${c.replyToName ? `<div class="text-xs text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-semibold">↩ ${esc(c.replyToName)} ကို ပြန်ဖြေသည်</div>` : ""}<div class="flex items-start justify-between gap-2"><div class="flex items-start gap-2 min-w-0">${avatar(cu, "w-7 h-7 text-xs")}<div class="text-sm text-slate-100 break-words"><span class="font-bold text-white">${esc(cu.name)}</span>: ${esc(c.text)}</div></div><button onclick="setCmtReply('${p.id}','${esc(cu.name)}')" class="text-xs text-emerald-400 font-bold shrink-0">↩ Reply</button></div></div>`;
+              return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-xs space-y-1">${c.replyToName ? `<div class="text-xs text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-semibold">↩ ${esc(c.replyToName)} ကို ပြန်ဖြေသည်</div>` : ""}<div class="flex items-start justify-between gap-2"><div class="flex items-start gap-2 min-w-0">${avatar(cu, "w-7 h-7 text-xs")}<div class="text-sm text-slate-100 break-words"><span class="font-bold text-white inline-flex items-center gap-1">${esc(cu.name)} ${blueBadge(cu)}</span>: ${esc(c.text)}</div></div><button onclick="setCmtReply('${p.id}','${esc(cu.name)}')" class="text-xs text-emerald-400 font-bold shrink-0">↩ Reply</button></div></div>`;
             }).join("")}
             ${rTarget ? `<div class="flex items-center justify-between text-xs bg-emerald-500/15 text-emerald-300 px-3 py-1.5 rounded-xl"><span>↩ <b>${esc(rTarget)}</b> ကို Reply ပြန်နေသည်</span><button onclick="delete st.replyTo['${p.id}'];render()" class="font-bold">✕</button></div>` : ""}
             <div class="flex items-center gap-2">${avatar(st.me, "w-8 h-8 text-xs")}<input id="ci-${p.id}" type="text" placeholder="မှတ်ချက်ရေးရန်..." onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-3.5 py-2 text-xs"/><button onclick="addCmt('${p.id}')" class="px-3.5 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">ပို့</button></div>
@@ -717,15 +886,7 @@
 
     function openMyDayModal() {
       st.mydayImg = null;
-      document.getElementById("modalRoot").innerHTML = `
-        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
-          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div>
-            <textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea>
-            <div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div>
-            <div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div>
-          </div>
-        </div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div></div></div>`;
     }
     function onPickMyDayImg(e) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
@@ -743,7 +904,7 @@
     function viewMyDay(id) {
       const d = st.myday.find(x => x.id === id); if (!d) return;
       const au = uInfo(d.authorId); playSong("notif");
-      document.getElementById("modalRoot").innerHTML = `<div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between"><div onclick="openUserModal('${au.id}')" class="flex items-center gap-2.5 cursor-pointer">${avatar(au, "w-10 h-10 text-sm")}<div><div class="text-sm font-bold text-white">${esc(au.name)}</div><div class="text-xs text-slate-400">${ago(d.createdAt)}</div></div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>${d.image ? `<div class="flex justify-center"><img src="${d.image}" class="w-56 h-56 rounded-full object-cover border-4 border-emerald-500/40"/></div>` : ""}${d.text ? `<p class="text-sm text-slate-100 text-center">${esc(d.text)}</p>` : ""}</div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between"><div onclick="openUserModal('${au.id}')" class="flex items-center gap-2.5 cursor-pointer">${avatar(au, "w-10 h-10 text-sm")}<div><div class="text-sm font-bold text-white flex items-center gap-1">${esc(au.name)} ${blueBadge(au)}</div><div class="text-xs text-slate-400">${ago(d.createdAt)}</div></div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>${d.image ? `<div class="flex justify-center"><img src="${d.image}" class="w-56 h-56 rounded-full object-cover border-4 border-emerald-500/40"/></div>` : ""}${d.text ? `<p class="text-sm text-slate-100 text-center">${esc(d.text)}</p>` : ""}</div></div>`;
     }
 
     function setCmtReply(pid, name) { st.replyTo[pid] = name; render(); setTimeout(() => { const i = document.getElementById("ci-" + pid); if (i) i.focus(); }, 50); }
@@ -776,28 +937,7 @@
 
     function openComposerModal() {
       st.img = null;
-      document.getElementById("modalRoot").innerHTML = `
-        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
-          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">Account ပို့စ်တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button></div>
-            <div class="flex flex-col items-center gap-1.5">
-              <label class="w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-400 cursor-pointer flex items-center justify-center bg-slate-800 relative">
-                ${avatar(st.me, "w-16 h-16 text-lg")}
-                <span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">📷</span>
-                <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
-              </label>
-              <span class="text-xs text-slate-400">ပုံရွေးရန် အဝိုင်းကို နှိပ်ပါ</span>
-            </div>
-            <textarea id="postTxt" rows="3" placeholder="#youtube, #facebook, #tiktok စသဖြင့် ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea>
-            <div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-700"><img id="imgPrev" src="" class="w-full max-h-56 object-cover"/><button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div>
-            <div class="grid grid-cols-2 gap-2">
-              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
-              <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="Full Ownership">Full Ownership</option><option value="Admin / Access">Admin / Access</option><option value="ဝယ်ယူလိုသည်">ဝယ်ယူလိုသည်</option></select>
-            </div>
-            <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="">-- Account အမျိုးအစား ရွေးပါ --</option>${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
-            <button onclick="submitPost()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold">တင်မည်</button>
-          </div>
-        </div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">Account ပို့စ်တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button></div><div class="flex flex-col items-center gap-1.5"><label class="w-16 h-16 rounded-full overflow-hidden border-2 border-emerald-400 cursor-pointer flex items-center justify-center bg-slate-800 relative">${avatar(st.me, "w-16 h-16 text-lg")}<span class="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">📷</span><input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/></label><span class="text-xs text-slate-400">ပုံရွေးရန် အဝိုင်းကို နှိပ်ပါ</span></div><textarea id="postTxt" rows="3" placeholder="#youtube, #facebook, #tiktok စသဖြင့် ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-700"><img id="imgPrev" src="" class="w-full max-h-56 object-cover"/><button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="grid grid-cols-2 gap-2"><input id="postPrice" type="text" placeholder="ဈေးနှုန်း" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/><select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="Full Ownership">Full Ownership</option><option value="Admin / Access">Admin / Access</option><option value="ဝယ်ယူလိုသည်">ဝယ်ယူလိုသည်</option></select></div><select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="">-- Account အမျိုးအစား ရွေးပါ --</option>${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select><button onclick="submitPost()" class="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold">တင်မည်</button></div></div>`;
     }
     function onPickImg(e) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
@@ -827,30 +967,19 @@
     }
 
     function openAppealModal() {
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-sky-300">Blue Mark လျှောက်လွှာ</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><p class="text-xs text-slate-300"><b>${ADMIN_NAME}</b> ထံ တိုက်ရိုက်ပို့ပေးပါမည်။</p><input id="apPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်း / Telegram" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/><input id="apProof" type="text" placeholder="Page / Account လင့်ခ်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/><textarea id="apReason" rows="3" placeholder="အကြောင်းပြချက်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs resize-none"></textarea><button onclick="submitAppeal()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ ပို့မည်</button></div></div>`;
+      if (st.me.blueMark) { toast("သင့်အကောင့်တွင် Blue Mark ✓ ရရှိပြီးသားဖြစ်ပါသည်"); return; }
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-sky-300">💎 Blue Mark လျှောက်ထားရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><p class="text-xs text-slate-300 leading-relaxed">လျှောက်လွှာကို <b>${ADMIN_NAME}</b> ထံ တိုက်ရိုက်ပို့ပေးပါမည်။ စိစစ်အတည်ပြုပြီးပါက သင့်နာမည်ဘေးတွင် အပြာရောင်အမှန်ခြစ် ပေါ်လာပါမည်။</p><input id="apPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဆက်သွယ်ရန် ဖုန်း / Telegram" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/><input id="apProof" type="text" placeholder="Page / Account လင့်ခ် သို့မဟုတ် အထောက်အထား" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/><textarea id="apReason" rows="3" placeholder="Blue Mark လျှောက်ထားလိုသည့် အကြောင်းပြချက်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs resize-none"></textarea><button onclick="submitAppeal()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-xs font-bold">ပိုင်ဇော်ထက်ထံ လျှောက်လွှာပို့မည်</button></div></div>`;
     }
     function submitAppeal() {
       const phone = (document.getElementById("apPhone").value || "").trim(), proof = (document.getElementById("apProof").value || "").trim(), reason = (document.getElementById("apReason").value || "").trim();
       if (!phone || !reason) return toast("ဖုန်းနှင့် အကြောင်းပြချက် ထည့်ပါ");
       const id = "AP-" + Date.now(), ap = { id, userId: st.me.id, userName: st.me.name, phone, proof, reason, reviewer: ADMIN_NAME, status: "pending", createdAt: Date.now() };
-      st.appeals[id] = ap; st.me.appealStatus = "pending"; saveMe(); playSong("like"); closeModal(); render(); toast("လျှောက်လွှာ ပို့ပြီးပါပြီ");
+      st.appeals[id] = ap; st.me.appealStatus = "pending"; saveMe(); playSong("like"); closeModal(); render(); toast("ပိုင်ဇော်ထက်ထံ လျှောက်လွှာ ပို့ပြီးပါပြီ");
       fbPut(`appeals/${id}`, ap).catch(() => {}); fbPut(`users/${st.me.id}/appealStatus`, "pending").catch(() => {});
-    }
-    function openAdminModal() {
-      const list = Object.values(st.appeals || {}).filter(Boolean).sort((a, b) => b.createdAt - a.createdAt);
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-sm font-bold text-white">Blue Mark စစ်ဆေးရေး</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>${list.length ? list.map(a => `<div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs"><div class="flex justify-between"><span class="font-bold text-white">${esc(a.userName)}</span><span class="text-amber-300 font-bold">${esc(a.status)}</span></div><div class="text-slate-300">📞 ${esc(a.phone)}</div><p class="text-slate-200">${esc(a.reason)}</p><div class="flex gap-2"><button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ ပေးမည်</button><button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold">✕ ပယ်ချ</button></div></div>`).join("") : `<p class="text-xs text-slate-400 text-center py-6">လျှောက်လွှာ မရှိသေးပါ</p>`}</div></div>`;
-    }
-    function decideAppeal(aid, uid, status) {
-      if (st.appeals[aid]) st.appeals[aid].status = status;
-      if (st.users[uid]) st.users[uid].blueMark = status === "approved";
-      if (uid === st.me.id) { st.me.blueMark = status === "approved"; st.me.appealStatus = status; saveMe(); }
-      fbPut(`appeals/${aid}/status`, status).catch(() => {}); fbPut(`users/${uid}/blueMark`, status === "approved").catch(() => {});
-      notify(uid, status === "approved" ? "က Blue Mark အတည်ပြုပေးလိုက်ပါသည် ✓" : "က Blue Mark ပယ်ချခဲ့ပါသည်");
-      playSong("like"); openAdminModal(); render();
     }
     function openRulesModal() {
       playSong("notif");
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">စည်းမျဉ်းစည်းကမ်းများ</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="space-y-2">${RULES.map((r, i) => `<div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-200"><span class="font-bold text-emerald-400 mr-1">${i + 1}.</span>${esc(r)}</div>`).join("")}</div><button onclick="closeModal()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">နားလည်ပါပြီ</button></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">📜 စည်းမျဉ်းစည်းကမ်းများ</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="space-y-2">${RULES.map((r, i) => `<div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-200 leading-relaxed"><span class="font-bold text-emerald-400 mr-1">${i + 1}.</span>${esc(r)}</div>`).join("")}</div><button onclick="closeModal()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">နားလည်ပါပြီ</button></div></div>`;
     }
     function openUserModal(uid) {
       const u = uInfo(uid), r = uRating(uid), isF = (st.me.friends || []).includes(uid), isFol = (st.me.following || []).includes(uid), own = uid === st.me.id;
@@ -865,7 +994,7 @@
     function openCallModal(cid) {
       const c = st.activeCall || st.calls[cid]; if (!c) return;
       const o = uInfo(c.fromId === st.me.id ? c.toId : c.fromId), isIn = c.toId === st.me.id && c.status === "ringing";
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-6 text-center space-y-5"><div class="flex justify-center">${avatar(o, "w-20 h-20 text-2xl")}</div><div><h3 class="text-lg font-bold text-white">${esc(o.name)}</h3><p class="text-sm text-emerald-400 font-semibold mt-1">${c.status === "connected" ? "🎙️ ဖုန်းပြောနေပါသည်..." : (isIn ? "🔔 ဖုန်းဝင်လာပါသည်..." : "📞 ခေါ်ဆိုနေပါသည်...")}</p></div><div class="flex justify-center gap-4">${isIn ? `<button onclick="answerCall('${c.id}')" class="px-5 py-3 rounded-full bg-emerald-600 text-white text-xs font-bold">✓ လက်ခံ</button>` : ""}<button onclick="endCall('${c.id}')" class="px-5 py-3 rounded-full bg-rose-600 text-white text-xs font-bold">✕ ဖုန်းချ</button></div></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-6 text-center space-y-5"><div class="flex justify-center">${avatar(o, "w-20 h-20 text-2xl")}</div><div><h3 class="text-lg font-bold text-white flex items-center justify-center gap-1">${esc(o.name)} ${blueBadge(o)}</h3><p class="text-sm text-emerald-400 font-semibold mt-1">${c.status === "connected" ? "🎙️ ဖုန်းပြောနေပါသည်..." : (isIn ? "🔔 ဖုန်းဝင်လာပါသည်..." : "📞 ခေါ်ဆိုနေပါသည်...")}</p></div><div class="flex justify-center gap-4">${isIn ? `<button onclick="answerCall('${c.id}')" class="px-5 py-3 rounded-full bg-emerald-600 text-white text-xs font-bold">✓ လက်ခံ</button>` : ""}<button onclick="endCall('${c.id}')" class="px-5 py-3 rounded-full bg-rose-600 text-white text-xs font-bold">✕ ဖုန်းချ</button></div></div></div>`;
     }
     function answerCall(cid) { stopRingLoop(); if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "connected"; playSong("like"); fbPut(`calls/${cid}/status`, "connected").catch(() => {}); openCallModal(cid); }
     function endCall(cid) { stopRingLoop(); if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "ended"; playSong("angry"); fbPut(`calls/${cid}/status`, "ended").catch(() => {}); st.activeCall = null; document.getElementById("modalRoot").innerHTML = ""; }
