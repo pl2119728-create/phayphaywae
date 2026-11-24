@@ -15,9 +15,9 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes slideUp { from { transform: translateY(100%); opacity: .5; } to { transform: translateY(0); opacity: 1; } }
-    .animate-slide-up { animation: slideUp .2s ease-out forwards; }
+    .animate-slide-up { animation: slideUp .18s ease-out forwards; }
     @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-    .animate-slide-right { animation: slideRight .22s cubic-bezier(.16,1,.3,1) forwards; }
+    .animate-slide-right { animation: slideRight .2s cubic-bezier(.16,1,.3,1) forwards; }
   </style>
 </head>
 <body class="bg-[#05080f] text-slate-100">
@@ -84,7 +84,12 @@
     const OWNER_ID = "PPW-565435";
     const ADMIN_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
     const ADMIN_PIN = "2026";
+    const BOOST_PRICE_TEXT = "၂၀,၀၀၀ ကျပ် (၂၄ နာရီ Top တင်မည်)";
+    const PAY_ACCOUNT_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
+    const TELEGRAM_HANDLE = "@snap105";
+    const TELEGRAM_URL = "https://t.me/snap105";
     const ACCOUNT_KEY = "ppw_main_account";
+    const CACHE_KEY = "ppw_fast_cache_v1";
     const TRADE_CATS = ["Facebook Page", "YouTube Account", "TikTok Account", "Instagram / RedNote", "Monetized Page / Channel"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
     const QUICK_TAGS = ["#facebook", "#youtube", "#tiktok", "#monetized"];
@@ -101,9 +106,9 @@
     const BLOCKED_PHYSICAL = ["အဝတ်အစား", "ရှပ်အင်္ကျီ", "ဘောင်းဘီ", "ဖိနပ်", "ထဘီ", "ပုဆိုး", "shirt", "pants", "clothes", "dress", "shoes"];
     const RULES = [
       "Facebook Page၊ YouTube Account၊ TikTok Account စသည့် အကောင့်/ပိုင်ဆိုင်မှု ရောင်းဝယ်မှုများကိုသာ တင်ရမည်။ အဝတ်အစားနှင့် မသက်ဆိုင်သော ပစ္စည်းများ ခွင့်မပြုပါ။",
-      "အမျိုးအစားအလိုက် #youtube၊ #facebook၊ #tiktok စသဖြင့် # ခံပြီး ထည့်သွင်းပါက Category မှ တစ်ချက်နှိပ် ရှာဖွေနိုင်မည်။",
-      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို လူတိုင်းအား အလိုအလျောက် မပေးပါ — Menu ထဲမှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ လျှောက်ထားပြီး စိစစ်အတည်ပြုမှသာ ရရှိမည်။",
-      "စိတ်ချလက်ချ ဝယ်ယူနိုင်ရန် ပို့စ်တိုင်း၏ နာမည်ဘေးရှိ Admin ကြားခံ မှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ ဆက်သွယ်နိုင်သည်။"
+      "MyDay ကို ၂၄ နာရီသာ တင်ခွင့်ရှိပြီး ဝင်ကြည့်သူစာရင်း (Views) နှင့် ဖျက်ခလုတ် (Delete) ပါဝင်သည်။",
+      "Boost တင်လိုပါက တစ်ရက် (၂၄ နာရီ) ၂၀,၀၀၀ ကျပ်ဖြင့် KPay/Wave (ပိုင်ဇော်ထက်) သို့ လွှဲပြီး ပြေစာကို @snap105 Telegram သို့ ပို့ရမည်။",
+      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို Menu ထဲမှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ လျှောက်ထားပြီး စိစစ်အတည်ပြုမှသာ ရရှိမည်။"
     ];
 
     function getUser() {
@@ -165,17 +170,37 @@
       return u;
     }
 
+    function loadFastCache() {
+      try {
+        const c = JSON.parse(localStorage.getItem(CACHE_KEY));
+        if (c && typeof c === "object") return c;
+      } catch (e) {}
+      return { posts: [], myday: [], users: {} };
+    }
+    function saveFastCache() {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          posts: st.posts.slice(0, 40),
+          myday: st.myday.slice(0, 20),
+          users: st.users
+        }));
+      } catch (e) {}
+    }
+
+    const cached = loadFastCache();
+
     let st = {
       tab: "home",
       profileSubTab: "posts",
       adminFilter: "pending",
       me: getUser(),
-      posts: [],
-      myday: [],
-      users: {},
+      posts: Array.isArray(cached.posts) ? cached.posts : [],
+      myday: Array.isArray(cached.myday) ? cached.myday.filter(d => d && (d.createdAt || 0) >= Date.now() - 24 * 3600000) : [],
+      users: cached.users || {},
       presence: {},
       reviews: {},
       appeals: {},
+      boostRequests: {},
       notifs: [],
       chats: {},
       typing: {},
@@ -215,12 +240,47 @@
       clearTimeout(window._tt);
       window._tt = setTimeout(() => el.classList.add("hidden"), 2400);
     }
+
+    // 100% Reliable Copy for APK / WebView / Mobile Browsers
+    function copyText(text, successMsg) {
+      const done = () => { playSong("notif"); toast(successMsg || "Copy ကူးပြီးပါပြီ"); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+      } else {
+        fallbackCopy(text, done);
+      }
+    }
+    function fallbackCopy(text, cb) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        cb();
+      } catch (e) {
+        prompt("Copy ကူးရန်:", text);
+      }
+    }
+    function copyUserId(id) { copyText(id || st.me.id, `ID (${id || st.me.id}) ကူးပြီးပါပြီ ✓`); }
+    function copyProfileLink() { copyText(`${APP_URL}?u=${st.me.id}`, "Profile Link ကူးပြီးပါပြီ ✓"); }
+
     function ago(ts) {
       const d = Math.floor((Date.now() - (ts || Date.now())) / 1000);
       if (d < 60) return "ယခုလေးတင်";
       if (d < 3600) return Math.floor(d / 60) + " မိနစ်ခန့်က";
       if (d < 86400) return Math.floor(d / 3600) + " နာရီခန့်က";
       return Math.floor(d / 86400) + " ရက်ခန့်က";
+    }
+    function remainingHours(untilTs) {
+      const ms = Number(untilTs || 0) - Date.now();
+      if (ms <= 0) return "";
+      const h = Math.ceil(ms / 3600000);
+      return h + " နာရီကျန်";
     }
     function formatExactTime(ts) {
       if (!ts) return "မသိရသေး";
@@ -237,6 +297,7 @@
       return ts ? "⚫ ဆင်းချိန် " + formatExactTime(ts) : "⚫ Offline";
     }
     function onlineFriendsCount() { return (st.me.friends || []).filter(fid => isOnline(fid)).length; }
+    function isBoosted(p) { return !!(p && Number(p.boostedUntil || 0) > Date.now()); }
 
     function ensureAudio() {
       try {
@@ -389,12 +450,75 @@
       fbPut(`posts/${p.id}/views`, p.views).catch(() => {});
     }
 
-    function requestBoost(pid) {
+    // Boost Payment Modal (KPay / Wave -> @snap105 Telegram -> 20,000 MMK / 24h Top)
+    function openBoostModal(pid) {
       const p = st.posts.find(x => x.id === pid);
-      const label = p ? (p.category + " - " + (p.text || "").slice(0, 30)) : pid;
-      if (st.me.id === OWNER_ID) { toast("သင့်ပို့စ်ကို Boost စနစ်ဖြင့် ထိပ်တင်ရန် အသင့်ဖြစ်ပါသည် ⚡"); return; }
-      openChat(OWNER_ID);
-      setTimeout(() => { const inp = document.getElementById("msgInp"); if (inp) { inp.value = `⚡ Boost တင်ချင်ပါတယ် (${label})`; inp.focus(); } }, 120);
+      if (!p) return;
+      playSong("notif");
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-sky-500/40 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3.5 animate-slide-up max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div>
+                <h3 class="text-base font-bold text-sky-300">⚡ ပို့စ် Boost တင်ရန် (Top ၂၄ နာရီ)</h3>
+                <div class="text-xs text-amber-300 font-bold mt-0.5">နှုန်းထား — ${BOOST_PRICE_TEXT}</div>
+              </div>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5 text-xs">
+              <div class="font-bold text-emerald-300 text-sm">💳 ငွေပေးချေရန် (KBZPay / WavePay)</div>
+              <div class="flex items-center justify-between bg-[#0f172a] p-2.5 rounded-xl border border-slate-800">
+                <div>
+                  <div class="text-slate-400 text-[11px]">KPay / Wave အကောင့်နာမည်</div>
+                  <div class="text-white font-bold text-sm mt-0.5">${PAY_ACCOUNT_NAME}</div>
+                </div>
+                <button onclick="copyText('${PAY_ACCOUNT_NAME}','နာမည် ကူးပြီးပါပြီ ✓')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-emerald-300 font-bold">ကူးမည်</button>
+              </div>
+              <div class="bg-sky-950/50 border border-sky-500/30 rounded-xl p-2.5 text-slate-200 leading-relaxed">
+                ငွေလွှဲပြီးပါက ပြေစာပုံကို <b class="text-sky-300">${TELEGRAM_HANDLE}</b> Telegram အကောင့်သို့ ပို့ပြီး အသေးစိတ်ပြောပေးပါ။ စစ်ဆေးပြီးသည်နှင့် သင့်ပို့စ်ကို <b>၂၄ နာရီလုံး Top ထိပ်ဆုံးတွင်</b> အမြဲတင်ပေးထားပါမည်။
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <a href="${TELEGRAM_URL}" target="_blank" rel="noopener" class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold flex items-center justify-center gap-2">
+                <span>✈️ Telegram (${TELEGRAM_HANDLE}) သို့ ပြေစာပို့မည်</span>
+              </a>
+              <button onclick="submitBoostRequest('${p.id}')" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">✓ ငွေလွှဲပြီးကြောင်း Admin ထံ အကြောင်းကြားမည်</button>
+              ${st.me.isAdmin ? `<button onclick="grantPostBoost('${p.id}', 24)" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold">🛡️ Admin: ယခုချက်ချင်း 24h Top Boost ဖွင့်မည်</button>` : ""}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function submitBoostRequest(pid) {
+      const p = st.posts.find(x => x.id === pid);
+      const id = "BR-" + Date.now();
+      const req = { id, postId: pid, userId: st.me.id, userName: st.me.name, postText: p ? (p.text || p.category).slice(0, 60) : pid, status: "pending", createdAt: Date.now() };
+      st.boostRequests[id] = req;
+      fbPut(`boostRequests/${id}`, req).catch(() => {});
+      notify(OWNER_ID, `က ပို့စ် Boost (၂၀,၀၀၀ ကျပ်) တောင်းဆိုထားပါသည် ⚡`);
+      playSong("like");
+      closeModal();
+      toast("Boost တောင်းဆိုမှု ပို့ပြီးပါပြီ — @snap105 သို့ ပြေစာပို့ပေးပါ");
+    }
+
+    function grantPostBoost(pid, hours = 24) {
+      const until = hours > 0 ? (Date.now() + hours * 3600000) : 0;
+      const p = st.posts.find(x => x.id === pid);
+      if (p) p.boostedUntil = until;
+      fbPut(`posts/${pid}/boostedUntil`, until).catch(() => {});
+      Object.values(st.boostRequests || {}).forEach(br => {
+        if (br && br.postId === pid && br.status === "pending") {
+          br.status = hours > 0 ? "approved" : "rejected";
+          fbPut(`boostRequests/${br.id}/status`, br.status).catch(() => {});
+        }
+      });
+      if (p && p.authorId) notify(p.authorId, hours > 0 ? "က သင့်ပို့စ်ကို ၂၄ နာရီ Top Boost ⚡ ဖွင့်ပေးလိုက်ပါပြီ!" : "က သင့်ပို့စ် Boost ကို ပိတ်လိုက်ပါသည်");
+      playSong(hours > 0 ? "love" : "angry");
+      closeModal();
+      render();
+      toast(hours > 0 ? "၂၄ နာရီ Top Boost ဖွင့်ပြီးပါပြီ ⚡" : "Boost ပိတ်ပြီးပါပြီ");
     }
 
     function requestEscrow(pid, sellerId) {
@@ -419,7 +543,7 @@
 
     function openSideMenu() {
       playSong("notif");
-      const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length;
+      const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length + Object.values(st.boostRequests || {}).filter(b => b && b.status === "pending").length;
       const onlineFri = onlineFriendsCount();
       document.getElementById("drawerRoot").innerHTML = `
         <div onclick="closeSideMenu()" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex">
@@ -429,7 +553,7 @@
               <div onclick="closeSideMenu();switchTab('profile')" class="bg-[#1e293b]/80 hover:bg-[#1e293b] border border-slate-700/80 rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition">${avatar(st.me, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</div><div class="text-xs text-slate-400 font-mono truncate">${esc(st.me.id)}</div></div><span class="text-slate-400 text-sm">›</span></div>
               <div class="grid grid-cols-2 gap-2.5">
                 <button onclick="closeSideMenu();openDashboardModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-emerald-500/30 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">📊</div><div class="text-xs font-bold text-emerald-300">Dashboard</div><div class="text-[11px] text-slate-400">Views & Stats</div></button>
-                ${st.me.isAdmin ? `<button onclick="closeSideMenu();openAdminModal()" class="relative bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/40 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">${pendingCount ? `<span class="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">${pendingCount}</span>` : ""}<div class="text-xl">🛡️</div><div class="text-xs font-bold text-sky-300">Blue Mark စစ်ရန်</div><div class="text-[11px] text-slate-400">Admin Panel</div></button>` : `<button onclick="closeSideMenu();openAppealModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">💎</div><div class="text-xs font-bold text-white">Blue Mark</div><div class="text-[11px] ${st.me.blueMark ? "text-sky-400 font-bold" : "text-slate-400"}">${st.me.blueMark ? "✓ ရရှိပြီး" : "လျှောက်ထားရန်"}</div></button>`}
+                ${st.me.isAdmin ? `<button onclick="closeSideMenu();openAdminModal()" class="relative bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/40 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">${pendingCount ? `<span class="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">${pendingCount}</span>` : ""}<div class="text-xl">🛡️</div><div class="text-xs font-bold text-sky-300">Admin စိစစ်ရေး</div><div class="text-[11px] text-slate-400">BlueMark & Boost</div></button>` : `<button onclick="closeSideMenu();openAppealModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">💎</div><div class="text-xs font-bold text-white">Blue Mark</div><div class="text-[11px] ${st.me.blueMark ? "text-sky-400 font-bold" : "text-slate-400"}">${st.me.blueMark ? "✓ ရရှိပြီး" : "လျှောက်ထားရန်"}</div></button>`}
                 <button onclick="toggleNightMode();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">🌙</div><div class="text-xs font-bold text-white">Night Mode</div><div class="text-[11px] ${st.nightMode ? "text-amber-300 font-bold" : "text-slate-400"}">${st.nightMode ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div></button>
                 <button onclick="toggleSound();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">${st.soundOn ? "🔊" : "🔇"}</div><div class="text-xs font-bold text-white">အသံစနစ်</div><div class="text-[11px] ${st.soundOn ? "text-emerald-400 font-bold" : "text-slate-400"}">${st.soundOn ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div></button>
                 <button onclick="toggleHideSeen();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">👁️</div><div class="text-xs font-bold text-white">Seen စနစ်</div><div class="text-[11px] ${st.me.hideSeen ? "text-amber-300 font-bold" : "text-emerald-400 font-bold"}">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</div></button>
@@ -437,7 +561,7 @@
               </div>
               <div class="pt-2 border-t border-slate-800 space-y-1.5">
                 <button onclick="closeSideMenu();openSettingsModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>⚙️</span><span>ပရိုဖိုင် & Location ပြင်ရန်</span></button>
-                <button onclick="copyProfileLink();closeSideMenu()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>📋</span><span>Profile Link ကူးမည်</span></button>
+                <button onclick="copyUserId();closeSideMenu()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>📋</span><span>User ID ကူးမည် (${esc(st.me.id)})</span></button>
                 <button onclick="closeSideMenu();openRulesModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>📜</span><span>စည်းမျဉ်းစည်းကမ်းများ</span></button>
                 ${!st.me.isAdmin ? `<button onclick="closeSideMenu();openAdminGate()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-xs font-semibold text-slate-400"><span>🔐</span><span>Admin Login</span></button>` : ""}
               </div>
@@ -504,7 +628,7 @@
 
     function openAdminGate() {
       if (st.me.isAdmin) { openAdminModal(); return; }
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-5 space-y-3.5 animate-slide-up"><div class="flex items-center justify-between"><h3 class="text-base font-bold text-white">🛡️ Admin ဝင်ရောက်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><p class="text-xs text-slate-400">Blue Mark စိစစ်ရေးစနစ်သို့ ဝင်ရောက်ရန် Admin PIN ရိုက်ထည့်ပါ</p><input id="adminPinInp" type="password" inputmode="numeric" placeholder="Admin PIN..." onkeydown="if(event.key==='Enter')verifyAdminPin()" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-sm text-center tracking-widest"/><button onclick="verifyAdminPin()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-sm font-bold">အတည်ပြု ဝင်ရောက်မည်</button></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-5 space-y-3.5 animate-slide-up"><div class="flex items-center justify-between"><h3 class="text-base font-bold text-white">🛡️ Admin ဝင်ရောက်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><p class="text-xs text-slate-400">Admin စိစစ်ရေးစနစ်သို့ ဝင်ရောက်ရန် PIN ရိုက်ထည့်ပါ</p><input id="adminPinInp" type="password" inputmode="numeric" placeholder="Admin PIN..." onkeydown="if(event.key==='Enter')verifyAdminPin()" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-sm text-center tracking-widest"/><button onclick="verifyAdminPin()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-sm font-bold">အတည်ပြု ဝင်ရောက်မည်</button></div></div>`;
     }
     function verifyAdminPin() {
       const v = (document.getElementById("adminPinInp").value || "").trim();
@@ -526,16 +650,37 @@
     }
     function openAdminModal() {
       const all = Object.values(st.appeals || {}).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      const pending = all.filter(a => a.status === "pending"), approved = all.filter(a => a.status === "approved"), rejected = all.filter(a => a.status === "rejected");
+      const pending = all.filter(a => a.status === "pending"), approved = all.filter(a => a.status === "approved");
+      const boostReqs = Object.values(st.boostRequests || {}).filter(b => b && b.status === "pending").sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       const verifiedUsers = Object.values(st.users || {}).filter(u => u && u.blueMark);
-      const shown = st.adminFilter === "approved" ? approved : (st.adminFilter === "rejected" ? rejected : pending);
+
+      let listHtml = "";
+      if (st.adminFilter === "boost") {
+        listHtml = boostReqs.length ? boostReqs.map(b => `
+          <div class="p-3.5 rounded-2xl bg-slate-900 border border-amber-500/30 space-y-2 text-xs">
+            <div class="flex justify-between"><span class="font-bold text-white">${esc(b.userName)} (${esc(b.userId)})</span><span class="text-amber-300 font-bold">${ago(b.createdAt)}</span></div>
+            <div class="text-slate-300 bg-[#0f172a] p-2 rounded-xl">${esc(b.postText)}</div>
+            <div class="flex gap-2">
+              <button onclick="grantPostBoost('${b.postId}', 24)" class="flex-1 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold">⚡ 24h Top Boost ပေးမည်</button>
+              <button onclick="grantPostBoost('${b.postId}', 0)" class="px-3 py-2 rounded-xl bg-rose-600 text-white font-bold">✕ ပယ်ချ</button>
+            </div>
+          </div>`).join("") : `<div class="text-center text-sm text-slate-400 py-8">Boost တောင်းဆိုမှု မရှိသေးပါ</div>`;
+      } else {
+        const shown = st.adminFilter === "approved" ? approved : pending;
+        listHtml = shown.length ? shown.map(a => { const au = uInfo(a.userId); return `<div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs"><div class="flex items-center justify-between gap-2"><div onclick="openUserModal('${a.userId}')" class="flex items-center gap-2 cursor-pointer min-w-0">${avatar(au, "w-9 h-9 text-xs")}<div class="min-w-0"><div class="font-bold text-white truncate flex items-center gap-1">${esc(a.userName)} ${blueBadge(au)}</div><div class="font-mono text-[11px] text-slate-400">${esc(a.userId)} • ${ago(a.createdAt)}</div></div></div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.status === "approved" ? "bg-sky-500/20 text-sky-300" : "bg-amber-500/20 text-amber-300"}">${esc(a.status)}</span></div><div class="bg-[#0f172a] rounded-xl p-2.5 space-y-1 text-slate-300"><div>📞 <span class="text-white font-semibold">${esc(a.phone)}</span></div>${a.proof ? `<div>🔗 <span class="text-emerald-300 break-all">${esc(a.proof)}</span></div>` : ""}<div class="text-slate-200 pt-0.5">${esc(a.reason)}</div></div><div class="flex gap-2">${a.status !== "approved" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ Blue Mark ပေးမည်</button>` : `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold">🚫 ပြန်ရုပ်သိမ်း</button>`}${a.status === "pending" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="px-4 py-2 rounded-xl bg-rose-600/80 text-white font-bold">✕ ပယ်ချ</button>` : ""}</div></div>`; }).join("") : `<div class="text-center text-sm text-slate-400 py-8">လျှောက်လွှာ မရှိသေးပါ</div>`;
+      }
+
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] flex flex-col">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">🛡️ Blue Mark စိစစ်ရေးစနစ်</h3><div class="text-[11px] text-sky-400 font-semibold">${ADMIN_NAME} • Verified (${verifiedUsers.length})</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">🛡️ Admin စိစစ်ရေးစနစ်</h3><div class="text-[11px] text-sky-400 font-semibold">${ADMIN_NAME} • Verified (${verifiedUsers.length})</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2"><div class="text-xs font-bold text-sky-300">⚡ User ID ဖြင့် တိုက်ရိုက် Blue Mark ပေး/ဖြုတ်</div><div class="flex gap-1.5"><input id="directUidInp" type="text" placeholder="PPW-xxxxxx" class="flex-1 bg-[#0f172a] text-white border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"/><button onclick="directGrantBlueMark(true)" class="px-3 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">✓ ပေး</button><button onclick="directGrantBlueMark(false)" class="px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">✕ ဖြုတ်</button></div></div>
-            <div class="grid grid-cols-3 gap-1.5"><button onclick="st.adminFilter='pending';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "pending" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-300"}">စစ်ရန် (${pending.length})</button><button onclick="st.adminFilter='approved';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "approved" ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-300"}">ပေးပြီး (${approved.length})</button><button onclick="st.adminFilter='rejected';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "rejected" ? "bg-rose-600 text-white" : "bg-slate-800 text-slate-300"}">ပယ်ချ (${rejected.length})</button></div>
-            <div class="flex-1 overflow-y-auto space-y-2.5 pr-0.5">${shown.length ? shown.map(a => { const au = uInfo(a.userId); return `<div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs"><div class="flex items-center justify-between gap-2"><div onclick="openUserModal('${a.userId}')" class="flex items-center gap-2 cursor-pointer min-w-0">${avatar(au, "w-9 h-9 text-xs")}<div class="min-w-0"><div class="font-bold text-white truncate flex items-center gap-1">${esc(a.userName)} ${blueBadge(au)}</div><div class="font-mono text-[11px] text-slate-400">${esc(a.userId)} • ${ago(a.createdAt)}</div></div></div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.status === "approved" ? "bg-sky-500/20 text-sky-300" : (a.status === "rejected" ? "bg-rose-500/20 text-rose-300" : "bg-amber-500/20 text-amber-300")}">${esc(a.status)}</span></div><div class="bg-[#0f172a] rounded-xl p-2.5 space-y-1 text-slate-300"><div>📞 <span class="text-white font-semibold">${esc(a.phone)}</span></div>${a.proof ? `<div>🔗 <span class="text-emerald-300 break-all">${esc(a.proof)}</span></div>` : ""}<div class="text-slate-200 pt-0.5">${esc(a.reason)}</div></div><div class="flex gap-2">${a.status !== "approved" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ Blue Mark ပေးမည်</button>` : `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold">🚫 ပြန်ရုပ်သိမ်း</button>`}${a.status === "pending" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="px-4 py-2 rounded-xl bg-rose-600/80 text-white font-bold">✕ ပယ်ချ</button>` : ""}</div></div>`; }).join("") : `<div class="text-center text-sm text-slate-400 py-8">ဤစာရင်းတွင် လျှောက်လွှာ မရှိသေးပါ</div>`}</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button onclick="st.adminFilter='pending';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "pending" ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-300"}">BlueMark (${pending.length})</button>
+              <button onclick="st.adminFilter='boost';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "boost" ? "bg-amber-500 text-slate-950" : "bg-slate-800 text-slate-300"}">⚡ Boost (${boostReqs.length})</button>
+              <button onclick="st.adminFilter='approved';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "approved" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">ပေးပြီး (${approved.length})</button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-0.5">${listHtml}</div>
           </div>
         </div>`;
     }
@@ -552,10 +697,10 @@
     async function sync(init = false) {
       try {
         fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
-        if (init) await fbPut(`users/${st.me.id}`, st.me);
-        const [po, md, us, pr, rv, ap, no, ch, ty, cl] = await Promise.all([
+        if (init) fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+        const [po, md, us, pr, rv, ap, br, no, ch, ty, cl] = await Promise.all([
           fbGet("posts"), fbGet("myday"), fbGet("users"), fbGet("presence"),
-          fbGet("reviews"), fbGet("appeals"), fbGet(`notifications/${st.me.id}`),
+          fbGet("reviews"), fbGet("appeals"), fbGet("boostRequests"), fbGet(`notifications/${st.me.id}`),
           fbGet("chats"), fbGet("typing"), fbGet("calls")
         ]);
         const rawPosts = po ? Object.values(po) : [];
@@ -575,8 +720,10 @@
         st.users[st.me.id] = st.me;
         st.reviews = rv || {};
         st.appeals = ap || {};
+        st.boostRequests = br || {};
         st.typing = ty || {};
         st.calls = cl || {};
+        saveFastCache();
 
         const nextNotifs = no ? Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
         let newNotifSong = false;
@@ -650,6 +797,8 @@
       else if (st.cat === "အသစ်ရောက်သူများ") list = list.filter(p => isNewUser(p.authorId)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       else if (st.cat !== "အားလုံး") list = list.filter(p => matchesCategoryOrTag(p, st.cat)).sort((a, b) => feedScore(b) - feedScore(a));
       else list.sort((a, b) => feedScore(b) - feedScore(a));
+      // Boosted posts (24h active) always stay at the very TOP
+      list.sort((a, b) => (isBoosted(b) ? 1 : 0) - (isBoosted(a) ? 1 : 0));
       return list;
     }
 
@@ -660,7 +809,9 @@
     }
 
     function renderMyDayStrip() {
-      return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${st.myday.map(d => { const du = uInfo(d.authorId); return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1.5 shrink-0 max-w-[72px]"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base")}</div><span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
+      const dayCutoff = Date.now() - 24 * 3600000;
+      const activeDays = st.myday.filter(d => d && (d.createdAt || 0) >= dayCutoff);
+      return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${activeDays.map(d => { const du = uInfo(d.authorId); const vCnt = Object.keys(d.viewers || {}).length; return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1 shrink-0 max-w-[72px] relative"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base", false)}</div>${vCnt > 0 ? `<span class="absolute top-0 right-0 px-1.5 py-0.2 rounded-full bg-black/80 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">👁️${vCnt}</span>` : ""}<span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
     }
 
     function render() {
@@ -695,7 +846,21 @@
         } else if (st.tab === "friends") {
           const q = st.fq.trim().toLowerCase();
           const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
-          el.innerHTML = `<div class="p-3.5 space-y-4"><div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white"><div class="text-xs text-emerald-100">သင့် User ID</div><div class="flex items-center justify-between mt-1"><span class="text-base font-bold">${esc(st.me.id)}</span><button onclick="copyProfileLink()" class="px-3.5 py-1.5 rounded-xl bg-white/20 text-xs font-bold">Link ကူးမည်</button></div></div><input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID သို့မဟုတ် နာမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm"/><div class="space-y-2.5">${users.length ? users.map(u => { const isF = (st.me.friends || []).includes(u.id); return `<div class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2"><div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400">${esc(onlineText(u.id))}</div></div></div><button onclick="openChat('${u.id}')" class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button><button onclick="toggleFriend('${u.id}')" class="px-3 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div></div>`;
+          el.innerHTML = `
+            <div class="p-3.5 space-y-4">
+              <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white space-y-2">
+                <div class="text-xs text-emerald-100">သင့် Friend Add ID</div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-base font-bold font-mono tracking-wide">${esc(st.me.id)}</span>
+                  <div class="flex gap-1.5">
+                    <button onclick="copyUserId('${st.me.id}')" class="px-3 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-bold active:scale-95 transition">📋 ID ကူးမည်</button>
+                    <button onclick="copyProfileLink()" class="px-2.5 py-1.5 rounded-xl bg-white/20 text-white text-xs font-bold active:scale-95 transition">🔗 Link</button>
+                  </div>
+                </div>
+              </div>
+              <input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID (PPW-xxxxxx) သို့မဟုတ် နာမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm"/>
+              <div class="space-y-2.5">${users.length ? users.map(u => { const isF = (st.me.friends || []).includes(u.id); return `<div class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2"><div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400 font-mono">${esc(u.id)} • ${esc(onlineText(u.id))}</div></div></div><button onclick="openChat('${u.id}')" class="px-2.5 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button><button onclick="toggleFriend('${u.id}')" class="px-2.5 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div>
+            </div>`;
         } else if (st.tab === "notifications") {
           el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm text-slate-100"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center text-sm text-slate-400 border border-slate-800">အကြောင်းကြားစာ မရှိသေးပါ</div>`}</div>`;
         } else if (st.tab === "profile") {
@@ -714,9 +879,7 @@
                 </div>
 
                 <div class="px-4 flex flex-col items-center -mt-14 relative z-10 pointer-events-none">
-                  <button onclick="openNoteModal()" class="pointer-events-auto mb-1.5 px-3 py-1 rounded-full bg-slate-800/95 border border-slate-600 text-xs text-slate-200 shadow-md max-w-[240px] truncate">
-                    ${activeNote ? `💭 ${esc(activeNote)}` : "Share a note..."}
-                  </button>
+                  <button onclick="openNoteModal()" class="pointer-events-auto mb-1.5 px-3 py-1 rounded-full bg-slate-800/95 border border-slate-600 text-xs text-slate-200 shadow-md max-w-[240px] truncate">${activeNote ? `💭 ${esc(activeNote)}` : "Share a note..."}</button>
                   <label class="pointer-events-auto relative cursor-pointer">
                     ${avatar(st.me, "w-24 h-24 text-3xl", false)}
                     <span class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow border-2 border-[#0f172a]">📷</span>
@@ -728,13 +891,13 @@
                   <p class="pointer-events-auto text-xs text-slate-300 mt-1.5 text-center max-w-xs leading-relaxed">${esc(st.me.bio || "")}</p>
                   <div class="pointer-events-auto text-[11px] text-slate-400 mt-1 flex items-center gap-2 flex-wrap justify-center">
                     ${st.me.city ? `<span>📍 ${esc(st.me.city)}</span>` : ""}
-                    <span class="font-mono">${esc(st.me.id)}</span>
+                    <button onclick="copyUserId('${st.me.id}')" class="font-mono text-emerald-300 underline">${esc(st.me.id)} 📋</button>
                     <span class="text-amber-300 font-bold">★ ${r.avg}</span>
                   </div>
 
                   <div class="pointer-events-auto grid grid-cols-2 gap-2 w-full mt-3.5">
                     <button onclick="openDashboardModal()" class="py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold">📊 Dashboard</button>
-                    <button onclick="copyProfileLink()" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold">📋 Link ကူးမည်</button>
+                    <button onclick="copyUserId('${st.me.id}')" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold">📋 ID ကူးမည်</button>
                   </div>
                 </div>
 
@@ -815,14 +978,8 @@
       r.readAsDataURL(f);
     }
 
-    function copyProfileLink() {
-      const link = `${APP_URL}?u=${st.me.id}`;
-      if (navigator.clipboard) navigator.clipboard.writeText(link);
-      playSong("notif"); toast("Profile Link ကူးပြီးပါပြီ");
-    }
-
     function postCard(p) {
-      const au = uInfo(p.authorId), rt = uRating(p.authorId), myRx = userReaction(p);
+      const au = uInfo(p.authorId), rt = uRating(p.authorId), myRx = userReaction(p), boosted = isBoosted(p);
       const rxCounts = {};
       REACTIONS.forEach(r => { rxCounts[r.key] = Object.keys((p.reactions && p.reactions[r.key]) || {}).length; });
       if (!rxCounts.like && p.likes) rxCounts.like = Object.keys(p.likes).length;
@@ -830,7 +987,8 @@
       const cmts = p.comments ? Object.values(p.comments).filter(Boolean).sort((a, b) => a.createdAt - b.createdAt) : [], exp = !!st.openCmt[p.id], own = p.authorId === st.me.id;
       const eng = engagementScore(p), rTarget = st.replyTo[p.id];
       return `
-        <article class="bg-[#0f172a] rounded-2xl border border-slate-800 shadow-sm overflow-hidden">
+        <article class="bg-[#0f172a] rounded-2xl border ${boosted ? "border-amber-400/70 shadow-lg shadow-amber-950/30" : "border-slate-800"} shadow-sm overflow-hidden">
+          ${boosted ? `<div class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500/20 to-sky-500/20 border-b border-amber-500/30 flex items-center justify-between text-[11px] font-bold text-amber-300"><span>⚡ BOOSTED • Top ပို့စ်</span><span>${remainingHours(p.boostedUntil)}</span></div>` : ""}
           <div class="p-3.5 pb-2 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
               <div onclick="openUserModal('${p.authorId}')" class="cursor-pointer">${avatar(au, "w-11 h-11 text-base")}</div>
@@ -838,8 +996,8 @@
                 <div class="flex items-center gap-1 flex-wrap">
                   <span onclick="openUserModal('${p.authorId}')" class="text-[15px] font-bold text-white truncate max-w-[140px] cursor-pointer">${esc(au.name)}</span>
                   ${blueBadge(au)}
-                  ${own
-                    ? `<button onclick="requestBoost('${p.id}')" class="text-xs font-bold text-sky-400 hover:underline">· ⚡ Boost</button>`
+                  ${(own || st.me.isAdmin)
+                    ? `<button onclick="openBoostModal('${p.id}')" class="text-xs font-bold text-sky-400 hover:underline">· ⚡ Boost</button>`
                     : `<button onclick="requestEscrow('${p.id}','${p.authorId}')" class="text-xs font-bold text-emerald-400 hover:underline">· 🛡️ Admin ကြားခံ</button>`}
                 </div>
                 <div class="text-xs text-slate-400">${ago(p.createdAt)} • <span class="text-emerald-400 font-semibold">${esc(p.category)}</span> • 👁️ ${Number(p.views) || 1} ${eng > 0 ? `• <span class="text-orange-400 font-bold">🔥 ${eng}</span>` : ""}</div>
@@ -882,9 +1040,10 @@
       render();
     }
 
+    // MyDay (24h limit + Viewers list + Delete button)
     function openMyDayModal() {
       st.mydayImg = null;
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><div class="text-[11px] text-emerald-400">၂၄ နာရီသာ ခံမည် (အလိုအလျောက် ပျောက်မည်)</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div></div></div>`;
     }
     function onPickMyDayImg(e) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
@@ -895,14 +1054,61 @@
     function submitMyDay() {
       const text = (document.getElementById("mdTxt").value || "").trim();
       if (!text && !st.mydayImg) return toast("MyDay ပုံ သို့မဟုတ် စာသား ထည့်ပေးပါ");
-      const id = "MD-" + Date.now(), d = { id, authorId: st.me.id, text, image: st.mydayImg || "", createdAt: Date.now() };
-      st.myday.unshift(d); playSong("like"); closeModal(); render(); toast("MyDay တင်ပြီးပါပြီ");
+      const id = "MD-" + Date.now(), d = { id, authorId: st.me.id, text, image: st.mydayImg || "", viewers: {}, createdAt: Date.now() };
+      st.myday.unshift(d); saveFastCache(); playSong("like"); closeModal(); render(); toast("MyDay တင်ပြီးပါပြီ (၂၄ နာရီ)");
       fbPut(`myday/${id}`, d).catch(() => {});
+    }
+    function deleteMyDay(id) {
+      st.myday = st.myday.filter(x => x.id !== id);
+      saveFastCache();
+      closeModal();
+      render();
+      toast("MyDay ဖျက်ပြီးပါပြီ");
+      fbDel(`myday/${id}`).catch(() => {});
     }
     function viewMyDay(id) {
       const d = st.myday.find(x => x.id === id); if (!d) return;
-      const au = uInfo(d.authorId); playSong("notif");
-      document.getElementById("modalRoot").innerHTML = `<div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-3xl p-4 space-y-3"><div class="flex items-center justify-between"><div onclick="openUserModal('${au.id}')" class="flex items-center gap-2.5 cursor-pointer">${avatar(au, "w-10 h-10 text-sm")}<div><div class="text-sm font-bold text-white flex items-center gap-1">${esc(au.name)} ${blueBadge(au)}</div><div class="text-xs text-slate-400">${ago(d.createdAt)}</div></div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>${d.image ? `<div class="flex justify-center"><img src="${d.image}" class="w-56 h-56 rounded-full object-cover border-4 border-emerald-500/40"/></div>` : ""}${d.text ? `<p class="text-sm text-slate-100 text-center">${esc(d.text)}</p>` : ""}</div></div>`;
+      if (!d.viewers) d.viewers = {};
+      if (!d.viewers[st.me.id]) {
+        d.viewers[st.me.id] = { id: st.me.id, name: st.me.name, at: Date.now() };
+        fbPut(`myday/${id}/viewers/${st.me.id}`, d.viewers[st.me.id]).catch(() => {});
+      }
+      const au = uInfo(d.authorId);
+      const canDel = d.authorId === st.me.id || st.me.isAdmin;
+      const viewersList = Object.values(d.viewers || {}).filter(Boolean).sort((a, b) => (b.at || 0) - (a.at || 0));
+      playSong("notif");
+      document.getElementById("modalRoot").innerHTML = `
+        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4">
+          <div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-3xl p-4 space-y-3 animate-slide-up max-h-[88vh] overflow-y-auto">
+            <div class="flex items-center justify-between gap-2">
+              <div onclick="openUserModal('${au.id}')" class="flex items-center gap-2.5 cursor-pointer min-w-0">
+                ${avatar(au, "w-10 h-10 text-sm")}
+                <div class="min-w-0">
+                  <div class="text-sm font-bold text-white flex items-center gap-1 truncate">${esc(au.name)} ${blueBadge(au)}</div>
+                  <div class="text-xs text-slate-400">${ago(d.createdAt)} • ${remainingHours((d.createdAt || Date.now()) + 24 * 3600000)}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${canDel ? `<button onclick="deleteMyDay('${d.id}')" class="px-2.5 py-1.5 rounded-full bg-rose-600/20 text-rose-300 text-xs font-bold">🗑️ ဖျက်</button>` : ""}
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+              </div>
+            </div>
+            ${d.image ? `<div class="flex justify-center py-1"><img src="${d.image}" class="w-56 h-56 rounded-full object-cover border-4 border-emerald-500/40"/></div>` : ""}
+            ${d.text ? `<p class="text-sm text-slate-100 text-center whitespace-pre-line">${esc(d.text)}</p>` : ""}
+            <div class="pt-2.5 border-t border-slate-800 space-y-2">
+              <div class="text-xs font-bold text-emerald-300">👁️ ဝင်ကြည့်သူများ (${viewersList.length} ဦး)</div>
+              <div class="max-h-36 overflow-y-auto space-y-1.5">
+                ${viewersList.length ? viewersList.map(v => {
+                  const vu = uInfo(v.id);
+                  return `<div onclick="openUserModal('${vu.id}')" class="flex items-center justify-between bg-slate-900 px-2.5 py-1.5 rounded-xl cursor-pointer">
+                    <div class="flex items-center gap-2 min-w-0">${avatar(vu, "w-7 h-7 text-xs", false)}<span class="text-xs font-bold text-slate-100 truncate">${esc(vu.name || v.name)}</span></div>
+                    <span class="text-[11px] text-slate-400">${ago(v.at)}</span>
+                  </div>`;
+                }).join("") : `<div class="text-xs text-slate-400">ဝင်ကြည့်သူ မရှိသေးပါ</div>`}
+              </div>
+            </div>
+          </div>
+        </div>`;
     }
 
     function setCmtReply(pid, name) { st.replyTo[pid] = name; render(); setTimeout(() => { const i = document.getElementById("ci-" + pid); if (i) i.focus(); }, 50); }
@@ -973,11 +1179,11 @@
       if (!text && !st.img) return toast("Account အကြောင်း သို့မဟုတ် ပုံ ထည့်ပေးပါ");
       if (hasBlockedClothing(text)) return toast("အဝတ်အစားစသည့် ရုပ်ပစ္စည်းများ ခွင့်မပြုပါ");
       const tags = (text.match(/#[\w\u1000-\u109F]+/g) || []).join(" "), id = "P-" + Date.now() + "-" + Math.floor(Math.random() * 999);
-      const p = { id, authorId: st.me.id, text, tags, image: st.img || "", price, condition, category, sold: false, views: 1, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
-      st.posts.unshift(p); playSong("like"); closeModal(); render(); toast("အရောင်းပို့စ်တင်ပြီးပါပြီ");
+      const p = { id, authorId: st.me.id, text, tags, image: st.img || "", price, condition, category, sold: false, boostedUntil: 0, views: 1, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
+      st.posts.unshift(p); saveFastCache(); playSong("like"); closeModal(); render(); toast("အရောင်းပို့စ်တင်ပြီးပါပြီ");
       fbPut(`users/${st.me.id}`, st.me).catch(() => {}); fbPut(`posts/${id}`, p).catch(() => {});
     }
-    function delPost(id) { st.posts = st.posts.filter(p => p.id !== id); render(); toast("ပို့စ်ဖျက်ပြီးပါပြီ"); fbDel(`posts/${id}`).catch(() => {}); }
+    function delPost(id) { st.posts = st.posts.filter(p => p.id !== id); saveFastCache(); render(); toast("ပို့စ်ဖျက်ပြီးပါပြီ"); fbDel(`posts/${id}`).catch(() => {}); }
     function addCmt(id) {
       const inp = document.getElementById("ci-" + id); if (!inp) return;
       const text = inp.value.trim(); if (!text) return;
@@ -1006,7 +1212,7 @@
     function openUserModal(uid) {
       const u = uInfo(uid), r = uRating(uid), isF = (st.me.friends || []).includes(uid), isFol = (st.me.following || []).includes(uid), own = uid === st.me.id;
       const uNote = u.note && (Date.now() - (u.noteAt || 0) < 24 * 3600000) ? u.note : "";
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-emerald-300">${esc(onlineText(uid))}</span><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="flex items-center gap-3">${avatar(u, "w-16 h-16 text-xl")}<div><h3 class="text-[15px] font-bold text-white flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><div class="text-xs font-mono text-slate-400">${esc(u.id)} ${u.city ? `• 📍 ${esc(u.city)}` : ""}</div>${uNote ? `<div class="text-xs text-emerald-300 mt-0.5">💭 ${esc(uNote)}</div>` : ""}<p class="text-xs text-slate-300 mt-0.5">${esc(u.bio || "")}</p></div></div><div class="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2 rounded-2xl"><div><div class="text-sm font-bold text-white">${(u.friends || []).length}</div><div class="text-[11px] text-slate-400">Friends</div></div><div><div class="text-sm font-bold text-white">${(u.following || []).length}</div><div class="text-[11px] text-slate-400">Following</div></div><div><div class="text-sm font-bold text-white">${followersCount(uid)}</div><div class="text-[11px] text-slate-400">Follower</div></div><div><div class="text-sm font-bold text-amber-300">★ ${r.avg}</div><div class="text-[11px] text-slate-400">အဆင့်</div></div></div>${!own ? `<div class="grid grid-cols-3 gap-2"><button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button><button onclick="toggleFollow('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isFol ? "bg-sky-500/20 text-sky-300" : "bg-sky-600 text-white"}">${isFol ? "Following ✓" : "+ Follow"}</button><button onclick="openChat('${u.id}')" class="py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">💬 စာပို့</button></div>` : ""}<div class="space-y-2"><div class="text-xs font-bold text-slate-300">မိတ်ဆွေများ (${(u.friends || []).length})</div>${renderFriendsGrid(uid, 6)}</div></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-emerald-300">${esc(onlineText(uid))}</span><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="flex items-center gap-3">${avatar(u, "w-16 h-16 text-xl")}<div><h3 class="text-[15px] font-bold text-white flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><div class="text-xs font-mono text-slate-400 flex items-center gap-1.5"><span>${esc(u.id)}</span><button onclick="copyUserId('${u.id}')" class="text-emerald-300 underline font-sans font-bold">ID ကူး</button></div>${uNote ? `<div class="text-xs text-emerald-300 mt-0.5">💭 ${esc(uNote)}</div>` : ""}<p class="text-xs text-slate-300 mt-0.5">${esc(u.bio || "")}</p></div></div><div class="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2 rounded-2xl"><div><div class="text-sm font-bold text-white">${(u.friends || []).length}</div><div class="text-[11px] text-slate-400">Friends</div></div><div><div class="text-sm font-bold text-white">${(u.following || []).length}</div><div class="text-[11px] text-slate-400">Following</div></div><div><div class="text-sm font-bold text-white">${followersCount(uid)}</div><div class="text-[11px] text-slate-400">Follower</div></div><div><div class="text-sm font-bold text-amber-300">★ ${r.avg}</div><div class="text-[11px] text-slate-400">အဆင့်</div></div></div>${!own ? `<div class="grid grid-cols-3 gap-2"><button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button><button onclick="toggleFollow('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isFol ? "bg-sky-500/20 text-sky-300" : "bg-sky-600 text-white"}">${isFol ? "Following ✓" : "+ Follow"}</button><button onclick="openChat('${u.id}')" class="py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">💬 စာပို့</button></div>` : ""}<div class="space-y-2"><div class="text-xs font-bold text-slate-300">မိတ်ဆွေများ (${(u.friends || []).length})</div>${renderFriendsGrid(uid, 6)}</div></div></div>`;
     }
 
     const roomId = (a, b) => [a, b].sort().join("__");
@@ -1080,7 +1286,6 @@
             <div id="msgBox" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-[#05080f]"></div>
             <div id="typingBanner" class="hidden px-3 py-1 bg-[#05080f]"></div>
             <div id="msgActionBar"></div>
-            <!-- Quick Inquiry Chips -->
             <div class="px-2.5 py-1.5 bg-[#0b1120] border-t border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
               ${QUICK_CHATS.map(q => `<button onclick="sendQuickChat('${q}')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-[11px] text-slate-200 whitespace-nowrap shrink-0">${q}</button>`).join("")}
             </div>
