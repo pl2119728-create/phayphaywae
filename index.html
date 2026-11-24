@@ -790,7 +790,7 @@
         const isTypingMsg = activeEl && activeEl.id === "msgInp";
         if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) { render(); if (st.chatUid) renderMsgs(); }
         else if (st.chatUid && !isTypingMsg) renderMsgs();
-        else if (st.chatUid) renderTypingBanner();
+        else if (st.chatUid) renderMsgs();
       } catch (e) {
         const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
         if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400";
@@ -991,7 +991,7 @@
         } else if (st.tab === "chats") {
           const rooms = Object.entries(st.chats || {}).filter(([k]) => k.includes(st.me.id));
           const others = Object.values(st.users).filter(u => u && u.id !== st.me.id);
-          el.innerHTML = `<div class="p-3.5 space-y-4"><div class="flex items-center justify-between px-1"><h2 class="text-base font-bold text-white">မက်ဆေ့ချ် Box</h2><span class="text-xs text-slate-400">${rooms.length} ဦး</span></div><div class="space-y-2.5">${rooms.length ? rooms.map(([k, mObj], idx) => { const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid); const ms = Object.values(mObj || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt); const last = ms[ms.length - 1]; const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500)); const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.video ? "🎬 Short Video" : (last.audio ? "🎙️ အသံ" : "📷 ဓာတ်ပုံ")))) : "စကားစပြောရန် နှိပ်ပါ"); return `<div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer"><span class="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>${avatar(o, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="flex items-center justify-between"><span class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span><span class="text-xs text-slate-400">${last ? ago(last.createdAt) : ""}</span></div><div class="text-xs ${isTyping ? "text-emerald-400 font-bold" : "text-slate-400"} truncate mt-0.5">${esc(preview)}</div></div></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">စာပို့ထားသူ မရှိသေးပါ</div>`}</div>${others.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><h3 class="text-sm font-bold text-slate-300 px-1">စာပို့ / ဖုန်းခေါ်နိုင်သူများ</h3><div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">${others.map(u => `<button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[90px] shrink-0">${avatar(u, "w-12 h-12 text-base")}<span class="text-xs font-bold text-white truncate w-full text-center">${esc(u.name)}</span><span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span></button>`).join("")}</div></div>` : ""}</div>`;
+          el.innerHTML = `<div class="p-3.5 space-y-4"><div class="flex items-center justify-between px-1"><h2 class="text-base font-bold text-white">မက်ဆေ့ချ် Box</h2><button class="bg-emerald-600 rounded-xl px-3 py-2 text-xs font-bold" onclick="openBroadcast()">အားလုံးထံ ပို့ရန်</button><span class="text-xs text-slate-400">${rooms.length} ဦး</span></div><div class="space-y-2.5">${rooms.length ? rooms.map(([k, mObj], idx) => { const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid); const ms = Object.values(mObj || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt); const last = ms[ms.length - 1]; const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500)); const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.video ? "🎬 Short Video" : (last.audio ? "🎙️ အသံ" : "📷 ဓာတ်ပုံ")))) : "စကားစပြောရန် နှိပ်ပါ"); return `<div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer"><span class="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>${avatar(o, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="flex items-center justify-between"><span class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span><span class="text-xs text-slate-400">${last ? ago(last.createdAt) : ""}</span></div><div class="text-xs ${isTyping ? "text-emerald-400 font-bold" : "text-slate-400"} truncate mt-0.5">${esc(preview)}</div></div></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">စာပို့ထားသူ မရှိသေးပါ</div>`}</div>${others.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><h3 class="text-sm font-bold text-slate-300 px-1">စာပို့ / ဖုန်းခေါ်နိုင်သူများ</h3><div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">${others.map(u => `<button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[90px] shrink-0">${avatar(u, "w-12 h-12 text-base")}<span class="text-xs font-bold text-white truncate w-full text-center">${esc(u.name)}</span><span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span></button>`).join("")}</div></div>` : ""}</div>`;
         } else if (st.tab === "friends") {
           const q = st.fq.trim().toLowerCase();
           const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
@@ -1544,10 +1544,12 @@
       if (st.recorder && st.recorder.state === "recording") { st.recorder.stop(); if (btn) btn.className = "w-8 h-8 rounded-full bg-slate-800 text-emerald-300 text-sm shrink-0"; return; }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return toast("အသံသွင်းစနစ် မရနိုင်ပါ");
       try {
+        const uid = st.chatUid;
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!btn.isConnected || st.chatUid !== uid) { stream.getTracks().forEach(t=>t.stop()); return; }
         st.audioChunks = []; const rec = new MediaRecorder(stream); st.recorder = rec;
         rec.ondataavailable = e => { if (e.data && e.data.size > 0) st.audioChunks.push(e.data); };
-        rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); const r = new FileReader(); r.onloadend = () => { if (st.chatUid) sendChatPayload({ text: "", image: "", audio: r.result, video: "" }); }; r.readAsDataURL(new Blob(st.audioChunks, { type: "audio/webm" })); };
+        rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); const r = new FileReader(); r.onloadend = () => { if (!rec.discard) sendChatPayload({audio:r.result},uid); }; r.readAsDataURL(new Blob(st.audioChunks, { type: rec.mimeType || st.audioChunks[0]?.type || "audio/webm" })); };
         rec.start(); toast("အသံသွင်းနေပါသည်... ပို့ရန် 🎙️ ကို ထပ်နှိပ်ပါ");
         if (btn) btn.className = "w-8 h-8 rounded-full bg-rose-600 text-white text-sm animate-pulse shrink-0";
       } catch (e) { toast("မိုက်ခရိုဖုန်း ခွင့်ပြုချက် လိုအပ်ပါသည်"); }
@@ -1556,32 +1558,166 @@
       const box = document.getElementById("msgBox"); if (!box || !st.chatUid) return;
       const ms = Object.values(st.chats[roomId(st.me.id, st.chatUid)] || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
       const otherHideSeen = !!(uInfo(st.chatUid) && uInfo(st.chatUid).hideSeen);
-      box.innerHTML = ms.length ? ms.map((m, i) => {
+      const markup = ms.length ? ms.map((m, i) => {
         const me = m.senderId === st.me.id, isPureSticker = !m.deletedForAll && !m.image && !m.audio && !m.video && STICKER_ICONS.includes((m.text || "").trim());
         const tick = me ? (m.seenAt && !otherHideSeen ? `<span class="text-sky-300 font-bold">✓✓</span>` : `<span class="text-emerald-200 font-bold">✓</span>`) : "";
         return `<div class="flex items-end gap-1.5 ${me ? "justify-end" : "justify-start"}">${!me ? `<span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}<div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-5xl py-1 px-2" : `max-w-[78%] px-3.5 py-2 rounded-2xl text-sm space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-48 object-cover cursor-zoom-in"/>` : ""}${m.video ? `<video controls playsinline src="${m.video}" class="rounded-xl max-h-52 w-56 bg-black"></video>` : ""}${m.audio ? `<audio controls src="${m.audio}" class="w-48 h-8"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}${me ? `<div class="text-[10px] text-right">${tick}</div>` : ""}</div>${me ? `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}</div>`;
       }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
-      box.scrollTop = box.scrollHeight;
+      if (markup !== box.lastMessages) { box.innerHTML=markup; box.lastMessages=markup; box.scrollTop=box.scrollHeight; }
       renderTypingBanner();
     }
-    function sendChatPayload({ text, image, audio, video }) {
-      if (!st.chatUid) return;
-      const rid = roomId(st.me.id, st.chatUid), mid = "M-" + Date.now();
-      const m = { id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "", video: video || "", seenAt: 0, deletedFor: {}, deletedForAll: false, createdAt: Date.now() };
-      if (!st.chats[rid]) st.chats[rid] = {}; st.chats[rid][mid] = m;
-      clearChatAttach(); fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {}); renderMsgs();
-      notify(st.chatUid, "က စာပို့လိုက်သည်"); fbPut(`chats/${rid}/${mid}`, m).catch(() => {});
+    function openBroadcast() {
+      const previous = document.getElementById("broadcastDialog");
+      if (previous) return;
+      const dialog = document.createElement("dialog");
+      dialog.id = "broadcastDialog";
+      dialog.style.cssText = "margin:auto;width:min(92%,420px);padding:20px;border-radius:18px;background:#101a2c;color:white;border:1px solid #334155";
+      dialog.innerHTML = `
+        <h2 class="text-base font-bold">အားလုံးထံ မက်ဆေ့ချ်ပို့ရန်</h2>
+        <p data-count class="text-sm text-slate-300"></p>
+        <textarea class="w-full bg-slate-900 rounded-xl p-3 my-2" aria-label="စာတို" rows="3" placeholder="စာတိုရေးပါ…"></textarea>
+        <button data-record type="button" class="bg-slate-800 px-3 py-2 rounded-xl">🎙️ အသံသွင်းရန်</button>
+        <audio controls hidden style="width:100%"></audio>
+        <p data-status role="status" class="text-sm text-emerald-300"></p>
+        <div class="flex justify-between mt-3"><button data-close type="button">ပိတ်ရန်</button>
+        <button data-send disabled type="button" class="bg-emerald-600 px-3 py-2 rounded-xl">ပို့မည်</button></div>`;
+      document.body.appendChild(dialog);
+      dialog.showModal();
+      const field = sel => dialog.querySelector(sel);
+      const input = field("textarea"), send = field("[data-send]"), record = field("[data-record]");
+      const status = field("[data-status]"), audio = field("audio");
+      let recorder, stream, clip = "", audioUrl, locked = false, sending = false, capturing = false;
+      let recipients = [], pending, message;
+      const release = () => stream?.getTracks().forEach(track => track.stop());
+      dialog.oncancel = e => { if (sending) e.preventDefault(); };
+      field("[data-close]").onclick = () => { if (!sending) dialog.close(); };
+      dialog.onclose = () => {
+        if (recorder?.state === "recording") recorder.stop();
+        release();
+        if (audioUrl) URL.revokeObjectURL(audioUrl);
+        dialog.remove();
+      };
+      function update() {
+        send.disabled = sending || capturing || !recipients.length || (!input.value.trim() && !clip);
+        record.disabled = locked || (capturing && recorder?.state !== "recording");
+        input.readOnly = locked;
+        field("[data-close]").disabled = sending;
+      }
+      input.oninput = update;
+      record.onclick = async () => {
+        if (recorder?.state === "recording") { recorder.stop(); update(); return; }
+        if (capturing || locked) return;
+        capturing = true; update();
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({audio:true});
+          if (!dialog.open) { release(); return; }
+          recorder = new MediaRecorder(stream);
+          const chunks = [];
+          recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+          recorder.onstop = async () => {
+            release();
+            try {
+              if (!dialog.open || !chunks.length) return;
+              const blob = new Blob(chunks,{type:recorder.mimeType || chunks[0].type});
+              const data = await new Promise((resolve,reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result); reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              if (!dialog.open) return;
+              clip = data;
+              if (audioUrl) URL.revokeObjectURL(audioUrl);
+              audio.src = audioUrl = URL.createObjectURL(blob);
+              audio.hidden = false;
+              status.textContent = "အသံကို နားထောင်ပြီး ပို့နိုင်ပါတယ်။";
+            } catch { status.textContent = "အသံသိမ်းမရပါ။ ပြန်သွင်းပါ။"; }
+            finally { capturing = false; record.textContent = "🎙️ အသံပြန်သွင်းရန်"; update(); }
+          };
+          recorder.start();
+          record.textContent = "⏹ အသံသွင်းခြင်း ရပ်ရန်"; update();
+        } catch { release(); capturing = false; status.textContent = "မိုက်ခရိုဖုန်း ဖွင့်မရပါ။ ခွင့်ပြုချက် စစ်ပေးပါ။"; update(); }
+      };
+      send.onclick = async () => {
+        if (send.disabled || sending) return;
+        if (!pending) {
+          pending = recipients.slice();
+          message = makeChatMessage({text:input.value.trim(),audio:clip});
+          locked = true;
+        }
+        sending = true; update();
+        status.textContent = "ပို့နေပါသည်…";
+        const failed = [];
+        const queue = pending.values();
+        async function worker() {
+          for (const uid of queue) {
+            try { await writeChatMessage(uid,message); }
+            catch { failed.push(uid); }
+          }
+        }
+        await Promise.all(Array.from({length:Math.min(3,pending.length)},worker));
+        pending = failed; sending = false;
+        if (!pending.length) {
+          dialog.close(); toast(recipients.length + " ဦးထံ ပို့ပြီးပါပြီ"); return;
+        }
+        status.textContent = (recipients.length-pending.length) + " ဦးထံ ပို့ပြီး၊ " + pending.length + " ဦးထံ နှောင့်နှေးနေပါသည်။";
+        send.textContent = "ကျန်သူများထံ ပြန်ပို့ရန်"; update();
+      };
+      field("[data-count]").textContent = "အသုံးပြုသူစာရင်း ရယူနေသည်…";
+      fbGet("users").then(users => {
+        recipients = [...new Set(Object.values(users || {}).map(u => u?.id).filter(uid =>
+          typeof uid === "string" && uid !== st.me.id && uid.length && !/[.#$/\[\]]/.test(uid)))];
+        field("[data-count]").textContent = recipients.length + " ဦး၏ ကိုယ်ပိုင်စာတိုခန်းသို့ ပို့မည်။";
+        send.textContent = recipients.length + " ဦးထံ ပို့မည်"; update();
+      }).catch(() => {field("[data-count]").textContent = "စာရင်းရယူမရပါ။ ခဏနေရင် ပြန်ဖွင့်ပါ။";});
     }
-    function sendMsg() {
-      const inp = document.getElementById("msgInp"); if (!inp || !st.chatUid) return;
-      const text = inp.value.trim(); if (!text && !st.chatImg && !st.chatVideo) return;
-      sendChatPayload({ text, image: st.chatImg || "", audio: "", video: st.chatVideo || "" }); inp.value = "";
+
+    function makeChatMessage({text="",image="",audio="",video=""}) {
+      return {id:"M-"+crypto.randomUUID(), senderId:st.me.id, text,image,audio,video,createdAt:Date.now()};
+    }
+
+    async function writeChatMessage(uid,message) {
+      const rid = roomId(st.me.id,uid);
+      const path = "chats/"+rid+"/"+message.id;
+      const changes = {};
+      for (const [key,value] of Object.entries(message)) changes[path+"/"+key] = value;
+      const nid = "N-"+message.id;
+      const notice = {id:nid,fromId:st.me.id,fromName:st.me.name,text:"က စာပို့လိုက်သည်",createdAt:message.createdAt};
+      for (const [key,value] of Object.entries(notice)) changes["notifications/"+uid+"/"+nid+"/"+key] = value;
+      const ctrl = new AbortController(), timer = setTimeout(()=>ctrl.abort(),20000);
+      try {
+        const response = await fetch(DB+"/.json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(changes),signal:ctrl.signal});
+        if (!response.ok) throw new Error("message write failed");
+      } finally { clearTimeout(timer); }
+      if (!st.chats[rid]) st.chats[rid] = {};
+      st.chats[rid][message.id] = {...st.chats[rid][message.id],...message};
+      if (uid === st.chatUid) renderMsgs();
+    }
+
+    async function sendChatPayload(payload, uid = st.chatUid) {
+      if (!uid) return false;
+      try {
+        await writeChatMessage(uid,makeChatMessage(payload));
+        fbPut(`typing/${roomId(st.me.id,uid)}/${st.me.id}`,0).catch(()=>{});
+        return true;
+      } catch { toast("မက်ဆေ့ချ် ပို့မရပါ။ လိုင်းစစ်ပြီး ပြန်ပို့ပါ။"); return false; }
+    }
+    async function sendMsg() {
+      const inp = document.getElementById("msgInp");
+      if (!inp || !st.chatUid || inp.dataset.sending) return;
+      const value=inp.value, text=value.trim(), image=st.chatImg || "", video=st.chatVideo || "";
+      if (!text && !image && !video) return;
+      inp.dataset.sending = "1";
+      const ok = await sendChatPayload({text,image,video});
+      delete inp.dataset.sending;
+      if (!ok || !inp.isConnected) return;
+      if (inp.value === value) inp.value="";
+      if ((st.chatImg||"")===image && (st.chatVideo||"")===video) clearChatAttach();
     }
     function closeModal() {
       stopRingLoop();
             if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
       if (st.recorder && st.recorder.state === "recording") {
-        try { st.recorder.stop(); } catch (e) {}
+        try { st.recorder.discard=true; st.recorder.stop(); } catch (e) {}
       }
       st.chatUid = null;
       st.activeCall = null;
