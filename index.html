@@ -1419,4 +1419,20 @@
     }
     function closeModal() {
       stopRingLoop();
-      if (st.chatUid) fbPut
+            if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
+      if (st.recorder && st.recorder.state === "recording") {
+        try { st.recorder.stop(); } catch (e) {}
+      }
+      st.chatUid = null;
+      st.activeCall = null;
+      st.showStickers = false;
+      const mr = document.getElementById("modalRoot");
+      if (mr) mr.innerHTML = "";
+    }
+
+    render();
+    sync(true);
+    setInterval(() => sync(false), 2000);
+  </script>
+</body>
+</html>
