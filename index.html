@@ -88,6 +88,7 @@
     const TRADE_CATS = ["Facebook Page", "YouTube Account", "TikTok Account", "Instagram / RedNote", "Monetized Page / Channel"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
     const QUICK_TAGS = ["#facebook", "#youtube", "#tiktok", "#monetized"];
+    const QUICK_CHATS = ["ရှိသေးလား?", "နောက်ဆုံးဈေး ဘယ်လောက်လဲ?", "Insights ပုံပြပေးပါ", "Admin ကြားခံနဲ့ ယူမယ်"];
     const CITIES = ["ရန်ကုန်", "မန္တလေး", "တောင်ကြီး", "ကျိုင်းတုံ", "နေပြည်တော်", "ပဲခူး", "မော်လမြိုင်", "အခြား"];
     const COLORS = ["from-emerald-500 to-teal-600", "from-blue-500 to-indigo-600", "from-amber-500 to-orange-600", "from-rose-500 to-pink-600", "from-purple-500 to-violet-600"];
     const REACTIONS = [
@@ -388,56 +389,34 @@
       fbPut(`posts/${p.id}/views`, p.views).catch(() => {});
     }
 
-    // Boost / Admin ကြားခံ Action
     function requestBoost(pid) {
       const p = st.posts.find(x => x.id === pid);
       const label = p ? (p.category + " - " + (p.text || "").slice(0, 30)) : pid;
-      if (st.me.id === OWNER_ID) {
-        toast("သင့်ပို့စ်ကို Boost စနစ်ဖြင့် ထိပ်တင်ရန် အသင့်ဖြစ်ပါသည် ⚡");
-        return;
-      }
+      if (st.me.id === OWNER_ID) { toast("သင့်ပို့စ်ကို Boost စနစ်ဖြင့် ထိပ်တင်ရန် အသင့်ဖြစ်ပါသည် ⚡"); return; }
       openChat(OWNER_ID);
-      setTimeout(() => {
-        const inp = document.getElementById("msgInp");
-        if (inp) { inp.value = `⚡ Boost တင်ချင်ပါတယ် (${label})`; inp.focus(); }
-      }, 120);
+      setTimeout(() => { const inp = document.getElementById("msgInp"); if (inp) { inp.value = `⚡ Boost တင်ချင်ပါတယ် (${label})`; inp.focus(); } }, 120);
     }
 
     function requestEscrow(pid, sellerId) {
-      const p = st.posts.find(x => x.id === pid);
-      const seller = uInfo(sellerId);
+      const p = st.posts.find(x => x.id === pid), seller = uInfo(sellerId);
       const label = p ? (p.category + " - " + (p.price || "CB")) : pid;
-      if (st.me.id === OWNER_ID) {
-        toast("Admin ကြားခံစနစ် အသင့်ရှိနေပါသည် 🛡️");
-        return;
-      }
+      if (st.me.id === OWNER_ID) { toast("Admin ကြားခံစနစ် အသင့်ရှိနေပါသည် 🛡️"); return; }
       openChat(OWNER_ID);
-      setTimeout(() => {
-        const inp = document.getElementById("msgInp");
-        if (inp) { inp.value = `🛡️ Admin ကြားခံနဲ့ ဝယ်ချင်ပါတယ် — ရောင်းသူ: ${seller.name} (${label})`; inp.focus(); }
-      }, 120);
+      setTimeout(() => { const inp = document.getElementById("msgInp"); if (inp) { inp.value = `🛡️ Admin ကြားခံနဲ့ ဝယ်ချင်ပါတယ် — ရောင်းသူ: ${seller.name} (${label})`; inp.focus(); } }, 120);
     }
 
     function toggleSold(pid) {
-      const p = st.posts.find(x => x.id === pid);
-      if (!p) return;
-      p.sold = !p.sold;
-      playSong("like");
-      render();
+      const p = st.posts.find(x => x.id === pid); if (!p) return;
+      p.sold = !p.sold; playSong("like"); render();
       toast(p.sold ? "SOLD (ရောင်းပြီး) အဖြစ် ပြောင်းလိုက်ပါပြီ" : "ပြန်လည်ရောင်းချမည်အဖြစ် ပြောင်းလိုက်ပါပြီ");
       fbPut(`posts/${pid}/sold`, p.sold).catch(() => {});
     }
 
     function openImageViewer(src) {
       if (!src) return;
-      document.getElementById("modalRoot").innerHTML = `
-        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-3">
-          <button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800 text-white font-bold">✕</button>
-          <img src="${src}" class="max-w-full max-h-[90vh] object-contain rounded-xl"/>
-        </div>`;
+      document.getElementById("modalRoot").innerHTML = `<div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-3"><button onclick="closeModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800 text-white font-bold">✕</button><img src="${src}" class="max-w-full max-h-[90vh] object-contain rounded-xl"/></div>`;
     }
 
-    // Facebook-style Side Menu Drawer
     function openSideMenu() {
       playSong("notif");
       const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length;
@@ -445,65 +424,17 @@
       document.getElementById("drawerRoot").innerHTML = `
         <div onclick="closeSideMenu()" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex">
           <aside onclick="event.stopPropagation()" class="w-[84%] max-w-[330px] h-full bg-[#0f172a] border-r border-slate-800 flex flex-col animate-slide-right overflow-y-auto no-scrollbar">
-            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-              <span class="text-lg font-bold text-white">Menu</span>
-              <button onclick="closeSideMenu()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button>
-            </div>
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between"><span class="text-lg font-bold text-white">Menu</span><button onclick="closeSideMenu()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div>
             <div class="p-3.5 space-y-3.5 flex-1">
-              <div onclick="closeSideMenu();switchTab('profile')" class="bg-[#1e293b]/80 hover:bg-[#1e293b] border border-slate-700/80 rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition">
-                ${avatar(st.me, "w-12 h-12 text-base")}
-                <div class="min-w-0 flex-1">
-                  <div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</div>
-                  <div class="text-xs text-slate-400 font-mono truncate">${esc(st.me.id)}</div>
-                </div>
-                <span class="text-slate-400 text-sm">›</span>
-              </div>
-
+              <div onclick="closeSideMenu();switchTab('profile')" class="bg-[#1e293b]/80 hover:bg-[#1e293b] border border-slate-700/80 rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition">${avatar(st.me, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</div><div class="text-xs text-slate-400 font-mono truncate">${esc(st.me.id)}</div></div><span class="text-slate-400 text-sm">›</span></div>
               <div class="grid grid-cols-2 gap-2.5">
-                <button onclick="closeSideMenu();openDashboardModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-emerald-500/30 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                  <div class="text-xl">📊</div>
-                  <div class="text-xs font-bold text-emerald-300">Dashboard</div>
-                  <div class="text-[11px] text-slate-400">Views & Stats</div>
-                </button>
-
-                ${st.me.isAdmin ? `
-                  <button onclick="closeSideMenu();openAdminModal()" class="relative bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/40 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                    ${pendingCount ? `<span class="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">${pendingCount}</span>` : ""}
-                    <div class="text-xl">🛡️</div>
-                    <div class="text-xs font-bold text-sky-300">Blue Mark စစ်ရန်</div>
-                    <div class="text-[11px] text-slate-400">Admin Panel</div>
-                  </button>` : `
-                  <button onclick="closeSideMenu();openAppealModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                    <div class="text-xl">💎</div>
-                    <div class="text-xs font-bold text-white">Blue Mark</div>
-                    <div class="text-[11px] ${st.me.blueMark ? "text-sky-400 font-bold" : "text-slate-400"}">${st.me.blueMark ? "✓ ရရှိပြီး" : "လျှောက်ထားရန်"}</div>
-                  </button>`}
-
-                <button onclick="toggleNightMode();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                  <div class="text-xl">🌙</div>
-                  <div class="text-xs font-bold text-white">Night Mode</div>
-                  <div class="text-[11px] ${st.nightMode ? "text-amber-300 font-bold" : "text-slate-400"}">${st.nightMode ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div>
-                </button>
-
-                <button onclick="toggleSound();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                  <div class="text-xl">${st.soundOn ? "🔊" : "🔇"}</div>
-                  <div class="text-xs font-bold text-white">အသံစနစ်</div>
-                  <div class="text-[11px] ${st.soundOn ? "text-emerald-400 font-bold" : "text-slate-400"}">${st.soundOn ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div>
-                </button>
-
-                <button onclick="toggleHideSeen();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                  <div class="text-xl">👁️</div>
-                  <div class="text-xs font-bold text-white">Seen စနစ်</div>
-                  <div class="text-[11px] ${st.me.hideSeen ? "text-amber-300 font-bold" : "text-emerald-400 font-bold"}">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</div>
-                </button>
-
-                <button onclick="closeSideMenu();switchTab('friends')" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">
-                  <div class="text-xl">👥</div>
-                  <div class="text-xs font-bold text-white">မိတ်ဆွေများ</div>
-                  <div class="text-[11px] text-emerald-400 font-semibold">${(st.me.friends || []).length} ဦး (${onlineFri} online)</div>
-                </button>
+                <button onclick="closeSideMenu();openDashboardModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-emerald-500/30 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">📊</div><div class="text-xs font-bold text-emerald-300">Dashboard</div><div class="text-[11px] text-slate-400">Views & Stats</div></button>
+                ${st.me.isAdmin ? `<button onclick="closeSideMenu();openAdminModal()" class="relative bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/40 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition">${pendingCount ? `<span class="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">${pendingCount}</span>` : ""}<div class="text-xl">🛡️</div><div class="text-xs font-bold text-sky-300">Blue Mark စစ်ရန်</div><div class="text-[11px] text-slate-400">Admin Panel</div></button>` : `<button onclick="closeSideMenu();openAppealModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">💎</div><div class="text-xs font-bold text-white">Blue Mark</div><div class="text-[11px] ${st.me.blueMark ? "text-sky-400 font-bold" : "text-slate-400"}">${st.me.blueMark ? "✓ ရရှိပြီး" : "လျှောက်ထားရန်"}</div></button>`}
+                <button onclick="toggleNightMode();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">🌙</div><div class="text-xs font-bold text-white">Night Mode</div><div class="text-[11px] ${st.nightMode ? "text-amber-300 font-bold" : "text-slate-400"}">${st.nightMode ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div></button>
+                <button onclick="toggleSound();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">${st.soundOn ? "🔊" : "🔇"}</div><div class="text-xs font-bold text-white">အသံစနစ်</div><div class="text-[11px] ${st.soundOn ? "text-emerald-400 font-bold" : "text-slate-400"}">${st.soundOn ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div></button>
+                <button onclick="toggleHideSeen();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">👁️</div><div class="text-xs font-bold text-white">Seen စနစ်</div><div class="text-[11px] ${st.me.hideSeen ? "text-amber-300 font-bold" : "text-emerald-400 font-bold"}">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</div></button>
+                <button onclick="closeSideMenu();switchTab('friends')" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5 active:scale-95 transition"><div class="text-xl">👥</div><div class="text-xs font-bold text-white">မိတ်ဆွေများ</div><div class="text-[11px] text-emerald-400 font-semibold">${(st.me.friends || []).length} ဦး (${onlineFri} online)</div></button>
               </div>
-
               <div class="pt-2 border-t border-slate-800 space-y-1.5">
                 <button onclick="closeSideMenu();openSettingsModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>⚙️</span><span>ပရိုဖိုင် & Location ပြင်ရန်</span></button>
                 <button onclick="copyProfileLink();closeSideMenu()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>📋</span><span>Profile Link ကူးမည်</span></button>
@@ -514,7 +445,6 @@
           </aside>
         </div>`;
     }
-
     function closeSideMenu() { const dr = document.getElementById("drawerRoot"); if (dr) dr.innerHTML = ""; }
 
     function openDashboardModal() {
@@ -527,8 +457,7 @@
       const engRate = totalViews > 0 ? Math.min(100, Math.round((totalEng / totalViews) * 100)) : 0;
       const topPost = [...myPosts].sort((a, b) => engagementScore(b) - engagementScore(a))[0];
 
-      const allUsers = Object.values(st.users || {}).filter(Boolean);
-      const totalU = Math.max(1, allUsers.length);
+      const allUsers = Object.values(st.users || {}).filter(Boolean), totalU = Math.max(1, allUsers.length);
       const cityMap = {};
       allUsers.forEach(u => { const c = (u.city || "").trim() || "မသတ်မှတ်ရသေး"; cityMap[c] = (cityMap[c] || 0) + 1; });
       const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -547,10 +476,7 @@
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-4 animate-slide-up max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div><h3 class="text-base font-bold text-white">📊 Creator Dashboard</h3><div class="text-[11px] text-emerald-400">စုစုပေါင်း အသုံးပြုသူ ${allUsers.length} ဦး</div></div>
-              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
-            </div>
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">📊 Creator Dashboard</h3><div class="text-[11px] text-emerald-400">စုစုပေါင်း အသုံးပြုသူ ${allUsers.length} ဦး</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
             <div class="grid grid-cols-3 gap-2">
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center"><div class="text-lg font-bold text-emerald-400">${totalViews}</div><div class="text-[11px] text-slate-400 font-semibold">Views</div></div>
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center"><div class="text-lg font-bold text-sky-400">${totalEng}</div><div class="text-[11px] text-slate-400 font-semibold">Engagement</div></div>
@@ -778,7 +704,6 @@
           el.innerHTML = `
             <div class="pb-4">
               <div class="bg-[#0f172a] border-b border-slate-800 pb-4">
-                <!-- Cover Photo (Fixed z-20 clickable button) -->
                 <div class="relative h-40 bg-gradient-to-br from-emerald-900/70 via-slate-900 to-sky-900/60 overflow-hidden">
                   ${st.me.coverPhoto ? `<img src="${st.me.coverPhoto}" class="w-full h-full object-cover"/>` : ""}
                   <label class="absolute top-2.5 left-2.5 z-20 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-white/20 active:scale-95 transition">
@@ -788,7 +713,6 @@
                   <button onclick="openSettingsModal()" class="absolute top-2.5 right-2.5 z-20 w-9 h-9 rounded-full bg-black/70 text-white flex items-center justify-center text-sm border border-white/20" title="Settings">⚙️</button>
                 </div>
 
-                <!-- Centered Avatar + Share a note bubble -->
                 <div class="px-4 flex flex-col items-center -mt-14 relative z-10 pointer-events-none">
                   <button onclick="openNoteModal()" class="pointer-events-auto mb-1.5 px-3 py-1 rounded-full bg-slate-800/95 border border-slate-600 text-xs text-slate-200 shadow-md max-w-[240px] truncate">
                     ${activeNote ? `💭 ${esc(activeNote)}` : "Share a note..."}
@@ -1011,8 +935,7 @@
     }
 
     function insertQuickTag(tag) {
-      const ta = document.getElementById("postTxt");
-      if (!ta) return;
+      const ta = document.getElementById("postTxt"); if (!ta) return;
       if (!ta.value.includes(tag)) ta.value = (ta.value ? ta.value + " " : "") + tag + " ";
       ta.focus();
     }
@@ -1022,35 +945,17 @@
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-              <h3 class="text-base font-bold text-white">အရောင်းပို့စ်တင်ရန်</h3>
-              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button>
-            </div>
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">အရောင်းပို့စ်တင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button></div>
             <textarea id="postTxt" rows="3" placeholder="#youtube, #facebook, #tiktok စသဖြင့် အသေးစိတ် ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              ${QUICK_TAGS.map(t => `<button type="button" onclick="insertQuickTag('${t}')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-emerald-300 text-xs font-bold">${t}</button>`).join("")}
-            </div>
-            <div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-700">
-              <img id="imgPrev" src="" class="w-full max-h-56 object-cover"/>
-              <button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button>
-            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">${QUICK_TAGS.map(t => `<button type="button" onclick="insertQuickTag('${t}')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-emerald-300 text-xs font-bold">${t}</button>`).join("")}</div>
+            <div id="imgBox" class="hidden relative rounded-2xl overflow-hidden border border-slate-700"><img id="imgPrev" src="" class="w-full max-h-56 object-cover"/><button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div>
             <div class="grid grid-cols-2 gap-2">
               <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (မထည့်လည်းရ / CB)" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
-              <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
-                <option value="ရောင်းမည်">ရောင်းမည်</option>
-                <option value="ဝယ်မည်">ဝယ်မည်</option>
-                <option value="လဲလှယ်မည်">လဲလှယ်မည်</option>
-              </select>
+              <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="ရောင်းမည်">ရောင်းမည်</option><option value="ဝယ်မည်">ဝယ်မည်</option><option value="လဲလှယ်မည်">လဲလှယ်မည်</option></select>
             </div>
-            <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
-              <option value="">-- Account အမျိုးအစား ရွေးပါ --</option>
-              ${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}
-            </select>
+            <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="">-- Account အမျိုးအစား ရွေးပါ --</option>${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
             <div class="flex items-center justify-between gap-2">
-              <label class="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold cursor-pointer flex items-center gap-1.5">
-                <span>📷 ပို့စ်ပုံ ထည့်ရန်</span>
-                <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
-              </label>
+              <label class="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold cursor-pointer flex items-center gap-1.5"><span>📷 ပို့စ်ပုံ ထည့်ရန်</span><input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/></label>
               <button onclick="submitPost()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold">တင်မည်</button>
             </div>
           </div>
@@ -1156,6 +1061,7 @@
     }
     function toggleStickerBar() { st.showStickers = !st.showStickers; const sb = document.getElementById("stickerBar"); if (sb) sb.classList.toggle("hidden", !st.showStickers); }
     function sendStickerIcon(ic) { if (!st.chatUid) return; playSong("love"); sendChatPayload({ text: ic, image: "", audio: "", video: "" }); st.showStickers = false; const sb = document.getElementById("stickerBar"); if (sb) sb.classList.add("hidden"); }
+    function sendQuickChat(txt) { if (!st.chatUid) return; sendChatPayload({ text: txt, image: "", audio: "", video: "" }); }
 
     function openChat(oid) {
       st.chatUid = oid; st.chatImg = null; st.chatVideo = null; st.showStickers = false; const o = uInfo(oid);
@@ -1174,6 +1080,10 @@
             <div id="msgBox" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-[#05080f]"></div>
             <div id="typingBanner" class="hidden px-3 py-1 bg-[#05080f]"></div>
             <div id="msgActionBar"></div>
+            <!-- Quick Inquiry Chips -->
+            <div class="px-2.5 py-1.5 bg-[#0b1120] border-t border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              ${QUICK_CHATS.map(q => `<button onclick="sendQuickChat('${q}')" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 text-[11px] text-slate-200 whitespace-nowrap shrink-0">${q}</button>`).join("")}
+            </div>
             <div id="stickerBar" class="hidden p-2 bg-[#0f172a] border-t border-slate-800 grid grid-cols-6 gap-1.5">${STICKER_ICONS.map(ic => `<button onclick="sendStickerIcon('${ic}')" class="bg-slate-900 border border-slate-700 rounded-xl py-2 text-2xl">${ic}</button>`).join("")}</div>
             <div id="chatAttachPreview" class="hidden px-3 py-2 bg-[#0f172a] border-t border-slate-800 flex items-center justify-between"><div id="chatAttachLabel" class="flex items-center gap-2 text-xs text-emerald-300 font-bold"></div><button onclick="clearChatAttach()" class="text-xs text-rose-400 font-bold">✕</button></div>
             <div class="p-2 bg-[#0f172a] border-t border-slate-800 flex items-center gap-1">
@@ -1230,7 +1140,7 @@
       box.innerHTML = ms.length ? ms.map((m, i) => {
         const me = m.senderId === st.me.id, isPureSticker = !m.deletedForAll && !m.image && !m.audio && !m.video && STICKER_ICONS.includes((m.text || "").trim());
         const tick = me ? (m.seenAt && !otherHideSeen ? `<span class="text-sky-300 font-bold">✓✓</span>` : `<span class="text-emerald-200 font-bold">✓</span>`) : "";
-        return `<div class="flex items-end gap-1.5 ${me ? "justify-end" : "justify-start"}">${!me ? `<span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}<div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-5xl py-1 px-2" : `max-w-[78%] px-3.5 py-2 rounded-2xl text-sm space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img src="${m.image}" class="rounded-xl max-h-48 object-cover"/>` : ""}${m.video ? `<video controls playsinline src="${m.video}" class="rounded-xl max-h-52 w-56 bg-black"></video>` : ""}${m.audio ? `<audio controls src="${m.audio}" class="w-48 h-8"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}${me ? `<div class="text-[10px] text-right">${tick}</div>` : ""}</div>${me ? `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}</div>`;
+        return `<div class="flex items-end gap-1.5 ${me ? "justify-end" : "justify-start"}">${!me ? `<span class="w-5 h-5 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}<div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-5xl py-1 px-2" : `max-w-[78%] px-3.5 py-2 rounded-2xl text-sm space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-48 object-cover cursor-zoom-in"/>` : ""}${m.video ? `<video controls playsinline src="${m.video}" class="rounded-xl max-h-52 w-56 bg-black"></video>` : ""}${m.audio ? `<audio controls src="${m.audio}" class="w-48 h-8"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}${me ? `<div class="text-[10px] text-right">${tick}</div>` : ""}</div>${me ? `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold flex items-center justify-center shrink-0">${i + 1}</span>` : ""}</div>`;
       }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
       box.scrollTop = box.scrollHeight;
       renderTypingBanner();
