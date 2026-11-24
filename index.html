@@ -814,6 +814,44 @@
       return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${activeDays.map(d => { const du = uInfo(d.authorId); const vCnt = Object.keys(d.viewers || {}).length; return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1 shrink-0 max-w-[72px] relative"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base", false)}</div>${vCnt > 0 ? `<span class="absolute top-0 right-0 px-1.5 py-0.2 rounded-full bg-black/80 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">👁️${vCnt}</span>` : ""}<span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
     }
 
+
+    const explore = { category: "", condition: "", price: "", available: false };
+    function filterOptions(items, selected) {
+      return '<option value="">အားလုံး</option>' + items.map(item =>
+        `<option ${item === selected ? "selected" : ""}>${esc(item)}</option>`
+      ).join("");
+    }
+    function parseKyat(input) {
+      const digits = "၀၁၂၃၄၅၆၇၈၉";
+      const text = String(input ?? "").replace(/[၀-၉]/g, d => digits.indexOf(d)).trim()
+        .replace(/^(?:mmk|ကျပ်)\s*/i, "").replace(/\s*(?:ကျပ်|mmk)$/i, "").trim();
+      const m = text.match(/^(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?\s*(သိန်း|သန်း|ထောင်)?$/);
+      if (!m) return null;
+      const units = { "ထောင်": 1000, "သိန်း": 100000, "သန်း": 1000000 };
+      const value = Number(m[1].replace(/,/g, "") + (m[2] || "")) * (units[m[3]] || 1);
+      return Number.isSafeInteger(value) ? value : null;
+    }
+    function refreshExplore() {
+      const query = st.q.trim().toLowerCase();
+      const max = parseKyat(explore.price);
+      const invalid = explore.price.trim() !== "" && max === null;
+      const results = invalid ? [] : st.posts.filter(post => {
+        if (explore.category && !matchesCategoryOrTag(post, explore.category)) return false;
+        if (explore.condition && post.condition !== explore.condition) return false;
+        if (explore.available && post.sold) return false;
+        if (max !== null) {
+          const price = parseKyat(post.price);
+          if (price === null || price > max) return false;
+        }
+        return [post.text, post.tags, post.category, post.price, uInfo(post.authorId).name]
+          .join(" ").toLowerCase().includes(query);
+      }).sort((a,b) => Number(isBoosted(b)) - Number(isBoosted(a)) || b.createdAt - a.createdAt);
+      document.getElementById("resultCount").textContent = invalid
+        ? "အများဆုံးဈေးကို 500,000 သို့မဟုတ် ၅ သိန်း လို့ ရိုက်ထည့်ပါ။"
+        : results.length ? `ပို့စ် ${results.length} ခု တွေ့ပါတယ်` : "ကိုက်ညီတဲ့ပို့စ် မတွေ့သေးပါ။";
+      document.getElementById("exploreResults").innerHTML = results.map(postCard).join("");
+    }
+
     function render() {
       const el = document.getElementById("mainContent");
       if (!el) return;
@@ -836,9 +874,25 @@
             </div>
             <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် အရောင်းပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
         } else if (st.tab === "explore") {
-          const q = st.q.trim().toLowerCase();
-          const res = st.posts.filter(p => !q || (p.text || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q) || (p.price || "").toLowerCase().includes(q) || (uInfo(p.authorId).name || "").toLowerCase().includes(q));
-          el.innerHTML = `<div class="p-3.5 space-y-3"><input type="text" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="#youtube, #facebook, #tiktok ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-sm"/><div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div><div class="space-y-3">${res.map(postCard).join("")}</div></div>`;
+
+          const field = "block w-full rounded-xl bg-slate-900 border border-slate-700 text-white px-3 py-2.5 text-sm";
+          el.innerHTML = `<section class="p-3.5 space-y-3">
+            <label class="block text-xs">ပို့စ်ရှာရန်<input id="queryFilter" class="${field}" type="search" value="${esc(st.q)}" placeholder="စာသား၊ #hashtag၊ ရောင်းသူနာမည်"/></label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="text-xs">အကောင့်အမျိုးအစား<select class="${field}" id="categoryFilter">${filterOptions(TRADE_CATS, explore.category)}</select></label>
+              <label class="text-xs">ပို့စ်အမျိုးအစား<select class="${field}" id="conditionFilter">${filterOptions(["ရောင်းမည်","ဝယ်မည်","လဲလှယ်မည်"], explore.condition)}</select></label>
+            </div>
+            <label class="block text-xs">အများဆုံးဈေး (ကျပ်)<input class="${field}" id="priceFilter" value="${esc(explore.price)}" placeholder="ဥပမာ ၅ သိန်း"/></label>
+            <label class="block text-sm"><input id="availableFilter" type="checkbox" ${explore.available ? "checked" : ""}/> ရောင်းပြီးသားပို့စ်များ ဖယ်ထားမည်</label>
+            <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
+            <p id="resultCount" class="text-sm text-emerald-300" aria-live="polite"></p><div class="space-y-3" id="exploreResults"></div>
+          </section>`;
+          document.getElementById("queryFilter").oninput = e => { st.q = e.target.value; refreshExplore(); };
+          document.getElementById("priceFilter").oninput = e => { explore.price = e.target.value; refreshExplore(); };
+          document.getElementById("categoryFilter").onchange = e => { explore.category = e.target.value; refreshExplore(); };
+          document.getElementById("conditionFilter").onchange = e => { explore.condition = e.target.value; refreshExplore(); };
+          document.getElementById("availableFilter").onchange = e => { explore.available = e.target.checked; refreshExplore(); };
+          refreshExplore();
         } else if (st.tab === "chats") {
           const rooms = Object.entries(st.chats || {}).filter(([k]) => k.includes(st.me.id));
           const others = Object.values(st.users).filter(u => u && u.id !== st.me.id);
@@ -1365,15 +1419,4 @@
     }
     function closeModal() {
       stopRingLoop();
-      if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
-      if (st.recorder && st.recorder.state === "recording") { try { st.recorder.stop(); } catch (e) {} }
-      st.chatUid = null; st.activeCall = null; st.showStickers = false;
-      const mr = document.getElementById("modalRoot"); if (mr) mr.innerHTML = "";
-    }
-
-    render();
-    sync(true);
-    setInterval(() => sync(false), 2000);
-  </script>
-</body>
-</html>
+      if (st.chatUid) fbPut
