@@ -1584,5 +1584,170 @@
     sync(true);
     setInterval(() => sync(false), 2000);
   </script>
+<script>
+(() => {
+  if (document.getElementById("ppwWatcher")) return;
+  const style = document.createElement("style");
+  style.textContent = `
+    #ppwWatcher{width:30px;height:30px;flex:none;pointer-events:none}
+    #ppwWatcher .blink{transform-box:fill-box;transform-origin:center;animation:ppwBlink 4.6s infinite}
+    @keyframes ppwBlink{0%,93%,98%,100%{transform:scaleY(1)}95%{transform:scaleY(.14)}}
+    .ppw-photo{width:clamp(94px,31vw,135px);aspect-ratio:1;display:grid;place-content:center;justify-items:center;gap:6px;position:relative;overflow:hidden;background:#102323;border:1px dashed #40bfa2;border-radius:12px;color:#9bf5d7;cursor:pointer;font-size:12px;font-weight:700}
+    .ppw-photo:focus-within{outline:2px solid white}
+    .ppw-photo input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+    .ppw-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .ppw-photo img[hidden],#ppwPull[hidden]{display:none}
+    #ppwPull{position:fixed;top:var(--pull-top,65px);left:50%;z-index:35;pointer-events:none;transform:translateX(-50%);display:grid;justify-items:center;color:#e4fff6;font-size:12px}
+    #ppwPull svg{width:42px;height:82px;display:block}
+    #ppwPull span{padding:3px 10px;background:#102323;border-radius:16px}
+    @media(prefers-reduced-motion:reduce){#ppwWatcher .blink{animation:none}}
+  `;
+  document.head.append(style);
+  const title = document.querySelector("header h1");
+  title.insertAdjacentHTML("afterend", `<svg id="ppwWatcher" aria-hidden="true" viewBox="0 0 100 100">
+    <defs><radialGradient id="eyeBody" cx=".3" cy=".2" r=".85"><stop stop-color="#a6fbd8"/><stop offset=".56" stop-color="#38ca9b"/><stop offset="1" stop-color="#128475"/></radialGradient></defs>
+    <rect x="4" y="4" width="92" height="92" rx="30" fill="url(#eyeBody)"/>
+    <g class="eye"><rect class="blink" x="-5" y="-9" width="10" height="18" rx="5" fill="#102426"/></g>
+    <g class="eye"><rect class="blink" x="-5" y="-9" width="10" height="18" rx="5" fill="#102426"/></g></svg>`);
+  const face = document.getElementById("ppwWatcher");
+  const eyes = face.querySelectorAll(".eye");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let x=0, y=0, tx=0, ty=0, vx=0, vy=0, raf=0, last=0;
+  function drawEyes() {
+    const cy=Math.sqrt(1-x*x), cp=Math.sqrt(1-y*y);
+    eyes.forEach((eye,i) => {
+      const offset=i === 0 ? -.23 : .23;
+      const front=Math.sqrt(1-offset*offset);
+      const z=front*cy-offset*x, depth=z*cp;
+      const k=.45+.55*depth;
+      eye.setAttribute("transform",`translate(${50+43*(offset*cy+front*x)} ${50+43*z*y}) rotate(${64*x*y}) scale(${k*(.7+.3*depth)} ${k})`);
+    });
+  }
+  function frame(now) {
+    const dt=last ? Math.min(1.6,(now-last)/16.67) : 1;
+    last=now;
+    vx+=((tx-x)*.07-vx*.29)*dt; vy+=((ty-y)*.07-vy*.29)*dt;
+    x+=vx*dt; y+=vy*dt;
+    if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(vx)+Math.abs(vy)<.003){
+      x=tx; y=ty; vx=vy=raf=last=0; drawEyes(); return;
+    }
+    drawEyes(); raf=requestAnimationFrame(frame);
+  }
+  function aim(a,b) {
+    tx=a; ty=b;
+    if(reduced.matches){x=a; y=b; drawEyes();}
+    else if(!raf) raf=requestAnimationFrame(frame);
+  }
+  function follow(e) {
+    const r=face.getBoundingClientRect(), dx=e.clientX-r.left-r.width/2, dy=e.clientY-r.top-r.height/2;
+    const d=Math.hypot(dx,dy)||1, reach=.73*Math.tanh(d/115);
+    aim(dx/d*reach,dy/d*reach);
+  }
+  drawEyes();
+  window.addEventListener("pointerdown",follow,{passive:true,capture:true});
+  window.addEventListener("pointermove",follow,{passive:true,capture:true});
+  document.documentElement.addEventListener("pointerleave",()=>aim(0,0));
+  window.addEventListener("blur",()=>aim(0,0));
+
+  const originalComposer=openComposerModal;
+  openComposerModal=function(){
+    originalComposer();
+    const text=document.getElementById("postTxt"), oldBox=document.getElementById("imgBox");
+    const picker=text.parentElement.querySelector('input[type=file]');
+    picker.closest("label").remove(); oldBox.remove();
+    const tile=document.createElement("label");
+    tile.className="ppw-photo";
+    tile.innerHTML='<span aria-hidden="true" style="font-size:24px">▧</span><span>ပုံရွေးရန်</span><img hidden alt="ရွေးထားသောပုံ"/>';
+    picker.className=""; picker.removeAttribute("onchange");
+    picker.setAttribute("aria-label","Gallery မှ ပို့စ်ပုံရွေးရန်");
+    tile.append(picker); text.before(tile);
+    const remove=document.createElement("button");
+    remove.type="button"; remove.textContent="ပုံဖယ်ရန်"; remove.hidden=true;
+    tile.after(remove);
+    const preview=tile.querySelector("img"), submit=text.parentElement.querySelector('[onclick="submitPost()"]');
+    let selection=0;
+    remove.onclick=()=>{selection++; picker.value=""; st.img=null; preview.hidden=true; remove.hidden=true; submit.disabled=false;};
+    picker.onchange=async()=>{
+      const file=picker.files[0]; if(!file)return;
+      const current=++selection;
+      const url=URL.createObjectURL(file);
+      submit.disabled=true;
+      try {
+        const image=new Image();
+        await new Promise((resolve,reject)=>{image.onload=resolve; image.onerror=reject; image.src=url;});
+        if(!tile.isConnected || selection!==current)return;
+        const canvas=document.createElement("canvas"), scale=Math.min(1,1000/Math.max(image.width,image.height));
+        canvas.width=Math.max(1,Math.round(image.width*scale)); canvas.height=Math.max(1,Math.round(image.height*scale));
+        canvas.getContext("2d").drawImage(image,0,0,canvas.width,canvas.height);
+        st.img=canvas.toDataURL("image/jpeg",.76);
+        preview.src=st.img; preview.hidden=false; remove.hidden=false;
+      } catch { if(tile.isConnected && selection===current)toast("ဒီပုံကို ဖွင့်မရပါ။ အခြားပုံရွေးပါ။"); }
+      finally { URL.revokeObjectURL(url); if(selection===current)submit.disabled=false; }
+    };
+  };
+
+  const main=document.getElementById("mainContent");
+  const indicator=document.createElement("div");
+  indicator.id="ppwPull"; indicator.hidden=true;
+  indicator.innerHTML='<svg aria-hidden="true" viewBox="0 0 42 82"><path fill="#127965"/><g><circle cx="21" cy="16" r="13" fill="#61efba"/><path d="M21 22V10m-5 5 5-5 5 5" stroke="#10382d" stroke-width="2.5" stroke-linecap="round" fill="none"/></g></svg><span role="status"></span>';
+  document.body.append(indicator);
+  const band=indicator.querySelector("path"), ball=indicator.querySelector("g"), label=indicator.querySelector("span");
+  const limit=78;
+  let grip=null, distance=0, loading=false, newest=false;
+  const rankedFeed=getFilteredPosts;
+  getFilteredPosts=function(){
+    const list=rankedFeed();
+    if(newest && st.cat==="အားလုံး")list.sort((a,b)=>Number(isBoosted(b))-Number(isBoosted(a)) || b.createdAt-a.createdAt);
+    return list;
+  };
+  function eligible(){
+    return st.tab==="home" && !document.getElementById("modalRoot").firstElementChild &&
+      !document.getElementById("drawerRoot").firstElementChild && window.scrollY<=1 && main.scrollTop<=1;
+  }
+  function paint(d){
+    const stretch=45*Math.tanh(d/limit), bottom=16+stretch;
+    indicator.hidden=false;
+    band.setAttribute("d",`M12 13 Q21 4 30 13 Q24 ${bottom-5} 31 ${bottom} Q21 ${bottom+17} 11 ${bottom} Q18 ${bottom-5} 12 13Z`);
+    ball.setAttribute("transform",`translate(0 ${stretch})`);
+    label.textContent=d>=limit?"လွှတ်ပြီး အသစ်ရယူရန်":"ပို့စ်အသစ်ရယူရန် ဆွဲပါ";
+  }
+  function cancel(){grip=null; distance=0; if(!loading)indicator.hidden=true;}
+  async function refresh(){
+    loading=true;
+    paint(0); label.textContent="ပို့စ်အသစ်များ ရယူနေသည်…";
+    if(!reduced.matches && ball.animate)ball.animate([{transform:"translateY(34px)"},{transform:"translateY(-6px)"},{transform:"translateY(0)"}],{duration:310});
+    const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),12000);
+    try{
+      const response=await fetch(DB+"/posts.json",{cache:"no-store",signal:controller.signal});
+      if(!response.ok)throw new Error();
+      const data=await response.json();
+      st.posts=Object.values(data||{}).filter(p=>p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text||p.image));
+      newest=true; saveFastCache();
+      if(st.tab==="home"){render();toast("ပို့စ်များ ပြန်လည်ရယူပြီးပါပြီ");}
+    }catch{if(st.tab==="home")toast("ပို့စ်များ ရယူမရပါ။ ပြန်ဆွဲကြည့်ပါ။");}
+    finally{clearTimeout(timeout); loading=false; cancel();}
+  }
+  main.addEventListener("touchstart",e=>{
+    if(loading || e.touches.length!==1 || !eligible() || e.target.closest("input,textarea,select,video,audio")){cancel();return;}
+    const p=e.touches[0]; grip={x:p.clientX,y:p.clientY}; distance=0;
+    indicator.style.setProperty("--pull-top",document.querySelector("header").getBoundingClientRect().bottom+"px");
+  },{passive:true});
+  main.addEventListener("touchmove",e=>{
+    if(!grip)return;
+    if(e.touches.length!==1 || !eligible()){cancel();return;}
+    const p=e.touches[0], dy=p.clientY-grip.y, dx=Math.abs(p.clientX-grip.x);
+    if(dy < -5 || (dx>8 && dx>dy)){cancel();return;}
+    if(dy<=4){distance=0;indicator.hidden=true;return;}
+    if(!e.cancelable){cancel();return;}
+    e.preventDefault(); distance=dy; paint(distance);
+  },{passive:false});
+  main.addEventListener("touchend",()=>{
+    const ready=grip && distance>=limit && eligible();
+    cancel(); if(ready && !loading)refresh();
+  },{passive:true});
+  main.addEventListener("touchcancel",cancel,{passive:true});
+})();
+</script>
+</script>
 </body>
 </html>
