@@ -91,8 +91,9 @@
   </div>
 
   <script>
-    const DB = "https://phay-phay-wae-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const APP_URL = "https://pl2119728-create.github.io/phayphaywae/";
+    const SUPABASE_URL = "https://jymrrclrydfmazypkcsi.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_jZNALOr3YPWi0TUyKq3khg_mF8MKVhN";
+    const APP_URL = "https://phayphaywae.pages.dev/";
     const OWNER_ID = "PPW-565435";
     const ADMIN_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
     const ADMIN_PIN = "2026";
@@ -224,6 +225,7 @@
       replyTo: {},
       viewedPosts: {},
       img: null,
+      selectedTags: [],
       mydayImg: null,
       chatImg: null,
       chatVideo: null,
@@ -451,13 +453,51 @@
       return BLOCKED_PHYSICAL.some(k => low.includes(k));
     }
 
-    async function fbGet(path, signal) {
-      const response = await fetch(`${DB}/${path}.json`, {signal});
-      if (!response.ok) throw new Error("Firebase HTTP " + response.status);
-      return response.json();
+    const SB_HEADERS = {
+      "apikey": SUPABASE_KEY,
+      "Authorization": "Bearer " + SUPABASE_KEY,
+      "Content-Type": "application/json"
+    };
+
+    function parsePath(path) {
+      const parts = String(path || "").split("/").filter(Boolean).map(p => decodeURIComponent(p));
+      return { bucket: parts[0] || "", itemId: parts[1] || "", sub: parts.slice(2) };
     }
-    const fbPut = (p, d) => fetch(`${DB}/${p}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
-    const fbDel = p => fetch(`${DB}/${p}.json`, { method: "DELETE" });
+
+    async function fbGet(path, signal) {
+      const { bucket, itemId, sub } = parsePath(path);
+      let url = `${SUPABASE_URL}/rest/v1/ppw_kv?bucket=eq.${encodeURIComponent(bucket)}&select=item_id,data`;
+      if (itemId) url += `&item_id=eq.${encodeURIComponent(itemId)}`;
+      const response = await fetch(url, { headers: SB_HEADERS, signal });
+      if (!response.ok) throw new Error("Supabase HTTP " + response.status);
+      const rows = await response.json();
+      if (!itemId) {
+        const out = {};
+        for (const r of rows) out[r.item_id] = r.data;
+        return out;
+      }
+      let val = rows.length ? rows[0].data : null;
+      for (const k of sub) val = (val && typeof val === "object") ? val[k] : null;
+      return val;
+    }
+
+    function fbPut(path, data) {
+      const { bucket, itemId, sub } = parsePath(path);
+      return fetch(`${SUPABASE_URL}/rest/v1/rpc/ppw_set`, {
+        method: "POST",
+        headers: SB_HEADERS,
+        body: JSON.stringify({ p_bucket: bucket, p_item_id: itemId, p_subpath: sub, p_val: data === undefined ? null : data })
+      });
+    }
+
+    function fbDel(path) {
+      const { bucket, itemId, sub } = parsePath(path);
+      return fetch(`${SUPABASE_URL}/rest/v1/rpc/ppw_del`, {
+        method: "POST",
+        headers: SB_HEADERS,
+        body: JSON.stringify({ p_bucket: bucket, p_item_id: itemId, p_subpath: sub })
+      });
+    }
 
     function trackPostView(p) {
       if (!p || !p.id || st.viewedPosts[p.id]) return;
@@ -1052,7 +1092,7 @@
         } else if (st.tab === "notifications") {
           el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${matches.map(m => listingButton(m.id, "🔔 " + m.title.slice(0,80))).join("")}${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm text-slate-100"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center text-sm text-slate-400 border border-slate-800">${matches.length ? "" : "အကြောင်းကြားစာ မရှိသေးပါ"}</div>`}</div>`;
         } else if (st.tab === "profile") {
-          const r = uRating(st.me.id), mine = st.posts.filter(p => p.authorId === st.me.id), fCount = (st.me.friends || []).length, followingCount = (st.me.following || []).length, followerCount = followersCount(st.me.id);
+          const r = uRating(st.me.id), mine = st.posts.filter(p => p.authorId === st.me.id || (p.taggedFriends && p.taggedFriends[st.me.id] && p.taggedFriends[st.me.id].status === "accepted")), fCount = (st.me.friends || []).length, followingCount = (st.me.following || []).length, followerCount = followersCount(st.me.id);
           const activeNote = st.me.note && (Date.now() - (st.me.noteAt || 0) < 24 * 3600000) ? st.me.note : "";
           el.innerHTML = `
             <div class="pb-4">
@@ -1177,6 +1217,7 @@
       return `
         <article class="bg-[#0f172a] rounded-2xl border ${boosted ? "border-amber-400/70 shadow-lg shadow-amber-950/30" : "border-slate-800"} shadow-sm overflow-hidden">
           ${boosted ? `<div class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500/20 to-sky-500/20 border-b border-amber-500/30 flex items-center justify-between text-[11px] font-bold text-amber-300"><span>⚡ BOOSTED • Top ပို့စ်</span><span>${remainingHours(p.boostedUntil)}</span></div>` : ""}
+          ${(p.taggedFriends && p.taggedFriends[st.me.id] && p.taggedFriends[st.me.id].status === "pending") ? `<div class="px-3.5 py-2 bg-sky-950/80 border-b border-sky-500/40 flex items-center justify-between gap-2 text-xs"><span class="text-sky-200 font-bold">🏷️ သင့်ကို Tag တွဲထားပါသည်</span><div class="flex gap-1.5 shrink-0"><button onclick="respondPostTag('${p.id}','accepted')" class="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold">✓ လက်ခံမည်</button><button onclick="respondPostTag('${p.id}','declined')" class="px-2.5 py-1 rounded-lg bg-rose-600/80 text-white font-bold">✕ ငြင်း</button></div></div>` : ""}
           <div class="p-3.5 pb-2 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
               <div onclick="openUserModal('${p.authorId}')" class="cursor-pointer">${avatar(au, "w-11 h-11 text-base")}</div>
@@ -1184,6 +1225,11 @@
                 <div class="flex items-center gap-1 flex-wrap">
                   <span onclick="openUserModal('${p.authorId}')" class="text-[15px] font-bold text-white truncate max-w-[140px] cursor-pointer">${esc(au.name)}</span>
                   ${blueBadge(au)}
+                  ${(() => {
+                    const tList = Object.values(p.taggedFriends || {}).filter(t => t && t.status !== "declined");
+                    if (!tList.length) return "";
+                    return `<span class="text-xs text-sky-300 font-semibold">· 🏷️ ${tList.map(t => `<span onclick="openUserModal('${t.id}')" class="underline cursor-pointer">${esc(uInfo(t.id).name || t.name)}</span>`).join(", ")} နှင့်အတူ</span>`;
+                  })()}
                   ${(own || st.me.isAdmin)
                     ? `<button onclick="openBoostModal('${p.id}')" class="text-xs font-bold text-sky-400 hover:underline">· ⚡ Boost</button>`
                     : `<button onclick="requestEscrow('${p.id}','${p.authorId}')" class="text-xs font-bold text-emerald-400 hover:underline">· 🛡️ Admin ကြားခံ</button>`}
@@ -1399,8 +1445,35 @@
       ta.focus();
     }
 
+    function toggleTagFriend(fid) {
+      const idx = st.selectedTags.indexOf(fid);
+      if (idx >= 0) st.selectedTags.splice(idx, 1);
+      else st.selectedTags.push(fid);
+      const wrap = document.getElementById("tagFriendChips");
+      if (wrap) wrap.innerHTML = renderTagFriendChips();
+    }
+    function renderTagFriendChips() {
+      const fris = (st.me.friends || []).filter(Boolean);
+      if (!fris.length) return `<span class="text-[11px] text-slate-400">Tag တွဲရန် မိတ်ဆွေ (Friend) အရင် Add ထားပါ</span>`;
+      return fris.map(fid => {
+        const fu = uInfo(fid);
+        const on = st.selectedTags.includes(fid);
+        return `<button type="button" onclick="toggleTagFriend('${fid}')" class="px-2.5 py-1 rounded-full text-xs font-bold border transition ${on ? "bg-sky-600 text-white border-sky-400" : "bg-slate-800 text-slate-300 border-slate-700"}">${on ? "✓ " : "🏷️ "}${esc(fu.name)}</button>`;
+      }).join("");
+    }
+    function respondPostTag(pid, status) {
+      const p = st.posts.find(x => x.id === pid); if (!p || !p.taggedFriends || !p.taggedFriends[st.me.id]) return;
+      p.taggedFriends[st.me.id].status = status;
+      playSong(status === "accepted" ? "love" : "notif");
+      saveFastCache();
+      render();
+      toast(status === "accepted" ? "Tag လက်ခံပြီးပါပြီ — သင့် Profile ထဲမှာ တွဲပေါ်နေပါပြီ ✓" : "Tag ကို ငြင်းပယ်လိုက်ပါပြီ");
+      fbPut(`posts/${pid}/taggedFriends/${st.me.id}/status`, status).catch(() => {});
+      if (status === "accepted") notify(p.authorId, "က သင့်ပို့စ် Tag ကို လက်ခံပြီး Profile မှာ တွဲပြလိုက်ပါသည် 🏷️");
+    }
     function openComposerModal() {
       st.img = null;
+      st.selectedTags = [];
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
@@ -1413,6 +1486,10 @@
               <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="ရောင်းမည်">ရောင်းမည်</option><option value="ဝယ်မည်">ဝယ်မည်</option><option value="လဲလှယ်မည်">လဲလှယ်မည်</option></select>
             </div>
             <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="">-- Account အမျိုးအစား ရွေးပါ --</option>${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+              <div class="text-[11px] font-bold text-sky-300">🏷️ မိတ်ဆွေ Tag တွဲရန် (Fri ဖြစ်သူများ)</div>
+              <div id="tagFriendChips" class="flex items-center gap-1.5 flex-wrap">${renderTagFriendChips()}</div>
+            </div>
             <div class="flex items-center justify-between gap-2">
               <label class="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold cursor-pointer flex items-center gap-1.5"><span>📷 ပို့စ်ပုံ ထည့်ရန်</span><input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/></label>
               <button onclick="submitPost()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold">တင်မည်</button>
@@ -1432,9 +1509,16 @@
       if (!text && !st.img) return toast("Account အကြောင်း သို့မဟုတ် ပုံ ထည့်ပေးပါ");
       if (hasBlockedClothing(text)) return toast("အဝတ်အစားစသည့် ရုပ်ပစ္စည်းများ ခွင့်မပြုပါ");
       const tags = (text.match(/#[\w\u1000-\u109F]+/g) || []).join(" "), id = "P-" + Date.now() + "-" + Math.floor(Math.random() * 999);
-      const p = { id, authorId: st.me.id, text, tags, image: st.img || "", price, condition, category, sold: false, boostedUntil: 0, views: 1, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
-      st.posts.unshift(p); saveFastCache(); playSong("like"); closeModal(); render(); toast("အရောင်းပို့စ်တင်ပြီးပါပြီ");
+      const taggedFriends = {};
+      (st.selectedTags || []).forEach(fid => {
+        if ((st.me.friends || []).includes(fid)) {
+          taggedFriends[fid] = { id: fid, name: uInfo(fid).name, status: "pending", at: Date.now() };
+        }
+      });
+      const p = { id, authorId: st.me.id, text, tags, taggedFriends, image: st.img || "", price, condition, category, sold: false, boostedUntil: 0, views: 1, likes: {}, reactions: { like: {}, haha: {}, love: {}, angry: {} }, comments: {}, createdAt: Date.now() };
+      st.posts.unshift(p); st.selectedTags = []; saveFastCache(); playSong("like"); closeModal(); render(); toast("အရောင်းပို့စ်တင်ပြီးပါပြီ");
       fbPut(`users/${st.me.id}`, st.me).catch(() => {}); fbPut(`posts/${id}`, p).catch(() => {});
+      Object.keys(taggedFriends).forEach(fid => notify(fid, "က သင့်ကို ပို့စ်တစ်ခုမှာ Tag တွဲလိုက်ပါသည် 🏷️ (လက်ခံရန် နှိပ်ပါ)"));
     }
     function delPost(id) { st.posts = st.posts.filter(p => p.id !== id); saveFastCache(); render(); toast("ပို့စ်ဖျက်ပြီးပါပြီ"); fbDel(`posts/${id}`).catch(() => {}); }
     function addCmt(id) {
@@ -1465,7 +1549,7 @@
     function openUserModal(uid) {
       const u = uInfo(uid), r = uRating(uid), isF = (st.me.friends || []).includes(uid), isFol = (st.me.following || []).includes(uid), own = uid === st.me.id;
       const uNote = u.note && (Date.now() - (u.noteAt || 0) < 24 * 3600000) ? u.note : "";
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-emerald-300">${esc(onlineText(uid))}</span><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="flex items-center gap-3">${avatar(u, "w-16 h-16 text-xl")}<div><h3 class="text-[15px] font-bold text-white flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><div class="text-xs font-mono text-slate-400 flex items-center gap-1.5"><span>${esc(u.id)}</span><button onclick="copyUserId('${u.id}')" class="text-emerald-300 underline font-sans font-bold">ID ကူး</button></div>${uNote ? `<div class="text-xs text-emerald-300 mt-0.5">💭 ${esc(uNote)}</div>` : ""}<p class="text-xs text-slate-300 mt-0.5">${esc(u.bio || "")}</p></div></div><div class="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2 rounded-2xl"><div><div class="text-sm font-bold text-white">${(u.friends || []).length}</div><div class="text-[11px] text-slate-400">Friends</div></div><div><div class="text-sm font-bold text-white">${(u.following || []).length}</div><div class="text-[11px] text-slate-400">Following</div></div><div><div class="text-sm font-bold text-white">${followersCount(uid)}</div><div class="text-[11px] text-slate-400">Follower</div></div><div><div class="text-sm font-bold text-amber-300">★ ${r.avg}</div><div class="text-[11px] text-slate-400">အဆင့်</div></div></div>${!own ? `<div class="grid grid-cols-3 gap-2"><button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button><button onclick="toggleFollow('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isFol ? "bg-sky-500/20 text-sky-300" : "bg-sky-600 text-white"}">${isFol ? "Following ✓" : "+ Follow"}</button><button onclick="openChat('${u.id}')" class="py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">💬 စာပို့</button></div>` : ""}<div class="space-y-2"><div class="text-xs font-bold text-slate-300">မိတ်ဆွေများ (${(u.friends || []).length})</div>${renderFriendsGrid(uid, 6)}</div></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[88vh] overflow-y-auto"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-emerald-300">${esc(onlineText(uid))}</span><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><div class="flex items-center gap-3">${avatar(u, "w-16 h-16 text-xl")}<div><h3 class="text-[15px] font-bold text-white flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</h3><div class="text-xs font-mono text-slate-400 flex items-center gap-1.5"><span>${esc(u.id)}</span><button onclick="copyUserId('${u.id}')" class="text-emerald-300 underline font-sans font-bold">ID ကူး</button></div>${uNote ? `<div class="text-xs text-emerald-300 mt-0.5">💭 ${esc(uNote)}</div>` : ""}<p class="text-xs text-slate-300 mt-0.5">${esc(u.bio || "")}</p></div></div><div class="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2 rounded-2xl"><div><div class="text-sm font-bold text-white">${(u.friends || []).length}</div><div class="text-[11px] text-slate-400">Friends</div></div><div><div class="text-sm font-bold text-white">${(u.following || []).length}</div><div class="text-[11px] text-slate-400">Following</div></div><div><div class="text-sm font-bold text-white">${followersCount(uid)}</div><div class="text-[11px] text-slate-400">Follower</div></div><div><div class="text-sm font-bold text-amber-300">★ ${r.avg}</div><div class="text-[11px] text-slate-400">အဆင့်</div></div></div>${!own ? `<div class="grid grid-cols-3 gap-2"><button onclick="toggleFriend('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button><button onclick="toggleFollow('${u.id}');openUserModal('${u.id}')" class="py-2 rounded-xl text-xs font-bold ${isFol ? "bg-sky-500/20 text-sky-300" : "bg-sky-600 text-white"}">${isFol ? "Following ✓" : "+ Follow"}</button><button onclick="openChat('${u.id}')" class="py-2 rounded-xl bg-slate-800 text-white text-xs font-bold">💬 စာပို့</button></div>` : ""}<div class="space-y-2"><div class="text-xs font-bold text-slate-300">မိတ်ဆွေများ (${(u.friends || []).length})</div>${renderFriendsGrid(uid, 6)}</div>${(() => { const uPosts = st.posts.filter(p => p.authorId === uid || (p.taggedFriends && p.taggedFriends[uid] && p.taggedFriends[uid].status === "accepted")); return uPosts.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><div class="text-xs font-bold text-emerald-300">📌 ပို့စ်များ & Tag တွဲထားသော ပို့စ်များ (${uPosts.length})</div>${uPosts.slice(0, 10).map(postCard).join("")}</div>` : ""; })()}</div></div>`;
     }
 
     const roomId = (a, b) => [a, b].sort().join("__");
@@ -1716,17 +1800,13 @@
 
     async function writeChatMessage(uid,message) {
       const rid = roomId(st.me.id,uid);
-      const path = "chats/"+rid+"/"+message.id;
-      const changes = {};
-      for (const [key,value] of Object.entries(message)) changes[path+"/"+key] = value;
       const nid = "N-"+message.id;
-      const notice = {id:nid,fromId:st.me.id,fromName:st.me.name,text:"က စာပို့လိုက်သည်",createdAt:message.createdAt};
-      for (const [key,value] of Object.entries(notice)) changes["notifications/"+uid+"/"+nid+"/"+key] = value;
-      const ctrl = new AbortController(), timer = setTimeout(()=>ctrl.abort(),20000);
-      try {
-        const response = await fetch(DB+"/.json",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(changes),signal:ctrl.signal});
-        if (!response.ok) throw new Error("message write failed");
-      } finally { clearTimeout(timer); }
+      const notice = {id:nid,fromId:st.me.id,fromName:st.me.name,text:"က စာပို့လိုက်သည်",read:false,createdAt:message.createdAt};
+      const [r1, r2] = await Promise.all([
+        fbPut(`chats/${rid}/${message.id}`, message),
+        fbPut(`notifications/${uid}/${nid}`, notice)
+      ]);
+      if (!r1.ok) throw new Error("message write failed");
       if (!st.chats[rid]) st.chats[rid] = {};
       st.chats[rid][message.id] = {...st.chats[rid][message.id],...message};
       if (uid === st.chatUid) renderMsgs();
@@ -1905,9 +1985,7 @@
     if(!reduced.matches && ball.animate)ball.animate([{transform:"translateY(34px)"},{transform:"translateY(-6px)"},{transform:"translateY(0)"}],{duration:310});
     const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),12000);
     try{
-      const response=await fetch(DB+"/posts.json",{cache:"no-store",signal:controller.signal});
-      if(!response.ok)throw new Error();
-      const data=await response.json();
+      const data=await fbGet("posts",controller.signal);
       st.posts=Object.values(data||{}).filter(p=>p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text||p.image));
       newest=true; saveFastCache();
       if(st.tab==="home"){render();toast("ပို့စ်များ ပြန်လည်ရယူပြီးပါပြီ");}
