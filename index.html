@@ -18,6 +18,21 @@
     .animate-slide-up { animation: slideUp .18s ease-out forwards; }
     @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
     .animate-slide-right { animation: slideRight .2s cubic-bezier(.16,1,.3,1) forwards; }
+
+    .market-dock {position:fixed;bottom:0;left:0;right:0;z-index:30;max-width:28rem;margin:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;padding:8px 8px calc(6px + env(safe-area-inset-bottom));background:#101829;border-top:1px solid #334155;box-shadow:0 -6px 24px #03071255}
+    #app {padding-bottom:calc(94px + env(safe-area-inset-bottom))}
+    .market-dock .nav-btn {display:flex;min-width:0;min-height:54px;align-items:center;justify-content:center;flex-direction:column;gap:3px;color:#bac4d3;font-size:11px;font-weight:600}
+    .market-dock button:focus-visible {outline:2px solid #fff;outline-offset:2px}
+    .dock-orb {position:relative;display:grid;place-items:center;width:37px;height:37px;border-radius:50%;color:#fff;background:radial-gradient(circle at 28% 18%,hsl(var(--h) 88% 76%),transparent 50%),linear-gradient(135deg,hsl(var(--h) 72% 49%),hsl(calc(var(--h) + 34) 75% 30%));box-shadow:inset 0 0 0 1px #ffffff45;filter:saturate(.62);transition:transform .35s cubic-bezier(.2,1.7,.4,1),filter .2s}
+    .dock-orb svg {width:20px;height:20px;filter:drop-shadow(0 1px 2px #0006)}
+    .nav-btn[aria-current=page] {color:#fff}
+    .nav-btn[aria-current=page] .dock-orb {transform:translateY(-3px) scale(1.1);filter:saturate(1.1);box-shadow:0 0 0 2px #101829,0 0 0 3px hsl(var(--h) 76% 70%)}
+    .dock-wave {display:none;position:absolute;bottom:-2px;align-items:center;gap:2px;border-radius:5px;background:#0e1729;padding:2px 3px}
+    .nav-btn[aria-current=page] .dock-wave {display:flex}
+    .dock-wave i {height:4px;width:2px;background:#fff;animation:dock-wave .55s ease-in-out 2 alternate}
+    .dock-wave i:nth-child(2n){height:7px;animation-delay:.09s}
+    @keyframes dock-wave {from{transform:scaleY(.45)}to{transform:scaleY(1)}}
+    @media(prefers-reduced-motion:reduce){.dock-orb,.dock-wave i{animation:none;transition:none}}
   </style>
 </head>
 <body class="bg-[#05080f] text-slate-100">
@@ -49,26 +64,26 @@
     <main id="mainContent" class="flex-1 overflow-y-auto"></main>
 
     <!-- အောက်ခြေမီနူး ၅ ခု (+ ခလုတ် အလယ်တည့်တည့်) -->
-    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#0f172a] border-t border-slate-800 px-2 py-2 grid grid-cols-5 items-center z-30 shadow-lg">
-      <button onclick="switchTab('home')" id="nav-home" class="nav-btn flex flex-col items-center gap-0.5 py-1 rounded-xl text-emerald-400">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    <nav class="market-dock" aria-label="အောက်ခြေမီနူး">
+      <button onclick="switchTab('home')" id="nav-home" aria-current="page" class="nav-btn flex flex-col items-center gap-0.5 py-1 rounded-xl text-emerald-400">
+        <span class="dock-orb" style="--h:158" aria-hidden="true"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="dock-wave"><i></i><i></i><i></i><i></i></span></span>
         <span class="text-[11px] font-bold">ပင်မ</span>
       </button>
       <button onclick="switchTab('explore')" id="nav-explore" class="nav-btn flex flex-col items-center gap-0.5 py-1 rounded-xl text-slate-400">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span class="dock-orb" style="--h:214" aria-hidden="true"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><span class="dock-wave"><i></i><i></i><i></i><i></i></span></span>
         <span class="text-[11px] font-semibold">ရှာဖွေ</span>
       </button>
       <div class="flex justify-center">
-        <button onclick="openComposerModal()" class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/60 active:scale-95 transition">
+        <button aria-label="အရောင်းပို့စ်တင်ရန်" onclick="openComposerModal()" class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/60 active:scale-95 transition">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
       </div>
       <button onclick="switchTab('chats')" id="nav-chats" class="nav-btn flex flex-col items-center gap-0.5 py-1 rounded-xl text-slate-400">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <span class="dock-orb" style="--h:281" aria-hidden="true"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg><span class="dock-wave"><i></i><i></i><i></i><i></i></span></span>
         <span class="text-[11px] font-semibold">စာတို</span>
       </button>
       <button onclick="switchTab('friends')" id="nav-friends" class="nav-btn flex flex-col items-center gap-0.5 py-1 rounded-xl text-slate-400">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span class="dock-orb" style="--h:22" aria-hidden="true"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg><span class="dock-wave"><i></i><i></i><i></i><i></i></span></span>
         <span class="text-[11px] font-semibold">မိတ်ဆွေ</span>
       </button>
     </nav>
@@ -698,6 +713,7 @@
       try {
         fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
         if (init) fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+        const readVersion = dayReactionVersion;
         const [po, md, us, pr, rv, ap, br, no, ch, ty, cl] = await Promise.all([
           fbGet("posts"), fbGet("myday"), fbGet("users"), fbGet("presence"),
           fbGet("reviews"), fbGet("appeals"), fbGet("boostRequests"), fbGet(`notifications/${st.me.id}`),
@@ -706,7 +722,8 @@
         const rawPosts = po ? Object.values(po) : [];
         st.posts = rawPosts.filter(p => p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
         const dayCutoff = Date.now() - 24 * 3600000;
-        st.myday = md ? Object.values(md).filter(d => d && (d.createdAt || 0) >= dayCutoff).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
+        if (readVersion === dayReactionVersion) st.myday = md ? Object.values(md).filter(d => d && (d.createdAt || 0) >= dayCutoff).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
+        refreshDayReactions();
         st.users = us || {};
         st.presence = pr || {};
         if (st.users[st.me.id]) {
@@ -756,7 +773,8 @@
         if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
         if (txt) txt.textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
 
-        const unread = st.notifs.filter(n => !n.read).length;
+        collectMatches();
+        const unread = st.notifs.filter(n => !n.read).length + matches.filter(m => !m.read).length;
         const nb = document.getElementById("notifBadge");
         if (nb) { if (unread > 0) { nb.textContent = unread > 9 ? "9+" : unread; nb.classList.remove("hidden"); } else nb.classList.add("hidden"); }
 
@@ -780,11 +798,15 @@
     }
 
     function switchTab(t) {
+      if (st.tab === "listing" && t !== "listing") {
+        const url = new URL(location.href); url.searchParams.delete("post"); history.replaceState(null,"",url);
+      }
       st.tab = t; playSong("notif");
-      document.querySelectorAll(".nav-btn").forEach(b => { b.classList.remove("text-emerald-400"); b.classList.add("text-slate-400"); });
+      document.querySelectorAll(".nav-btn").forEach(b => { b.removeAttribute("aria-current"); b.classList.remove("text-emerald-400"); b.classList.add("text-slate-400"); });
       const a = document.getElementById("nav-" + t);
-      if (a) { a.classList.remove("text-slate-400"); a.classList.add("text-emerald-400"); }
+      if (a) { a.setAttribute("aria-current","page"); a.classList.remove("text-slate-400"); a.classList.add("text-emerald-400"); }
       if (t === "notifications") {
+        matches.forEach(m => { m.read = true; }); persistSearches();
         st.notifs.filter(n => !n.read).forEach(n => { n.read = true; fbPut(`notifications/${st.me.id}/${n.id}/read`, true).catch(() => {}); });
         const nb = document.getElementById("notifBadge"); if (nb) nb.classList.add("hidden");
       }
@@ -831,32 +853,92 @@
       const value = Number(m[1].replace(/,/g, "") + (m[2] || "")) * (units[m[3]] || 1);
       return Number.isSafeInteger(value) ? value : null;
     }
+    function searchMatches(post, filters) {
+      if (filters.category && !matchesCategoryOrTag(post, filters.category)) return false;
+      if (filters.condition && post.condition !== filters.condition) return false;
+      if (filters.available && post.sold) return false;
+      if (filters.price.trim()) {
+        const limit = parseKyat(filters.price), price = parseKyat(post.price);
+        if (price === null || limit === null || price > limit) return false;
+      }
+      return [post.text, post.tags, post.category, post.price, uInfo(post.authorId).name]
+        .join(" ").toLowerCase().includes(filters.query.trim().toLowerCase());
+    }
+
     function refreshExplore() {
-      const query = st.q.trim().toLowerCase();
-      const max = parseKyat(explore.price);
-      const invalid = explore.price.trim() !== "" && max === null;
-      const results = invalid ? [] : st.posts.filter(post => {
-        if (explore.category && !matchesCategoryOrTag(post, explore.category)) return false;
-        if (explore.condition && post.condition !== explore.condition) return false;
-        if (explore.available && post.sold) return false;
-        if (max !== null) {
-          const price = parseKyat(post.price);
-          if (price === null || price > max) return false;
-        }
-        return [post.text, post.tags, post.category, post.price, uInfo(post.authorId).name]
-          .join(" ").toLowerCase().includes(query);
-      }).sort((a,b) => Number(isBoosted(b)) - Number(isBoosted(a)) || b.createdAt - a.createdAt);
+      const invalid = explore.price.trim() !== "" && parseKyat(explore.price) === null;
+      const filters = {...explore, query: st.q};
+      const results = invalid ? [] : st.posts.filter(post => searchMatches(post, filters))
+        .sort((a,b) => Number(isBoosted(b)) - Number(isBoosted(a)) || b.createdAt - a.createdAt);
       document.getElementById("resultCount").textContent = invalid
         ? "အများဆုံးဈေးကို 500,000 သို့မဟုတ် ၅ သိန်း လို့ ရိုက်ထည့်ပါ။"
         : results.length ? `ပို့စ် ${results.length} ခု တွေ့ပါတယ်` : "ကိုက်ညီတဲ့ပို့စ် မတွေ့သေးပါ။";
       document.getElementById("exploreResults").innerHTML = results.map(postCard).join("");
     }
 
+    const watchKey = "ppw-searches-" + st.me.id;
+    let watches = [], matches = [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(watchKey) || "{}");
+      watches = Array.isArray(saved.watches) ? saved.watches : [];
+      matches = Array.isArray(saved.matches) ? saved.matches : [];
+    } catch {}
+    function persistSearches() {
+      try { localStorage.setItem(watchKey, JSON.stringify({watches, matches})); }
+      catch { toast("ဒီဖုန်းမှာ ရှာဖွေမှုကို သိမ်းမရပါ။"); }
+    }
+    function searchLabel(f) {
+      return [f.query, f.category, f.condition, f.price && f.price + " အောက်/အထိ", f.available && "ရောင်းပြီး ဖယ်ထား"].filter(Boolean).join(" · ");
+    }
+    function saveSearch() {
+      const filters = {...explore, query: st.q.trim()};
+      const label = searchLabel(filters);
+      if (!label) return toast("ရှာမယ့်စာသား သို့မဟုတ် စစ်ထုတ်ချက် ရွေးပါ။");
+      if (filters.price.trim() && parseKyat(filters.price) === null) return toast("ဈေးနှုန်း ပြန်စစ်ပေးပါ။");
+      if (watches.some(w => JSON.stringify(w.filters) === JSON.stringify(filters))) return toast("ဒီရှာဖွေမှုကို သိမ်းထားပြီးပါပြီ။");
+      watches.push({filters, since: Date.now()}); persistSearches(); render();
+    }
+    function openSavedSearch(index) {
+      const {query, ...filters} = watches[index].filters;
+      Object.assign(explore, filters); st.q = query; render();
+    }
+    function forgetSearch(index) { watches.splice(index,1); persistSearches(); render(); }
+    function collectMatches() {
+      const seen = new Set(matches.map(m => m.id));
+      const fresh = st.posts.filter(p => p.authorId !== st.me.id && !seen.has(p.id) &&
+        watches.some(w => p.createdAt > w.since && searchMatches(p,w.filters)));
+      if (!fresh.length) return;
+      matches.unshift(...fresh.map(p => ({id:p.id, title:p.text || p.category, read:st.tab === "notifications"})));
+      persistSearches();
+    }
+    function shareListing(id) {
+      const url = new URL(APP_URL); url.searchParams.set("post",id);
+      if (navigator.share) navigator.share({title:"ဖြေးဖြေး ဝယ်",url:url.href}).catch(e => {
+        if (e.name !== "AbortError") copyText(url.href);
+      });
+      else copyText(url.href, "ပို့စ်လင့်ခ် ကူးပြီးပါပြီ");
+    }
+    function openListing(id) {
+      closeModal();
+      const url = new URL(location.href); url.searchParams.set("post",id);
+      history.replaceState(null,"",url);
+      switchTab("listing"); window.scrollTo(0,0);
+    }
+    function listingButton(id, label) {
+      if (!/^P-[a-zA-Z0-9_-]+$/.test(id)) return "";
+      return `<button class="text-emerald-300 font-bold px-3 py-2 text-sm" onclick="openListing('${id}')">${esc(label)}</button>`;
+    }
+
     function render() {
       const el = document.getElementById("mainContent");
       if (!el) return;
       try {
-        if (st.tab === "home") {
+        if (st.tab === "listing") {
+          const id = new URL(location.href).searchParams.get("post");
+          const p = st.posts.find(p => p.id === id);
+          el.innerHTML = `<button onclick="switchTab('home')" class="px-4 py-2 text-emerald-300">← ပင်မ</button>` +
+            (p ? postCard(p) : (st.firstSync ? "ပို့စ်ရှာနေပါသည်…" : "ဒီပို့စ်ကို ရှာမတွေ့ပါ။"));
+        } else if (st.tab === "home") {
           const list = getFilteredPosts();
           list.forEach(trackPostView);
           el.innerHTML = `
@@ -885,6 +967,8 @@
             <label class="block text-xs">အများဆုံးဈေး (ကျပ်)<input class="${field}" id="priceFilter" value="${esc(explore.price)}" placeholder="ဥပမာ ၅ သိန်း"/></label>
             <label class="block text-sm"><input id="availableFilter" type="checkbox" ${explore.available ? "checked" : ""}/> ရောင်းပြီးသားပို့စ်များ ဖယ်ထားမည်</label>
             <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
+            <button onclick="saveSearch()" class="rounded-xl bg-emerald-700 px-3 py-2 text-sm">🔔 ရှာဖွေမှု သိမ်းထားမည်</button>
+            ${watches.map((w,i) => `<div class="flex justify-between text-sm"><button onclick="openSavedSearch(${i})">${esc(searchLabel(w.filters))}</button><button onclick="forgetSearch(${i})">ဖယ်ရန်</button></div>`).join("")}
             <p id="resultCount" class="text-sm text-emerald-300" aria-live="polite"></p><div class="space-y-3" id="exploreResults"></div>
           </section>`;
           document.getElementById("queryFilter").oninput = e => { st.q = e.target.value; refreshExplore(); };
@@ -916,7 +1000,7 @@
               <div class="space-y-2.5">${users.length ? users.map(u => { const isF = (st.me.friends || []).includes(u.id); return `<div class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-2"><div onclick="openUserModal('${u.id}')" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400 font-mono">${esc(u.id)} • ${esc(onlineText(u.id))}</div></div></div><button onclick="openChat('${u.id}')" class="px-2.5 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button><button onclick="toggleFriend('${u.id}')" class="px-2.5 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div>
             </div>`;
         } else if (st.tab === "notifications") {
-          el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm text-slate-100"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center text-sm text-slate-400 border border-slate-800">အကြောင်းကြားစာ မရှိသေးပါ</div>`}</div>`;
+          el.innerHTML = `<div class="p-3.5 space-y-2.5"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${matches.map(m => listingButton(m.id, "🔔 " + m.title.slice(0,80))).join("")}${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserModal('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm text-slate-100"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center text-sm text-slate-400 border border-slate-800">${matches.length ? "" : "အကြောင်းကြားစာ မရှိသေးပါ"}</div>`}</div>`;
         } else if (st.tab === "profile") {
           const r = uRating(st.me.id), mine = st.posts.filter(p => p.authorId === st.me.id), fCount = (st.me.friends || []).length, followingCount = (st.me.following || []).length, followerCount = followersCount(st.me.id);
           const activeNote = st.me.note && (Date.now() - (st.me.noteAt || 0) < 24 * 3600000) ? st.me.note : "";
@@ -1073,6 +1157,7 @@
           <div class="px-2 py-2 border-t border-slate-800 grid grid-cols-4 gap-1 text-xs">
             ${REACTIONS.map(r => `<button onclick="setReaction('${p.id}','${r.key}')" class="py-2 px-1 rounded-xl font-bold border flex items-center justify-center gap-1 ${myRx === r.key ? r.activeClass : "bg-slate-800/80 text-slate-200 border-transparent"}"><span>${r.icon}</span><span class="truncate">${r.label}</span></button>`).join("")}
           </div>
+          ${/^P-[a-zA-Z0-9_-]+$/.test(p.id) ? `<button class="px-4 py-2 text-emerald-300 text-sm" onclick="shareListing('${p.id}')">↗ ပို့စ်မျှဝေရန်</button>` : ""}
           <div class="px-3.5 pb-2.5"><button onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];playSong('notif');render()" class="w-full py-2 rounded-xl bg-slate-800 text-xs font-bold text-slate-200">💬 မှတ်ချက်များ ${cmts.length ? `(${cmts.length})` : ""}</button></div>
           ${exp ? `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 space-y-2.5">${cmts.map(c => { const cu = uInfo(c.authorId); return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-xs space-y-1">${c.replyToName ? `<div class="text-xs text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-semibold">↩ ${esc(c.replyToName)} ကို ပြန်ဖြေသည်</div>` : ""}<div class="flex items-start justify-between gap-2"><div class="flex items-start gap-2 min-w-0">${avatar(cu, "w-7 h-7 text-xs")}<div class="text-sm text-slate-100 break-words"><span class="font-bold text-white inline-flex items-center gap-1">${esc(cu.name)} ${blueBadge(cu)}</span>: ${esc(c.text)}</div></div><button onclick="setCmtReply('${p.id}','${esc(cu.name)}')" class="text-xs text-emerald-400 font-bold shrink-0">↩ Reply</button></div></div>`; }).join("")}${rTarget ? `<div class="flex items-center justify-between text-xs bg-emerald-500/15 text-emerald-300 px-3 py-1.5 rounded-xl"><span>↩ <b>${esc(rTarget)}</b> ကို Reply ပြန်နေသည်</span><button onclick="delete st.replyTo['${p.id}'];render()" class="font-bold">✕</button></div>` : ""}<div class="flex items-center gap-2">${avatar(st.me, "w-8 h-8 text-xs")}<input id="ci-${p.id}" type="text" placeholder="မှတ်ချက်ရေးရန်..." onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-3.5 py-2 text-xs"/><button onclick="addCmt('${p.id}')" class="px-3.5 py-2 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">ပို့</button></div></div>` : ""}
         </article>`;
@@ -1097,7 +1182,7 @@
     // MyDay (24h limit + Viewers list + Delete button)
     function openMyDayModal() {
       st.mydayImg = null;
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><div class="text-[11px] text-emerald-400">၂၄ နာရီသာ ခံမည် (အလိုအလျောက် ပျောက်မည်)</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div></div></div>`;
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><div class="text-[11px] text-emerald-400">၂၄ နာရီသာ ခံမည် (အလိုအလျောက် ပျောက်မည်)</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div><label class="block text-xs">အရောင်းပို့စ် တွဲတင်ရန်<select id="dayListing" class="block w-full rounded-xl bg-slate-900 p-2"><option value="">ပို့စ်ရွေးရန် (ရွေးချယ်နိုင်)</option>${st.posts.filter(p => p.authorId === st.me.id && !p.sold).map(p => `<option value="${esc(p.id)}">${esc((p.text || p.category).slice(0,60))} · ${esc(p.price || "CB")}</option>`).join("")}</select></label><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div></div></div>`;
     }
     function onPickMyDayImg(e) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
@@ -1107,8 +1192,9 @@
     }
     function submitMyDay() {
       const text = (document.getElementById("mdTxt").value || "").trim();
-      if (!text && !st.mydayImg) return toast("MyDay ပုံ သို့မဟုတ် စာသား ထည့်ပေးပါ");
-      const id = "MD-" + Date.now(), d = { id, authorId: st.me.id, text, image: st.mydayImg || "", viewers: {}, createdAt: Date.now() };
+      const postId = document.getElementById("dayListing").value;
+      if (!postId && !text && !st.mydayImg) return toast("MyDay ပုံ သို့မဟုတ် စာသား ထည့်ပေးပါ");
+      const id = "MD-" + Date.now(), d = { id, postId, authorId: st.me.id, text, image: st.mydayImg || "", viewers: {}, createdAt: Date.now() };
       st.myday.unshift(d); saveFastCache(); playSong("like"); closeModal(); render(); toast("MyDay တင်ပြီးပါပြီ (၂၄ နာရီ)");
       fbPut(`myday/${id}`, d).catch(() => {});
     }
@@ -1120,6 +1206,65 @@
       toast("MyDay ဖျက်ပြီးပါပြီ");
       fbDel(`myday/${id}`).catch(() => {});
     }
+
+    const dayReactions = [
+      {key: "like", icon: "👍", label: "Like"},
+      {key: "haha", icon: "😂", label: "Haha"},
+      {key: "love", icon: "❤️", label: "Love"}
+    ];
+    const dayReactionPending = new Set();
+    let dayReactionVersion = 0;
+
+    function refreshDayReactions() {
+      const bar = document.getElementById("dayReactionBar");
+      if (!bar) return;
+      const day = st.myday.find(item => item.id === bar.dataset.day);
+      if (!day || day.createdAt + 86400000 <= Date.now()) {
+        bar.textContent = "ဒီ MyDay ကို ကြည့်ရှုချိန် ကုန်ဆုံးသွားပါပြီ။";
+        return;
+      }
+      const values = Object.values(day.reactions || {});
+      const mine = (day.reactions || {})[st.me.id];
+      bar.replaceChildren();
+      for (const {key, icon, label} of dayReactions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = icon + " " + label + " " + values.filter(value => value === key).length;
+        button.setAttribute("aria-pressed", String(mine === key));
+        button.className = "flex-1 rounded-xl py-2 text-xs font-bold " +
+          (mine === key ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-200");
+        button.disabled = day.authorId === st.me.id || dayReactionPending.has(day.id);
+        button.onclick = () => changeDayReaction(day.id, key);
+        bar.appendChild(button);
+      }
+    }
+
+    async function changeDayReaction(id, key) {
+      const day = st.myday.find(item => item.id === id);
+      if (!day || day.authorId === st.me.id || Date.now() >= day.createdAt + 86400000 ||
+          dayReactionPending.has(id) || !dayReactions.some(r => r.key === key)) return;
+      const next = (day.reactions || {})[st.me.id] === key ? null : key;
+      dayReactionPending.add(id);
+      refreshDayReactions();
+      try {
+        const response = await fbPut(`myday/${encodeURIComponent(id)}/reactions/${encodeURIComponent(st.me.id)}`, next);
+        if (!response.ok) throw new Error("write failed");
+        dayReactionVersion++;
+        const current = st.myday.find(item => item.id === id);
+        if (current) {
+          if (!current.reactions) current.reactions = {};
+          if (next) current.reactions[st.me.id] = next;
+          else delete current.reactions[st.me.id];
+          saveFastCache();
+        }
+      } catch (error) {
+        toast("Reaction သိမ်းမရသေးပါ။ ပြန်နှိပ်ကြည့်ပါ။");
+      } finally {
+        dayReactionPending.delete(id);
+        refreshDayReactions();
+      }
+    }
+
     function viewMyDay(id) {
       const d = st.myday.find(x => x.id === id); if (!d) return;
       if (!d.viewers) d.viewers = {};
@@ -1149,6 +1294,8 @@
             </div>
             ${d.image ? `<div class="flex justify-center py-1"><img src="${d.image}" class="w-56 h-56 rounded-full object-cover border-4 border-emerald-500/40"/></div>` : ""}
             ${d.text ? `<p class="text-sm text-slate-100 text-center whitespace-pre-line">${esc(d.text)}</p>` : ""}
+            ${d.postId ? listingButton(d.postId,"🛍️ ဈေးနှုန်းနှင့် အသေးစိတ်ကြည့်ရန်") : ""}
+            <div id="dayReactionBar" class="flex gap-2"></div>
             <div class="pt-2.5 border-t border-slate-800 space-y-2">
               <div class="text-xs font-bold text-emerald-300">👁️ ဝင်ကြည့်သူများ (${viewersList.length} ဦး)</div>
               <div class="max-h-36 overflow-y-auto space-y-1.5">
@@ -1163,6 +1310,8 @@
             </div>
           </div>
         </div>`;
+      document.getElementById("dayReactionBar").dataset.day = id;
+      refreshDayReactions();
     }
 
     function setCmtReply(pid, name) { st.replyTo[pid] = name; render(); setTimeout(() => { const i = document.getElementById("ci-" + pid); if (i) i.focus(); }, 50); }
@@ -1430,6 +1579,7 @@
       if (mr) mr.innerHTML = "";
     }
 
+    if (new URL(location.href).searchParams.has("post")) { st.tab = "listing"; document.getElementById("nav-home").removeAttribute("aria-current"); }
     render();
     sync(true);
     setInterval(() => sync(false), 2000);
