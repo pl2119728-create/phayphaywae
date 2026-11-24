@@ -711,28 +711,67 @@
     }
 
     let syncRunning = false;
+    let syncTimer = 0;
+    let nextSyncDelay = 4000;
+    const loaded = new Set();
+    const slowReads = new Set(["posts","myday","users","reviews","appeals","boostRequests"]);
+    const lastRead = new Map();
+    const failedReads = new Set();
+
+    function showSyncStatus(text, live = false) {
+      const dot = document.getElementById("syncDot");
+      const label = document.getElementById("syncText");
+      if (dot) dot.className = "w-2 h-2 rounded-full " + (live ? "bg-emerald-400" : "bg-amber-400");
+      if (label) label.textContent = text;
+    }
+
+    function scheduleSync(delay) {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => sync(), delay);
+    }
+
     async function sync(init = false) {
       if (syncRunning) return;
       syncRunning = true;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const read = path => fbGet(path, controller.signal);
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      const noticePath = `notifications/${st.me.id}`;
       try {
         fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
         if (init) fbPut(`users/${st.me.id}`, st.me).catch(() => {});
         const readVersion = dayReactionVersion;
-        const [po, md, us, pr, rv, ap, br, no, ch, ty, cl] = await Promise.all([
-          read("posts"), read("myday"), read("users"), read("presence"),
-          read("reviews"), read("appeals"), read("boostRequests"), read(`notifications/${st.me.id}`),
-          read("chats"), read("typing"), read("calls")
-        ]);
-        const rawPosts = po ? Object.values(po) : [];
-        st.posts = rawPosts.filter(p => p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
-        const dayCutoff = Date.now() - 24 * 3600000;
-        if (readVersion === dayReactionVersion) st.myday = md ? Object.values(md).filter(d => d && (d.createdAt || 0) >= dayCutoff).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
-        refreshDayReactions();
-        st.users = us || {};
-        st.presence = pr || {};
+        const paths = ["posts","myday","users","presence","reviews","appeals","boostRequests",
+          noticePath,"chats","typing","calls"].filter(path =>
+            !slowReads.has(path) || !lastRead.has(path) || Date.now() - lastRead.get(path) >= 15000);
+        const data = Object.create(null);
+        await Promise.all(paths.map(async path => {
+          try {
+            data[path] = await fbGet(path, controller.signal);
+            lastRead.set(path, Date.now());
+            failedReads.delete(path);
+          } catch {
+            failedReads.add(path);
+          }
+        }));
+        if (!Object.keys(data).length) {
+          nextSyncDelay = Math.min(30000, nextSyncDelay * 2);
+          showSyncStatus("ဒေတာ ရယူမရသေးပါ။ ပြန်ချိတ်နေသည်…");
+          return;
+        }
+        nextSyncDelay = 4000;
+        if ("posts" in data) {
+          st.posts = Object.values(data.posts || {}).filter(p => p && TRADE_CATS.includes(p.category) &&
+            !hasBlockedClothing(p.text) && (p.text || p.image));
+        }
+        if ("myday" in data && readVersion === dayReactionVersion) {
+          const cutoff = Date.now() - 24 * 3600000;
+          st.myday = Object.values(data.myday || {}).filter(d => d && (d.createdAt || 0) >= cutoff)
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          refreshDayReactions();
+        }
+        for (const key of ["users","presence","reviews","appeals","boostRequests","typing","calls"]) {
+          if (key in data) st[key] = data[key] || {};
+        }
         if (st.users[st.me.id]) {
           st.me.blueMark = st.me.id === OWNER_ID ? true : !!st.users[st.me.id].blueMark;
           st.me.appealStatus = st.users[st.me.id].appealStatus || st.me.appealStatus || "none";
@@ -742,43 +781,43 @@
           saveMe();
         }
         st.users[st.me.id] = st.me;
-        st.reviews = rv || {};
-        st.appeals = ap || {};
-        st.boostRequests = br || {};
-        st.typing = ty || {};
-        st.calls = cl || {};
-        saveFastCache();
+        if ("users" in data || "posts" in data || "myday" in data) saveFastCache();
 
-        const nextNotifs = no ? Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
         let newNotifSong = false;
-        nextNotifs.forEach(n => { if (!st.seenNotifIds[n.id]) { st.seenNotifIds[n.id] = true; if (!st.firstSync && !n.read) newNotifSong = true; } });
-        st.notifs = nextNotifs;
-
-        const nextChats = ch || {};
+        if (noticePath in data) {
+          st.notifs = Object.values(data[noticePath] || {}).filter(Boolean).sort((a,b) => b.createdAt - a.createdAt);
+          for (const n of st.notifs) {
+            if (!st.seenNotifIds[n.id] && loaded.has(noticePath) && !n.read) newNotifSong = true;
+            st.seenNotifIds[n.id] = true;
+          }
+        }
         let newMsgSong = false;
-        Object.entries(nextChats).forEach(([rk, mObj]) => {
-          if (!rk.includes(st.me.id)) return;
-          Object.values(mObj || {}).forEach(m => { if (m && !st.seenMsgIds[m.id]) { st.seenMsgIds[m.id] = true; if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true; } });
-        });
-        st.chats = nextChats;
+        if ("chats" in data) {
+          st.chats = data.chats || {};
+          for (const [rk, room] of Object.entries(st.chats)) {
+            if (!rk.includes(st.me.id)) continue;
+            for (const m of Object.values(room || {})) {
+              if (!m) continue;
+              if (!st.seenMsgIds[m.id] && loaded.has("chats") && m.senderId !== st.me.id) newMsgSong = true;
+              st.seenMsgIds[m.id] = true;
+            }
+          }
+        }
 
         let incomingCall = null;
-        Object.values(st.calls || {}).forEach(c => {
+        Object.values(data.calls || {}).forEach(c => {
           if (!c) return;
-          if (c.status === "ringing" && c.toId === st.me.id && !st.seenCallIds[c.id]) { st.seenCallIds[c.id] = true; if (!st.firstSync) incomingCall = c; }
+          if (c.status === "ringing" && c.toId === st.me.id && !st.seenCallIds[c.id]) { st.seenCallIds[c.id] = true; if (loaded.has("calls")) incomingCall = c; }
           if (st.activeCall && st.activeCall.id === c.id) { st.activeCall = c; if (c.status !== "ringing") stopRingLoop(); }
         });
-        st.firstSync = false;
+        for (const path of Object.keys(data)) loaded.add(path);
+        st.firstSync = !loaded.has("posts");
 
         if (incomingCall && !st.activeCall) { st.activeCall = incomingCall; startRingLoop("incoming"); openCallModal(incomingCall.id); }
         else if (newMsgSong) playSong("message");
         else if (newNotifSong) playSong("notif");
 
         if (st.chatUid && !st.me.hideSeen) markRoomSeen(st.chatUid);
-
-        const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
-        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
-        if (txt) txt.textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
 
         collectMatches();
         const unread = st.notifs.filter(n => !n.read).length + matches.filter(m => !m.read).length;
@@ -787,18 +826,18 @@
 
         const activeEl = document.activeElement;
         const tag = activeEl ? activeEl.tagName : "";
-        const isTypingMsg = activeEl && activeEl.id === "msgInp";
-        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) { render(); if (st.chatUid) renderMsgs(); }
-        else if (st.chatUid && !isTypingMsg) renderMsgs();
-        else if (st.chatUid) renderMsgs();
-      } catch (e) {
-        const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
-        if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400";
-        if (txt) txt.textContent = "ချိတ်ဆက်မှု မအောင်မြင်သေးပါ";
+        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) render();
+        if (st.chatUid) renderMsgs();
+        if (failedReads.size) showSyncStatus("ဒေတာအချို့ ရရှိပြီး။ ကျန်တာ ပြန်ယူနေသည်…");
+        else showSyncStatus("တိုက်ရိုက်ချိတ်ဆက်ပြီး", true);
+      } catch (error) {
+        console.error("Sync update failed", error);
+        showSyncStatus("ရရှိထားသော ဒေတာကို ပြသရာတွင် အမှားရှိသည်");
       } finally {
         clearTimeout(timeout);
         controller.abort();
         syncRunning = false;
+        scheduleSync(nextSyncDelay);
       }
     }
 
@@ -1729,7 +1768,8 @@
     if (new URL(location.href).searchParams.has("post")) { st.tab = "listing"; document.getElementById("nav-home").removeAttribute("aria-current"); }
     render();
     sync(true);
-    setInterval(() => sync(false), 2000);
+    window.addEventListener("online", () => scheduleSync(0));
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) scheduleSync(0); });
   </script>
 <script>
 (() => {
