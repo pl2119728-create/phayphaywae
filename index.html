@@ -18,7 +18,7 @@
 
     .market-dock { position:fixed; bottom:0; left:0; right:0; z-index:30; max-width:28rem; margin:auto; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center; padding:8px 8px calc(6px + env(safe-area-inset-bottom)); background:#101829; border-top:1px solid #334155; box-shadow:0 -6px 24px #03071255; }
     #app { padding-bottom:calc(94px + env(safe-area-inset-bottom)); }
-    .market-dock .nav-btn { display:flex; min-width:0; min-height:54px; align-items:center; justify-content:center; flex-direction:column; gap:3px; color:#bac4d3; font-size:11px; font-weight:600; }
+    .market-dock .nav-btn { position:relative; display:flex; min-width:0; min-height:54px; align-items:center; justify-content:center; flex-direction:column; gap:3px; color:#bac4d3; font-size:11px; font-weight:600; }
     .dock-orb { position:relative; display:grid; place-items:center; width:37px; height:37px; border-radius:50%; color:#fff; background:radial-gradient(circle at 28% 18%,hsl(var(--h) 88% 76%),transparent 50%),linear-gradient(135deg,hsl(var(--h) 72% 49%),hsl(calc(var(--h) + 34) 75% 30%)); box-shadow:inset 0 0 0 1px #ffffff45; filter:saturate(.62); transition:transform .3s ease,filter .2s; }
     .nav-btn[aria-current=page] { color:#fff; }
     .nav-btn[aria-current=page] .dock-orb { transform:translateY(-3px) scale(1.1); filter:saturate(1.1); box-shadow:0 0 0 2px #101829,0 0 0 3px hsl(var(--h) 76% 70%); }
@@ -26,6 +26,8 @@
 </head>
 <body class="bg-[#05080f] text-slate-100">
   <div id="nightOverlay" class="hidden fixed inset-0 z-40 pointer-events-none bg-black/35"></div>
+  <audio id="remoteAudio" autoplay playsinline></audio>
+
   <div id="app" class="max-w-md mx-auto min-h-screen bg-[#0b1120] shadow-2xl flex flex-col relative pb-24 border-x border-slate-800/80">
     <!-- Top Header -->
     <header class="sticky top-0 z-30 bg-[#0b1120]/95 backdrop-blur border-b border-slate-800 px-3.5 py-3 flex items-center justify-between gap-2">
@@ -55,7 +57,7 @@
       </div>
     </header>
 
-    <!-- Upload Status Bar (ပို့စ်တင်နေသည် စာတန်းသေးသေးလေး) -->
+    <!-- Upload Status Bar -->
     <div id="uploadStatusBar" class="hidden bg-emerald-950/90 border-b border-emerald-500/40 px-3.5 py-1.5 flex items-center justify-center gap-2 text-xs font-bold text-emerald-300">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
       <span id="uploadStatusText">ပို့စ်တင်နေသည်...</span>
@@ -79,7 +81,10 @@
         </button>
       </div>
       <button onclick="switchTab('chats')" id="nav-chats" class="nav-btn text-slate-400">
-        <span class="dock-orb" style="--h:281"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></span>
+        <span class="dock-orb" style="--h:281">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span id="chatBadge" class="hidden absolute -top-1 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 border-2 border-[#101829] text-white text-[10px] font-bold flex items-center justify-center">0</span>
+        </span>
         <span>စာတို</span>
       </button>
       <button onclick="switchTab('friends')" id="nav-friends" class="nav-btn text-slate-400">
@@ -104,7 +109,7 @@
     const TELEGRAM_HANDLE = "@snap105";
     const TELEGRAM_URL = "https://t.me/snap105";
     const ACCOUNT_KEY = "ppw_main_account";
-    const CACHE_KEY = "ppw_fast_cache_v4";
+    const CACHE_KEY = "ppw_fast_cache_v5";
 
     const TRADE_CATS = ["Facebook Page", "YouTube Account", "TikTok Account", "Instagram / RedNote", "Monetized Page / Channel"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
@@ -128,8 +133,8 @@
     const RULES = [
       "Facebook Page၊ YouTube Account၊ TikTok Account စသည့် အကောင့်/ပိုင်ဆိုင်မှု ရောင်းဝယ်မှုများကိုသာ တင်ရမည်။ အဝတ်အစားနှင့် မသက်ဆိုင်သော ပစ္စည်းများ ခွင့်မပြုပါ။",
       "MyDay ကို ၂၄ နာရီသာ တင်ခွင့်ရှိပြီး ဝင်ကြည့်သူစာရင်း (Views) နှင့် ဖျက်ခလုတ် (Delete) ပါဝင်သည်။",
-      "Boost တင်လိုပါက တစ်ရက် (၂၄ နာရီ) ၂၀,၀၀၀ ကျပ်ဖြင့် KPay/Wave (ပိုင်ဇော်ထက်) သို့ လွှဲပြီး ပြေစာကို @snap105 Telegram သို့ ပို့ရမည်။",
-      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို Menu ထဲမှတစ်ဆင့် ကိုပိုင်ဇော်ထက်ထံ လျှောက်ထားပြီး စိစစ်အတည်ပြုမှသာ ရရှိမည်။"
+      "Blue Mark (အတည်ပြု အမှတ်အသား) ကို Menu ထဲမှတစ်ဆင့် အခမဲ့ လျှောက်ထားနိုင်ပြီး Admin (ကိုပိုင်ဇော်ထက်) စိစစ်အတည်ပြုပေးပါမည်။",
+      "Boost တင်လိုပါက တစ်ရက် (၂၄ နာရီ) ၂၀,၀၀၀ ကျပ်ဖြင့် KPay/Wave (ပိုင်ဇော်ထက်) သို့ လွှဲပြီး ပြေစာကို @snap105 Telegram သို့ ပို့ရမည်။"
     ];
 
     function getUser() {
@@ -143,6 +148,7 @@
               id: s.id,
               name: s.name || ("အသုံးပြုသူ #" + String(s.id).slice(-4)),
               bio: s.bio || "ဖြေးဖြေး ဝယ် မှာ Page / Account များ စိတ်ချလက်ချ ရောင်းဝယ်နေပါတယ်။",
+              telegram: s.telegram || "",
               phone: s.phone || "",
               photo: s.photo || "",
               coverPhoto: s.coverPhoto || "",
@@ -170,7 +176,7 @@
         id: "PPW-" + n,
         name: "အသုံးပြုသူ #" + String(n).slice(-4),
         bio: "ဖြေးဖြေး ဝယ် မှာ Page / Account များ စိတ်ချလက်ချ ရောင်းဝယ်နေပါတယ်။",
-        phone: "", photo: "", coverPhoto: "", note: "", noteAt: 0, city: "", gender: "", age: "",
+        telegram: "", phone: "", photo: "", coverPhoto: "", note: "", noteAt: 0, city: "", gender: "", age: "",
         blueMark: false, appealStatus: "none", isAdmin: false, hideSeen: false,
         color: COLORS[n % COLORS.length], friends: [], following: [], createdAt: Date.now()
       };
@@ -183,7 +189,6 @@
 
     let st = {
       tab: "home",
-      profileSubTab: "posts",
       adminFilter: "pending",
       me: getUser(),
       posts: Array.isArray(cached.posts) ? cached.posts : [],
@@ -199,7 +204,9 @@
       nightMode: false, soundOn: true, audioCtx: null, ringTimer: null,
       seenMsgIds: {}, seenNotifIds: {}, seenCallIds: {}, firstSync: true,
       recorder: null, audioChunks: [],
-      sessionOnlineAt: Date.now()
+      sessionOnlineAt: Date.now(),
+      // WebRTC Voice Call State
+      pc: null, localStream: null, callMuted: false, speakerOn: true, callSeconds: 0, callSecTimer: null, appliedIce: {}
     };
 
     const saveMe = () => { try { localStorage.setItem(ACCOUNT_KEY, JSON.stringify(st.me)); } catch (e) {} };
@@ -219,6 +226,20 @@
       el.textContent = m; el.classList.remove("hidden");
       clearTimeout(window._tt);
       window._tt = setTimeout(() => el.classList.add("hidden"), 2400);
+    }
+
+    function formatTelegramUrl(raw) {
+      const v = String(raw || "").trim();
+      if (!v) return "";
+      if (v.startsWith("http://") || v.startsWith("https://")) return v;
+      if (v.startsWith("t.me/")) return "https://" + v;
+      return "https://t.me/" + v.replace(/^@+/, "");
+    }
+    function formatTelegramDisplay(raw) {
+      const v = String(raw || "").trim();
+      if (!v) return "";
+      if (v.startsWith("http")) return v.replace(/^https?:\/\/(www\.)?/, "");
+      return v.startsWith("@") ? v : "@" + v.replace(/^t\.me\//, "");
     }
 
     function setUploadStatus(show, text = "ပို့စ်တင်နေသည်...") {
@@ -244,7 +265,6 @@
       } catch (e) { prompt("Copy ကူးရန်:", text); }
     }
     function copyUserId(id) { copyText(id || st.me.id, `ID (${id || st.me.id}) ကူးပြီးပါပြီ ✓`); }
-    function copyProfileLink() { copyText(`${APP_URL}?u=${st.me.id}`, "Profile Link ကူးပြီးပါပြီ ✓"); }
 
     function ago(ts) {
       const d = Math.floor((Date.now() - (ts || Date.now())) / 1000);
@@ -262,14 +282,11 @@
       return new Date(Number(ts)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
-    // Accurate Online / Offline & Active / Last Seen Time
     function parsePresence(uid) {
       if (uid === st.me.id) return { online: true, lastSeen: Date.now(), onlineSince: st.sessionOnlineAt };
       const raw = st.presence[uid];
       if (!raw) return { online: false, lastSeen: 0, onlineSince: 0 };
-      if (typeof raw === "number") {
-        return { online: (Date.now() - raw < 16000), lastSeen: raw, onlineSince: raw };
-      }
+      if (typeof raw === "number") return { online: (Date.now() - raw < 16000), lastSeen: raw, onlineSince: raw };
       const lastSeen = Number(raw.lastSeen || 0);
       const onlineSince = Number(raw.onlineSince || lastSeen);
       const online = raw.online !== false && lastSeen > 0 && (Date.now() - lastSeen < 16000);
@@ -278,20 +295,12 @@
     function isOnline(uid) { return parsePresence(uid).online; }
     function onlineText(uid) {
       const p = parsePresence(uid);
-      if (p.online) {
-        return p.onlineSince ? `🟢 Online (တက်ချိန် ${formatClock(p.onlineSince)})` : "🟢 Online";
-      }
-      if (p.lastSeen) {
-        return `⚫ Offline • ဆင်းချိန် ${formatClock(p.lastSeen)} (${ago(p.lastSeen)})`;
-      }
+      if (p.online) return p.onlineSince ? `🟢 Online (တက်ချိန် ${formatClock(p.onlineSince)})` : "🟢 Online";
+      if (p.lastSeen) return `⚫ Offline • ဆင်းချိန် ${formatClock(p.lastSeen)} (${ago(p.lastSeen)})`;
       return "⚫ Offline";
     }
     function updateMyPresence(isOnlineNow) {
-      const payload = {
-        online: !!isOnlineNow,
-        lastSeen: Date.now(),
-        onlineSince: st.sessionOnlineAt
-      };
+      const payload = { online: !!isOnlineNow, lastSeen: Date.now(), onlineSince: st.sessionOnlineAt };
       st.presence[st.me.id] = payload;
       fbPut(`presence/${st.me.id}`, payload).catch(() => {});
     }
@@ -300,9 +309,7 @@
       else { st.sessionOnlineAt = Date.now(); updateMyPresence(true); }
     });
     window.addEventListener("beforeunload", () => {
-      try {
-        navigator.sendBeacon(`${DB}/presence/${st.me.id}.json`, JSON.stringify({ online: false, lastSeen: Date.now(), onlineSince: st.sessionOnlineAt }));
-      } catch (e) {}
+      try { navigator.sendBeacon(`${DB}/presence/${st.me.id}.json`, JSON.stringify({ online: false, lastSeen: Date.now(), onlineSince: st.sessionOnlineAt })); } catch (e) {}
     });
 
     const onlineFriendsCount = () => (st.me.friends || []).filter(fid => isOnline(fid)).length;
@@ -320,26 +327,36 @@
     }
     document.addEventListener("pointerdown", () => { if (st.soundOn) ensureAudio(); }, { passive: true });
     function stopRingLoop() { if (st.ringTimer) { clearInterval(st.ringTimer); st.ringTimer = null; } }
-    function startRingLoop() { stopRingLoop(); playSong("message"); st.ringTimer = setInterval(() => playSong("message"), 1600); }
+    function startRingLoop(mode = "incoming") {
+      stopRingLoop();
+      const ringOnce = () => playSong(mode === "incoming" ? "ring" : "dial");
+      ringOnce();
+      st.ringTimer = setInterval(ringOnce, mode === "incoming" ? 1300 : 1800);
+    }
     function playSong(kind) {
-      if (!st.soundOn) return;
+      if (!st.soundOn && kind !== "hangup") return;
       const ctx = ensureAudio(); if (!ctx) return;
       try {
         const now = ctx.currentTime;
         const seq =
+          kind === "hangup" ? [480, 480, 480] :
+          kind === "ring" ? [880, 1174.66, 880, 1174.66] :
+          kind === "dial" ? [440, 440] :
           kind === "upload" ? [523.25, 659.25, 783.99, 1046.5, 1318.5] :
           kind === "message" ? [659.25, 880, 1046.5] :
           kind === "love" ? [523.25, 659.25, 783.99, 1046.5] :
           kind === "angry" ? [220, 165] : [523.25, 783.99];
+        const step = kind === "hangup" ? 0.24 : 0.085;
+        const dur = kind === "hangup" ? 0.16 : 0.22;
         seq.forEach((f, idx) => {
           const osc = ctx.createOscillator(), g = ctx.createGain();
-          osc.type = kind === "upload" ? "triangle" : "sine";
-          osc.frequency.setValueAtTime(f, now + idx * 0.075);
-          g.gain.setValueAtTime(0.001, now + idx * 0.075);
-          g.gain.exponentialRampToValueAtTime(0.18, now + idx * 0.075 + 0.015);
-          g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.075 + 0.24);
+          osc.type = kind === "hangup" ? "sine" : (kind === "upload" || kind === "ring" ? "triangle" : "sine");
+          osc.frequency.setValueAtTime(f, now + idx * step);
+          g.gain.setValueAtTime(0.001, now + idx * step);
+          g.gain.exponentialRampToValueAtTime(kind === "hangup" ? 0.24 : 0.18, now + idx * step + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + idx * step + dur);
           osc.connect(g); g.connect(ctx.destination);
-          osc.start(now + idx * 0.075); osc.stop(now + idx * 0.075 + 0.26);
+          osc.start(now + idx * step); osc.stop(now + idx * step + dur + 0.02);
         });
       } catch (e) {}
     }
@@ -357,7 +374,7 @@
     }
 
     const uInfo = id => {
-      const base = id === st.me.id ? st.me : (st.users[id] || { id: id || "PPW", name: id || "User", bio: "", photo: "", coverPhoto: "", note: "", noteAt: 0, city: "", gender: "", age: "", blueMark: false, friends: [], following: [], color: COLORS[0], createdAt: Date.now() });
+      const base = id === st.me.id ? st.me : (st.users[id] || { id: id || "PPW", name: id || "User", bio: "", telegram: "", photo: "", coverPhoto: "", note: "", noteAt: 0, city: "", gender: "", age: "", blueMark: false, friends: [], following: [], color: COLORS[0], createdAt: Date.now() });
       if (base.id === OWNER_ID) { base.blueMark = true; base.isAdmin = true; }
       return base;
     };
@@ -387,7 +404,6 @@
       return `<div class="relative inline-block shrink-0">${inner}${onlineDot}</div>`;
     }
 
-    // Check if current user is allowed to see post based on privacy (everyone / friends / onlyme)
     function canSeePost(p) {
       if (!p || st.deletedIds[p.id]) return false;
       if (p.authorId === st.me.id) return true;
@@ -403,9 +419,9 @@
     }
 
     function privacyBadge(priv) {
-      if (priv === "onlyme") return `<span class="text-[11px] text-amber-300 font-semibold" title="Only Me">🔒 Only Me</span>`;
-      if (priv === "friends") return `<span class="text-[11px] text-sky-300 font-semibold" title="Friends">👥 Friends</span>`;
-      return `<span class="text-[11px] text-slate-400" title="Everyone">🌍</span>`;
+      if (priv === "onlyme") return `<span class="text-[11px] text-amber-300 font-semibold">🔒 Only Me</span>`;
+      if (priv === "friends") return `<span class="text-[11px] text-sky-300 font-semibold">👥 Friends</span>`;
+      return `<span class="text-[11px] text-slate-400">🌍</span>`;
     }
 
     function totalReactions(p) {
@@ -440,7 +456,7 @@
 
     async function fbGet(path, query = "") {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30000);
+      const timer = setTimeout(() => controller.abort(), 25000);
       try {
         const res = await fetch(`${DB}/${path}.json${query}`, { signal: controller.signal });
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -452,6 +468,22 @@
     const fbPut = (p, d) => fetch(`${DB}/${p}.json`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(d) });
     const fbDel = p => fetch(`${DB}/${p}.json`, { method: "DELETE" });
 
+    // Calculate total unread chat messages across all rooms
+    function countUnreadChats() {
+      let unreadMsgs = 0;
+      Object.entries(st.chats || {}).forEach(([rk, mObj]) => {
+        if (!rk.includes(st.me.id)) return;
+        const oid = rk.split("__").find(x => x !== st.me.id);
+        if (st.chatUid && st.chatUid === oid) return;
+        Object.values(mObj || {}).forEach(m => {
+          if (m && m.senderId !== st.me.id && !m.seenAt && !(m.deletedFor && m.deletedFor[st.me.id])) {
+            unreadMsgs++;
+          }
+        });
+      });
+      return unreadMsgs;
+    }
+
     let syncBusy = false;
     async function sync(init = false) {
       if (syncBusy) return;
@@ -462,30 +494,85 @@
         updateMyPresence(true);
         if (init) fbPut(`users/${st.me.id}`, st.me).catch(() => {});
 
-        // Fetch latest 50 posts so user profiles and feed always stay completely in sync (including sold & deleted)
-        const po = await fbGet("posts", '?orderBy="$key"&limitToLast=50');
-        const rawPosts = po ? Object.values(po) : [];
-        const localPending = st.posts.filter(p => p && p._uploading && !po?.[p.id]);
-        const serverPosts = rawPosts.filter(p => p && !st.deletedIds[p.id] && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
-        st.posts = [...localPending, ...serverPosts];
+        // Fast parallel fetch of chats + notifications + posts so messages appear immediately!
+        const [ch, no, cl, ty, po] = await Promise.all([
+          fbGet("chats").catch(() => null),
+          fbGet(`notifications/${st.me.id}`).catch(() => null),
+          fbGet("calls").catch(() => null),
+          fbGet("typing").catch(() => null),
+          fbGet("posts", '?orderBy="$key"&limitToLast=45').catch(() => null)
+        ]);
+
+        if (ch) {
+          let newMsgSong = false;
+          Object.entries(ch).forEach(([rk, mObj]) => {
+            if (!rk.includes(st.me.id)) return;
+            Object.values(mObj || {}).forEach(m => {
+              if (m && !st.seenMsgIds[m.id]) {
+                st.seenMsgIds[m.id] = true;
+                if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true;
+              }
+            });
+          });
+          st.chats = ch;
+          if (newMsgSong) playSong("message");
+        }
+
+        if (no) {
+          const nextNotifs = Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          let newNotifSong = false;
+          nextNotifs.forEach(n => { if (!st.seenNotifIds[n.id]) { st.seenNotifIds[n.id] = true; if (!st.firstSync && !n.read) newNotifSong = true; } });
+          st.notifs = nextNotifs;
+          if (newNotifSong) playSong("notif");
+        }
+
+        if (ty) st.typing = ty;
+        if (cl) {
+          st.calls = cl;
+          handleCallSignaling(cl);
+        }
+
+        if (po) {
+          const rawPosts = Object.values(po);
+          const localPending = st.posts.filter(p => p && p._uploading && !po[p.id]);
+          const serverPosts = rawPosts.filter(p => p && !st.deletedIds[p.id] && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
+          st.posts = [...localPending, ...serverPosts];
+        }
 
         if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
         if (txt) txt.textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
 
-        const activeEl = document.activeElement;
-        if (!["INPUT", "TEXTAREA", "SELECT"].includes(activeEl ? activeEl.tagName : "")) render();
+        // Update Notification & Chat Unread Badges immediately
+        const unreadNotif = st.notifs.filter(n => !n.read).length;
+        const nb = document.getElementById("notifBadge");
+        if (nb) { if (unreadNotif > 0) { nb.textContent = unreadNotif > 99 ? "99+" : unreadNotif; nb.classList.remove("hidden"); } else nb.classList.add("hidden"); }
 
-        const [md, us, pr, rv, ap, br, no, ch, ty, cl] = await Promise.all([
+        const unreadChat = countUnreadChats();
+        const cb = document.getElementById("chatBadge");
+        if (cb) { if (unreadChat > 0) { cb.textContent = unreadChat > 99 ? "99+" : unreadChat; cb.classList.remove("hidden"); } else cb.classList.add("hidden"); }
+
+        if (st.chatUid && !st.me.hideSeen) markRoomSeen(st.chatUid);
+
+        const activeNow = document.activeElement;
+        const tag = activeNow ? activeNow.tagName : "";
+        const isTypingMsg = activeNow && activeNow.id === "msgInp";
+        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) {
+          render();
+          if (st.chatUid) renderMsgs();
+        } else if (st.chatUid && !isTypingMsg) {
+          renderMsgs();
+        } else if (st.chatUid) {
+          renderTypingBanner();
+        }
+
+        // Secondary fetch (MyDay, Users, Presence, Appeals)
+        const [md, us, pr, rv, ap, br] = await Promise.all([
           fbGet("myday", '?orderBy="$key"&limitToLast=20').catch(() => null),
           fbGet("users").catch(() => null),
           fbGet("presence").catch(() => null),
           fbGet("reviews").catch(() => null),
           fbGet("appeals").catch(() => null),
-          fbGet("boostRequests").catch(() => null),
-          fbGet(`notifications/${st.me.id}`).catch(() => null),
-          fbGet("chats").catch(() => null),
-          fbGet("typing").catch(() => null),
-          fbGet("calls").catch(() => null)
+          fbGet("boostRequests").catch(() => null)
         ]);
 
         const dayCutoff = Date.now() - 24 * 3600000;
@@ -494,9 +581,11 @@
           st.users = us;
           if (st.users[st.me.id]) {
             st.me.blueMark = st.me.id === OWNER_ID ? true : !!st.users[st.me.id].blueMark;
+            st.me.appealStatus = st.users[st.me.id].appealStatus || st.me.appealStatus || "none";
             if (st.users[st.me.id].isAdmin || st.me.id === OWNER_ID) st.me.isAdmin = true;
             if (!st.me.photo && st.users[st.me.id].photo) st.me.photo = st.users[st.me.id].photo;
             if (!st.me.coverPhoto && st.users[st.me.id].coverPhoto) st.me.coverPhoto = st.users[st.me.id].coverPhoto;
+            if (!st.me.telegram && st.users[st.me.id].telegram) st.me.telegram = st.users[st.me.id].telegram;
             if (Array.isArray(st.users[st.me.id].friends) && st.users[st.me.id].friends.length > (st.me.friends || []).length) {
               st.me.friends = st.users[st.me.id].friends;
             }
@@ -508,49 +597,8 @@
         if (rv) st.reviews = rv;
         if (ap) st.appeals = ap;
         if (br) st.boostRequests = br;
-        if (ty) st.typing = ty;
-        if (cl) st.calls = cl;
-
-        if (no) {
-          const nextNotifs = Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-          let newNotifSong = false;
-          nextNotifs.forEach(n => { if (!st.seenNotifIds[n.id]) { st.seenNotifIds[n.id] = true; if (!st.firstSync && !n.read) newNotifSong = true; } });
-          st.notifs = nextNotifs;
-          if (newNotifSong) playSong("notif");
-        }
-
-        if (ch) {
-          let newMsgSong = false;
-          Object.entries(ch).forEach(([rk, mObj]) => {
-            if (!rk.includes(st.me.id)) return;
-            Object.values(mObj || {}).forEach(m => { if (m && !st.seenMsgIds[m.id]) { st.seenMsgIds[m.id] = true; if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true; } });
-          });
-          st.chats = ch;
-          if (newMsgSong) playSong("message");
-        }
-
-        let incomingCall = null;
-        Object.values(st.calls || {}).forEach(c => {
-          if (!c) return;
-          if (c.status === "ringing" && c.toId === st.me.id && !st.seenCallIds[c.id]) { st.seenCallIds[c.id] = true; if (!st.firstSync) incomingCall = c; }
-          if (st.activeCall && st.activeCall.id === c.id) { st.activeCall = c; if (c.status !== "ringing") stopRingLoop(); }
-        });
         st.firstSync = false;
         saveFastCache();
-
-        if (incomingCall && !st.activeCall) { st.activeCall = incomingCall; startRingLoop(); openCallModal(incomingCall.id); }
-        if (st.chatUid && !st.me.hideSeen) markRoomSeen(st.chatUid);
-
-        const unread = st.notifs.filter(n => !n.read).length;
-        const nb = document.getElementById("notifBadge");
-        if (nb) { if (unread > 0) { nb.textContent = unread > 9 ? "9+" : unread; nb.classList.remove("hidden"); } else nb.classList.add("hidden"); }
-
-        const activeNow = document.activeElement;
-        const tag = activeNow ? activeNow.tagName : "";
-        const isTypingMsg = activeNow && activeNow.id === "msgInp";
-        if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) { render(); if (st.chatUid) renderMsgs(); }
-        else if (st.chatUid && !isTypingMsg) renderMsgs();
-        else if (st.chatUid) renderTypingBanner();
       } catch (e) {
         if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400";
         if (txt) txt.textContent = "ချိတ်ဆက်မှု ပြန်စမ်းနေသည်…";
@@ -587,14 +635,11 @@
       return list;
     }
 
-    // Facebook-style 6-grid friends display (3 columns x 2 rows)
     function renderFriendsGrid(uid, limit = 6) {
       const u = uInfo(uid);
       const allFri = Array.isArray(u.friends) ? u.friends : [];
       const shown = allFri.slice(0, limit);
-      if (!shown.length) {
-        return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center text-sm text-slate-400">မိတ်ဆွေစာရင်း မရှိသေးပါ</div>`;
-      }
+      if (!shown.length) return `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center text-sm text-slate-400">မိတ်ဆွေစာရင်း မရှိသေးပါ</div>`;
       return `
         <div class="grid grid-cols-3 gap-2.5">
           ${shown.map(fid => {
@@ -604,13 +649,8 @@
               : `<div class="w-full aspect-square bg-gradient-to-br ${fu.color || COLORS[0]} text-white text-2xl font-bold flex items-center justify-center">${esc((fu.name || "U").trim().charAt(0).toUpperCase())}</div>`;
             return `
               <div onclick="openUserModal('${fu.id}')" class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden cursor-pointer active:scale-95 transition shadow-sm">
-                <div class="relative">
-                  ${photoHtml}
-                  ${isOnline(fu.id) ? `<span class="absolute bottom-1.5 right-1.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-900"></span>` : ""}
-                </div>
-                <div class="p-2">
-                  <div class="text-xs font-bold text-slate-100 truncate flex items-center gap-0.5">${esc(fu.name)} ${blueBadge(fu)}</div>
-                </div>
+                <div class="relative">${photoHtml}${isOnline(fu.id) ? `<span class="absolute bottom-1.5 right-1.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-900"></span>` : ""}</div>
+                <div class="p-2"><div class="text-xs font-bold text-slate-100 truncate flex items-center gap-0.5">${esc(fu.name)} ${blueBadge(fu)}</div></div>
               </div>`;
           }).join("")}
         </div>
@@ -622,7 +662,6 @@
       return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${activeDays.map(d => { const du = uInfo(d.authorId); const vCnt = Object.keys(d.viewers || {}).length; return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1 shrink-0 max-w-[72px] relative"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base", false)}</div>${vCnt > 0 ? `<span class="absolute top-0 right-0 px-1.5 rounded-full bg-black/80 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">👁️${vCnt}</span>` : ""}<span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
     }
 
-    // Direct Gallery Picker from Home Composer Row
     function onQuickGalleryPost(e) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
       const r = new FileReader();
@@ -632,8 +671,7 @@
           const c = document.createElement("canvas"), mw = 640;
           let w = im.width, h = im.height; if (w > mw) { h = Math.round(h * mw / w); w = mw; }
           c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h);
-          const dataUrl = c.toDataURL("image/jpeg", 0.72);
-          openComposerModal(dataUrl);
+          openComposerModal(c.toDataURL("image/jpeg", 0.72));
         };
         im.src = ev.target.result;
       };
@@ -648,7 +686,7 @@
         const list = getFilteredPosts();
         el.innerHTML = `
           ${renderMyDayStrip()}
-          <!-- Facebook-style Single-Row Post Composer Bar -->
+          <!-- Facebook-style Single-Row Post Bar -->
           <div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800 flex items-center gap-2.5">
             <div onclick="switchTab('profile')" class="cursor-pointer shrink-0">${avatar(st.me, "w-10 h-10 text-sm")}</div>
             <button onclick="openComposerModal()" class="flex-1 min-w-0 text-left bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/70 text-slate-300 text-xs sm:text-sm px-3.5 py-2.5 rounded-full font-medium truncate">အရောင်းပို့စ်တင်ရန် (Page / YouTube)...</button>
@@ -676,7 +714,43 @@
       } else if (st.tab === "chats") {
         const rooms = Object.entries(st.chats || {}).filter(([k]) => k.includes(st.me.id));
         const others = Object.values(st.users).filter(u => u && u.id !== st.me.id);
-        el.innerHTML = `<div class="p-3.5 space-y-4"><div class="flex items-center justify-between px-1"><h2 class="text-base font-bold text-white">မက်ဆေ့ချ် Box</h2><span class="text-xs text-slate-400">${rooms.length} ဦး</span></div><div class="space-y-2.5">${rooms.length ? rooms.map(([k, mObj], idx) => { const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid); const ms = Object.values(mObj || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt); const last = ms[ms.length - 1]; const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500)); const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.video ? "🎬 Short Video" : (last.audio ? "🎙️ အသံ" : "📷 ဓာတ်ပုံ")))) : "စကားစပြောရန် နှိပ်ပါ"); return `<div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer"><span class="w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>${avatar(o, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="flex items-center justify-between"><span class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span><span class="text-xs text-slate-400">${last ? ago(last.createdAt) : ""}</span></div><div class="text-xs ${isTyping ? "text-emerald-400 font-bold" : "text-slate-400"} truncate mt-0.5">${esc(preview)}</div></div></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">စာပို့ထားသူ မရှိသေးပါ</div>`}</div>${others.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><h3 class="text-sm font-bold text-slate-300 px-1">စာပို့ / ဖုန်းခေါ်နိုင်သူများ</h3><div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">${others.map(u => `<button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[90px] shrink-0">${avatar(u, "w-12 h-12 text-base")}<span class="text-xs font-bold text-white truncate w-full text-center">${esc(u.name)}</span><span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span></button>`).join("")}</div></div>` : ""}</div>`;
+        const totalUnread = countUnreadChats();
+        el.innerHTML = `
+          <div class="p-3.5 space-y-4">
+            <div class="flex items-center justify-between px-1">
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold text-white">မက်ဆေ့ချ် Box</h2>
+                ${totalUnread > 0 ? `<span class="px-2 py-0.5 rounded-full bg-rose-500 text-white text-xs font-bold">စာအသစ် ${totalUnread} စောင်</span>` : ""}
+              </div>
+              <span class="text-xs text-slate-400">${rooms.length} ဦး</span>
+            </div>
+            <div class="space-y-2.5">
+              ${rooms.length ? rooms.map(([k, mObj], idx) => {
+                const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid);
+                const ms = Object.values(mObj || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
+                const unreadInRoom = ms.filter(m => m.senderId !== st.me.id && !m.seenAt).length;
+                const last = ms[ms.length - 1];
+                const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500));
+                const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.video ? "🎬 Short Video" : (last.audio ? "🎙️ အသံ" : "📷 ဓာတ်ပုံ")))) : "စကားစပြောရန် နှိပ်ပါ");
+                return `
+                  <div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border ${unreadInRoom > 0 ? "border-emerald-500/50 bg-emerald-950/20" : "border-slate-800"} flex items-center gap-3 cursor-pointer">
+                    <span class="w-7 h-7 rounded-full ${unreadInRoom > 0 ? "bg-rose-500" : "bg-emerald-600"} text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
+                    ${avatar(o, "w-12 h-12 text-base")}
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span>
+                        <span class="text-xs text-slate-400 shrink-0">${last ? ago(last.createdAt) : ""}</span>
+                      </div>
+                      <div class="flex items-center justify-between gap-2 mt-0.5">
+                        <div class="text-xs ${isTyping ? "text-emerald-400 font-bold" : (unreadInRoom > 0 ? "text-white font-bold" : "text-slate-400")} truncate">${esc(preview)}</div>
+                        ${unreadInRoom > 0 ? `<span class="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[11px] font-bold shrink-0">${unreadInRoom} စောင်</span>` : ""}
+                      </div>
+                    </div>
+                  </div>`;
+              }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">စာပို့ထားသူ မရှိသေးပါ</div>`}
+            </div>
+            ${others.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><h3 class="text-sm font-bold text-slate-300 px-1">စာပို့ / ဖုန်းခေါ်နိုင်သူများ</h3><div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">${others.map(u => `<button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[90px] shrink-0">${avatar(u, "w-12 h-12 text-base")}<span class="text-xs font-bold text-white truncate w-full text-center">${esc(u.name)}</span><span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span></button>`).join("")}</div></div>` : ""}
+          </div>`;
       } else if (st.tab === "friends") {
         const q = st.fq.trim().toLowerCase();
         const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
@@ -686,6 +760,7 @@
       } else if (st.tab === "profile") {
         const r = uRating(st.me.id), mine = st.posts.filter(p => p.authorId === st.me.id && !st.deletedIds[p.id]).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)), fCount = (st.me.friends || []).length, followingCount = (st.me.following || []).length, followerCount = followersCount(st.me.id);
         const activeNote = st.me.note && (Date.now() - (st.me.noteAt || 0) < 24 * 3600000) ? st.me.note : "";
+        const tgUrl = formatTelegramUrl(st.me.telegram);
         el.innerHTML = `
           <div class="pb-4">
             <div class="bg-[#0f172a] border-b border-slate-800 pb-4">
@@ -707,14 +782,15 @@
                 <h2 class="pointer-events-auto mt-2.5 text-[15px] font-bold text-white flex items-center justify-center gap-1 text-center">${esc(st.me.name)} ${blueBadge(st.me)}</h2>
                 <div class="pointer-events-auto text-xs text-slate-300 mt-1 font-medium"><b>${followerCount}</b> followers · <b>${followingCount}</b> following · <b>${mine.length}</b> posts</div>
                 <p class="pointer-events-auto text-xs text-slate-300 mt-1.5 text-center max-w-xs leading-relaxed">${esc(st.me.bio || "")}</p>
-                <div class="pointer-events-auto text-[11px] text-slate-400 mt-1 flex items-center gap-2 flex-wrap justify-center">
+                ${tgUrl ? `<a href="${esc(tgUrl)}" target="_blank" rel="noopener" class="pointer-events-auto mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 text-xs font-bold">✈️ Telegram: ${esc(formatTelegramDisplay(st.me.telegram))}</a>` : ""}
+                <div class="pointer-events-auto text-[11px] text-slate-400 mt-1.5 flex items-center gap-2 flex-wrap justify-center">
                   ${st.me.city ? `<span>📍 ${esc(st.me.city)}</span>` : ""}
                   <button onclick="copyUserId('${st.me.id}')" class="font-mono text-emerald-300 underline">${esc(st.me.id)} 📋</button>
                   <span class="text-amber-300 font-bold">★ ${r.avg}</span>
                 </div>
                 <div class="pointer-events-auto grid grid-cols-2 gap-2 w-full mt-3.5">
                   <button onclick="openDashboardModal()" class="py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold">📊 Dashboard</button>
-                  <button onclick="copyUserId('${st.me.id}')" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold">📋 ID ကူးမည်</button>
+                  <button onclick="openSettingsModal()" class="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold">✏️ Bio & Telegram</button>
                 </div>
               </div>
             </div>
@@ -812,43 +888,113 @@
       fbPut(`posts/${id}/comments/${cid}`, c).catch(() => {});
     }
 
+    // Facebook-style Post Composer Modal (Top-right Post button + Large Photo Dropzone)
     function openComposerModal(preloadedImg = null) {
       st.img = preloadedImg || null;
       document.getElementById("modalRoot").innerHTML = `
-        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
-          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div class="flex items-center gap-2">
-                ${avatar(st.me, "w-9 h-9 text-xs", false)}
+        <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl flex flex-col max-h-[92vh] animate-slide-up overflow-hidden">
+            <!-- Top Bar with Close on Left, Title in Middle, and POST Button on Top-Right -->
+            <div class="px-4 py-3 bg-[#162033] border-b border-slate-800 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center">✕</button>
+                <h3 class="text-base font-bold text-white">ပို့စ်တင်ရန်</h3>
+              </div>
+              <button onclick="submitPost()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-bold shadow-md active:scale-95 transition">တင်မည်</button>
+            </div>
+
+            <div class="p-4 space-y-3.5 overflow-y-auto">
+              <!-- Author + Privacy Row -->
+              <div class="flex items-center gap-2.5">
+                ${avatar(st.me, "w-11 h-11 text-base", false)}
                 <div>
-                  <h3 class="text-sm font-bold text-white">${esc(st.me.name)}</h3>
-                  <select id="postPriv" class="mt-0.5 bg-slate-800 text-emerald-300 border border-slate-700 rounded-lg px-2 py-0.5 text-[11px] font-bold">
+                  <div class="text-sm font-bold text-white flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</div>
+                  <select id="postPriv" class="mt-1 bg-slate-800 text-emerald-300 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold">
                     ${PRIVACY_OPTS.map(o => `<option value="${o.key}">${o.icon} ${o.label}</option>`).join("")}
                   </select>
                 </div>
               </div>
-              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button>
-            </div>
-            <textarea id="postTxt" rows="3" placeholder="#youtube, #facebook, #tiktok စသဖြင့် အသေးစိတ် ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea>
-            <div class="flex items-center gap-1.5 flex-wrap">${QUICK_TAGS.map(t => `<button type="button" onclick="const ta=document.getElementById('postTxt');ta.value+=(ta.value?' ':'')+'${t} '" class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-emerald-300 text-xs font-bold">${t}</button>`).join("")}</div>
-            <div id="imgBox" class="${st.img ? "" : "hidden"} relative rounded-2xl overflow-hidden border border-slate-700"><img id="imgPrev" src="${st.img || ""}" class="w-full max-h-56 object-cover"/><button onclick="st.img=null;document.getElementById('imgBox').classList.add('hidden')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div>
-            <div class="grid grid-cols-2 gap-2">
-              <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (မထည့်လည်းရ / CB)" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
-              <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="ရောင်းမည်">ရောင်းမည်</option><option value="ဝယ်မည်">ဝယ်မည်</option><option value="လဲလှယ်မည်">လဲလှယ်မည်</option></select>
-            </div>
-            <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold"><option value="">-- Account အမျိုးအစား ရွေးပါ --</option>${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}</select>
-            <div class="flex items-center justify-between gap-2">
-              <label class="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold cursor-pointer flex items-center gap-1.5"><span>🖼️ Gallery ပုံထည့်</span><input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/></label>
-              <button onclick="submitPost()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold">တင်မည်</button>
+
+              <!-- Text Input -->
+              <textarea id="postTxt" rows="3" placeholder="ရောင်းမည့် Page / Account အကြောင်း အသေးစိတ် ရေးပါ (#facebook, #youtube, #tiktok)..." class="w-full bg-transparent text-white placeholder-slate-400 text-base focus:outline-none resize-none"></textarea>
+
+              <!-- Quick Hashtags -->
+              <div class="flex items-center gap-1.5 flex-wrap">
+                ${QUICK_TAGS.map(t => `<button type="button" onclick="const ta=document.getElementById('postTxt');ta.value+=(ta.value?' ':'')+'${t} '" class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-emerald-300 text-xs font-bold">${t}</button>`).join("")}
+              </div>
+
+              <!-- Large Facebook-style Photo Picker / Preview Box -->
+              <div id="largePhotoArea">
+                ${st.img ? `
+                  <div class="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-900">
+                    <img id="imgPrev" src="${st.img}" class="w-full max-h-72 object-contain mx-auto"/>
+                    <button onclick="clearComposerImg()" class="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-full bg-black/80 text-white text-xs font-bold border border-white/20">✕ ပုံဖျက်</button>
+                  </div>` : `
+                  <label class="w-full h-44 rounded-2xl bg-slate-900/90 hover:bg-slate-800/80 border-2 border-dashed border-emerald-500/40 flex flex-col items-center justify-center gap-2 cursor-pointer transition active:scale-[0.99]">
+                    <div class="w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
+                      <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 15l-5-5L5 21"/></svg>
+                    </div>
+                    <div class="text-sm font-bold text-emerald-300">ဓာတ်ပုံ / Insights ထည့်ရန် နှိပ်ပါ</div>
+                    <div class="text-xs text-slate-400">ဖုန်း Gallery ထဲမှ ပုံရွေးချယ်နိုင်ပါသည်</div>
+                    <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
+                  </label>`}
+              </div>
+
+              <!-- Price, Condition & Category -->
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <input id="postPrice" type="text" placeholder="ဈေးနှုန်း (မထည့်လည်းရ / CB)" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"/>
+                <select id="postCond" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
+                  <option value="ရောင်းမည်">ရောင်းမည်</option>
+                  <option value="ဝယ်မည်">ဝယ်မည်</option>
+                  <option value="လဲလှယ်မည်">လဲလှယ်မည်</option>
+                </select>
+              </div>
+              <select id="postCat" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
+                <option value="">-- Account အမျိုးအစား ရွေးပါ --</option>
+                ${TRADE_CATS.map(c => `<option value="${c}">${c}</option>`).join("")}
+              </select>
             </div>
           </div>
         </div>`;
     }
 
+    function clearComposerImg() {
+      st.img = null;
+      const area = document.getElementById("largePhotoArea");
+      if (area) {
+        area.innerHTML = `
+          <label class="w-full h-44 rounded-2xl bg-slate-900/90 hover:bg-slate-800/80 border-2 border-dashed border-emerald-500/40 flex flex-col items-center justify-center gap-2 cursor-pointer transition">
+            <div class="w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 15l-5-5L5 21"/></svg>
+            </div>
+            <div class="text-sm font-bold text-emerald-300">ဓာတ်ပုံ / Insights ထည့်ရန် နှိပ်ပါ</div>
+            <div class="text-xs text-slate-400">ဖုန်း Gallery ထဲမှ ပုံရွေးချယ်နိုင်ပါသည်</div>
+            <input type="file" accept="image/*" onchange="onPickImg(event)" class="hidden"/>
+          </label>`;
+      }
+    }
+
     function onPickImg(e) {
       const f = e.target.files && e.target.files[0]; if (!f) return;
       const r = new FileReader();
-      r.onload = ev => { const im = new Image(); im.onload = () => { const c = document.createElement("canvas"), mw = 640; let w = im.width, h = im.height; if (w > mw) { h = Math.round(h * mw / w); w = mw; } c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h); st.img = c.toDataURL("image/jpeg", 0.72); document.getElementById("imgPrev").src = st.img; document.getElementById("imgBox").classList.remove("hidden"); }; im.src = ev.target.result; };
+      r.onload = ev => {
+        const im = new Image();
+        im.onload = () => {
+          const c = document.createElement("canvas"), mw = 640;
+          let w = im.width, h = im.height; if (w > mw) { h = Math.round(h * mw / w); w = mw; }
+          c.width = w; c.height = h; c.getContext("2d").drawImage(im, 0, 0, w, h);
+          st.img = c.toDataURL("image/jpeg", 0.72);
+          const area = document.getElementById("largePhotoArea");
+          if (area) {
+            area.innerHTML = `
+              <div class="relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-900">
+                <img id="imgPrev" src="${st.img}" class="w-full max-h-72 object-contain mx-auto"/>
+                <button onclick="clearComposerImg()" class="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-full bg-black/80 text-white text-xs font-bold border border-white/20">✕ ပုံဖျက်</button>
+              </div>`;
+          }
+        };
+        im.src = ev.target.result;
+      };
       r.readAsDataURL(f);
     }
 
@@ -914,6 +1060,99 @@
       document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-sky-500/40 w-full max-w-md rounded-3xl p-4 space-y-3"><div class="flex justify-between"><h3 class="text-base font-bold text-sky-300">⚡ Boost တင်ရန် (၂၄ နာရီ)</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs">✕</button></div><p class="text-xs text-slate-300">${BOOST_PRICE_TEXT} — KPay/Wave (${PAY_ACCOUNT_NAME}) သို့ လွှဲပြီး ${TELEGRAM_HANDLE} သို့ ပြေစာပို့ပါ။</p><a href="${TELEGRAM_URL}" target="_blank" class="w-full py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold flex justify-center">✈️ Telegram (${TELEGRAM_HANDLE})</a>${st.me.isAdmin ? `<button onclick="fbPut('posts/${pid}/boostedUntil',Date.now()+86400000);closeModal();sync()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold">🛡️ Admin: 24h Boost ဖွင့်မည်</button>` : ""}</div></div>`;
     }
 
+    // Free Blue Mark Request System (No money required)
+    function openAppealModal() {
+      if (st.me.blueMark) {
+        toast("သင့်အကောင့်တွင် Blue Mark ✓ ရရှိပြီးသားဖြစ်ပါသည်");
+        return;
+      }
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-sky-500/40 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div>
+                <h3 class="text-base font-bold text-sky-300">💎 Blue Mark လျှောက်ထားရန် (အခမဲ့)</h3>
+                <div class="text-[11px] text-emerald-400 font-semibold">ငွေကြေး လုံးဝပေးဆောင်ရန် မလိုပါ</div>
+              </div>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">သင့်အကောင့် အစစ်အမှန်ဖြစ်ကြောင်း စိစစ်အတည်ပြုနိုင်ရန် အချက်အလက်များ ဖြည့်သွင်းပြီး Admin (<b>${ADMIN_NAME}</b>) ထံ အခမဲ့ တောင်းခံနိုင်ပါသည်။</p>
+            <input id="apTg" type="text" value="${esc(st.me.telegram || "")}" placeholder="Telegram Username / Link (ဥပမာ @username)" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/>
+            <input id="apProof" type="text" placeholder="သင်ပိုင်ဆိုင်သော Page / Channel လင့်ခ် (ရှိပါက)" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs"/>
+            <textarea id="apReason" rows="3" placeholder="Blue Mark တောင်းခံလိုသည့် အကြောင်းအရင်း ရေးပါ..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs resize-none"></textarea>
+            <button onclick="submitAppeal()" class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold">💎 Blue Mark အခမဲ့ တောင်းခံမည်</button>
+          </div>
+        </div>`;
+    }
+
+    function submitAppeal() {
+      const tg = (document.getElementById("apTg").value || "").trim();
+      const proof = (document.getElementById("apProof").value || "").trim();
+      const reason = (document.getElementById("apReason").value || "").trim();
+      if (!reason) return toast("အကြောင်းအရင်း ရေးပေးပါ");
+      const id = "AP-" + Date.now();
+      const ap = { id, userId: st.me.id, userName: st.me.name, phone: tg || st.me.phone || "Telegram", proof, reason, reviewer: ADMIN_NAME, status: "pending", createdAt: Date.now() };
+      st.appeals[id] = ap;
+      st.me.appealStatus = "pending";
+      saveMe();
+      playSong("upload");
+      closeModal();
+      render();
+      toast("✓ Blue Mark တောင်းခံလွှာ ပို့ပြီးပါပြီ (ငွေကြေးမလိုပါ)");
+      notify(OWNER_ID, "က Blue Mark (အခမဲ့) တောင်းခံထားပါသည် 💎");
+      fbPut(`appeals/${id}`, ap).catch(() => {});
+      fbPut(`users/${st.me.id}/appealStatus`, "pending").catch(() => {});
+    }
+
+    function openAdminGate() {
+      if (st.me.isAdmin) { openAdminModal(); return; }
+      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-5 space-y-3.5 animate-slide-up"><div class="flex items-center justify-between"><h3 class="text-base font-bold text-white">🛡️ Admin ဝင်ရောက်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div><input id="adminPinInp" type="password" inputmode="numeric" placeholder="Admin PIN..." onkeydown="if(event.key==='Enter')verifyAdminPin()" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-sm text-center tracking-widest"/><button onclick="verifyAdminPin()" class="w-full py-3 rounded-xl bg-sky-600 text-white text-sm font-bold">ဝင်ရောက်မည်</button></div></div>`;
+    }
+    function verifyAdminPin() {
+      const v = (document.getElementById("adminPinInp").value || "").trim();
+      if (v !== ADMIN_PIN) { playSong("angry"); return toast("Admin PIN မှားယွင်းနေပါသည်"); }
+      st.me.isAdmin = true; st.me.blueMark = true; saveMe();
+      fbPut(`users/${st.me.id}/isAdmin`, true).catch(() => {}); fbPut(`users/${st.me.id}/blueMark`, true).catch(() => {});
+      playSong("love"); toast("Admin စနစ် ဖွင့်လိုက်ပါပြီ ✓"); openAdminModal(); render();
+    }
+    function directGrantBlueMark(grant) {
+      const uid = (document.getElementById("directUidInp").value || "").trim().toUpperCase();
+      if (!uid) return toast("User ID (PPW-xxxxxx) ရိုက်ထည့်ပါ");
+      if (st.users[uid]) st.users[uid].blueMark = grant;
+      if (uid === st.me.id) { st.me.blueMark = grant; saveMe(); }
+      fbPut(`users/${uid}/blueMark`, grant).catch(() => {});
+      notify(uid, grant ? "က သင့်အကောင့်ကို Blue Mark ✓ အတည်ပြုပေးလိုက်ပါသည်!" : "က သင့် Blue Mark ကို ပြန်လည်ရုပ်သိမ်းခဲ့ပါသည်");
+      playSong(grant ? "love" : "angry");
+      toast(grant ? `${uid} ကို Blue Mark ပေးပြီးပါပြီ ✓` : `${uid} မှ Blue Mark ဖြုတ်ပြီးပါပြီ`);
+      openAdminModal(); render();
+    }
+    function openAdminModal() {
+      const all = Object.values(st.appeals || {}).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const pending = all.filter(a => a.status === "pending"), approved = all.filter(a => a.status === "approved");
+      const shown = st.adminFilter === "approved" ? approved : pending;
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">🛡️ Admin Blue Mark စိစစ်ရေး</h3><div class="text-[11px] text-sky-400 font-semibold">${ADMIN_NAME}</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2"><div class="text-xs font-bold text-sky-300">⚡ User ID ဖြင့် တိုက်ရိုက် Blue Mark ပေး/ဖြုတ်</div><div class="flex gap-1.5"><input id="directUidInp" type="text" placeholder="PPW-xxxxxx" class="flex-1 bg-[#0f172a] text-white border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"/><button onclick="directGrantBlueMark(true)" class="px-3 py-2 rounded-xl bg-sky-600 text-white text-xs font-bold">✓ ပေး</button><button onclick="directGrantBlueMark(false)" class="px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">✕ ဖြုတ်</button></div></div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="st.adminFilter='pending';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "pending" ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-300"}">တောင်းခံထားသူ (${pending.length})</button>
+              <button onclick="st.adminFilter='approved';openAdminModal()" class="py-2 rounded-xl text-xs font-bold ${st.adminFilter === "approved" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">ပေးပြီးသား (${approved.length})</button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-0.5">${shown.length ? shown.map(a => { const au = uInfo(a.userId); return `<div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs"><div class="flex items-center justify-between gap-2"><div onclick="openUserModal('${a.userId}')" class="flex items-center gap-2 cursor-pointer min-w-0">${avatar(au, "w-9 h-9 text-xs")}<div class="min-w-0"><div class="font-bold text-white truncate flex items-center gap-1">${esc(a.userName)} ${blueBadge(au)}</div><div class="font-mono text-[11px] text-slate-400">${esc(a.userId)} • ${ago(a.createdAt)}</div></div></div></div><div class="bg-[#0f172a] rounded-xl p-2.5 space-y-1 text-slate-300"><div>✈️ <span class="text-white font-semibold">${esc(a.phone)}</span></div>${a.proof ? `<div>🔗 <span class="text-emerald-300 break-all">${esc(a.proof)}</span></div>` : ""}<div class="text-slate-200 pt-0.5">${esc(a.reason)}</div></div><div class="flex gap-2">${a.status !== "approved" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','approved')" class="flex-1 py-2 rounded-xl bg-sky-600 text-white font-bold">✓ Blue Mark ပေးမည်</button>` : `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="flex-1 py-2 rounded-xl bg-rose-600 text-white font-bold">🚫 ပြန်ရုပ်သိမ်း</button>`}${a.status === "pending" ? `<button onclick="decideAppeal('${a.id}','${a.userId}','rejected')" class="px-4 py-2 rounded-xl bg-rose-600/80 text-white font-bold">✕ ပယ်ချ</button>` : ""}</div></div>`; }).join("") : `<div class="text-center text-sm text-slate-400 py-8">လျှောက်လွှာ မရှိသေးပါ</div>`}</div>
+          </div>
+        </div>`;
+    }
+    function decideAppeal(aid, uid, status) {
+      if (st.appeals[aid]) st.appeals[aid].status = status;
+      if (st.users[uid]) st.users[uid].blueMark = status === "approved";
+      if (uid === st.me.id) { st.me.blueMark = status === "approved"; st.me.appealStatus = status; saveMe(); }
+      fbPut(`appeals/${aid}/status`, status).catch(() => {}); fbPut(`users/${uid}/blueMark`, status === "approved").catch(() => {}); fbPut(`users/${uid}/appealStatus`, status).catch(() => {});
+      notify(uid, status === "approved" ? "က သင့်အကောင့်ကို Blue Mark ✓ အတည်ပြုပေးလိုက်ပါသည်!" : "က သင့် Blue Mark လျှောက်လွှာကို ပယ်ချ/ရုပ်သိမ်းခဲ့ပါသည်");
+      playSong(status === "approved" ? "love" : "angry"); toast(status === "approved" ? "Blue Mark ပေးပြီးပါပြီ ✓" : "ပယ်ချ/ရုပ်သိမ်းပြီးပါပြီ");
+      openAdminModal(); render();
+    }
+
     function openMyDayModal() {
       st.mydayImg = null;
       document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-3xl p-4 space-y-3"><div class="flex justify-between"><h3 class="text-base font-bold text-white">MyDay တင်ရန် (၂၄ နာရီ)</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs">✕</button></div><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm"></textarea><div class="flex justify-between items-center"><label class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold cursor-pointer">📷 ပုံရွေးရန်<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">တင်မည်</button></div></div></div>`;
@@ -944,6 +1183,7 @@
     function openSideMenu() {
       playSong("notif");
       const onlineFri = onlineFriendsCount();
+      const pendingCount = Object.values(st.appeals || {}).filter(a => a && a.status === "pending").length;
       document.getElementById("drawerRoot").innerHTML = `
         <div onclick="closeSideMenu()" class="fixed inset-0 z-50 bg-black/70 flex">
           <aside onclick="event.stopPropagation()" class="w-[84%] max-w-[330px] h-full bg-[#0f172a] border-r border-slate-800 flex flex-col animate-slide-right overflow-y-auto no-scrollbar">
@@ -951,18 +1191,18 @@
             <div class="p-3.5 space-y-3.5 flex-1">
               <div onclick="closeSideMenu();switchTab('profile')" class="bg-[#1e293b]/80 hover:bg-[#1e293b] border border-slate-700/80 rounded-2xl p-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition">${avatar(st.me, "w-12 h-12 text-base")}<div class="min-w-0 flex-1"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(st.me.name)} ${blueBadge(st.me)}</div><div class="text-xs text-slate-400 font-mono truncate">${esc(st.me.id)}</div></div><span class="text-slate-400 text-sm">›</span></div>
               <div class="grid grid-cols-2 gap-2.5">
-                <button onclick="closeSideMenu();switchTab('profile')" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-emerald-500/30 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">👤</div><div class="text-xs font-bold text-emerald-300">Profile ကြည့်ရန်</div><div class="text-[11px] text-slate-400">Friends 6 ကွက်</div></button>
-                <button onclick="closeSideMenu();openDashboardModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/30 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">📊</div><div class="text-xs font-bold text-sky-300">Dashboard</div><div class="text-[11px] text-slate-400">Location & Stats</div></button>
+                <button onclick="closeSideMenu();openDashboardModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-emerald-500/30 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">📊</div><div class="text-xs font-bold text-emerald-300">Dashboard</div><div class="text-[11px] text-slate-400">Location & Stats</div></button>
+                ${st.me.isAdmin ? `<button onclick="closeSideMenu();openAdminModal()" class="relative bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/40 rounded-2xl p-3.5 text-left space-y-1.5">${pendingCount ? `<span class="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-bold">${pendingCount}</span>` : ""}<div class="text-xl">🛡️</div><div class="text-xs font-bold text-sky-300">Admin စိစစ်ရေး</div><div class="text-[11px] text-slate-400">Blue Mark ပေးရန်</div></button>` : `<button onclick="closeSideMenu();openAppealModal()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-sky-500/30 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">💎</div><div class="text-xs font-bold text-sky-300">Blue Mark</div><div class="text-[11px] ${st.me.blueMark ? "text-emerald-400 font-bold" : "text-slate-400"}">${st.me.blueMark ? "✓ ရရှိပြီး" : "အခမဲ့ လျှောက်ရန်"}</div></button>`}
                 <button onclick="toggleNightMode();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">🌙</div><div class="text-xs font-bold text-white">Night Mode</div><div class="text-[11px] ${st.nightMode ? "text-amber-300 font-bold" : "text-slate-400"}">${st.nightMode ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div></button>
                 <button onclick="toggleSound();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">${st.soundOn ? "🔊" : "🔇"}</div><div class="text-xs font-bold text-white">အသံစနစ်</div><div class="text-[11px] ${st.soundOn ? "text-emerald-400 font-bold" : "text-slate-400"}">${st.soundOn ? "ဖွင့်ထားသည်" : "ပိတ်ထားသည်"}</div></button>
                 <button onclick="toggleHideSeen();openSideMenu()" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">👁️</div><div class="text-xs font-bold text-white">Seen စနစ်</div><div class="text-[11px] ${st.me.hideSeen ? "text-amber-300 font-bold" : "text-emerald-400 font-bold"}">${st.me.hideSeen ? "Seen ပိတ်ထား" : "Seen ပြထား"}</div></button>
                 <button onclick="closeSideMenu();switchTab('friends')" class="bg-[#1e293b]/70 hover:bg-[#1e293b] border border-slate-700/70 rounded-2xl p-3.5 text-left space-y-1.5"><div class="text-xl">👥</div><div class="text-xs font-bold text-white">မိတ်ဆွေများ</div><div class="text-[11px] text-emerald-400 font-semibold">${(st.me.friends || []).length} ဦး (${onlineFri} online)</div></button>
               </div>
               <div class="pt-2 border-t border-slate-800 space-y-1.5">
-                <button onclick="closeSideMenu();openSettingsModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>⚙️</span><span>ပရိုဖိုင် & Location ပြင်ရန်</span></button>
+                <button onclick="closeSideMenu();openSettingsModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>⚙️</span><span>Bio, Telegram & Location ပြင်ရန်</span></button>
                 <button onclick="copyUserId();closeSideMenu()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>📋</span><span>User ID ကူးမည် (${esc(st.me.id)})</span></button>
                 <button onclick="closeSideMenu();openRulesModal()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-sm font-semibold text-slate-200"><span>📜</span><span>စည်းမျဉ်းစည်းကမ်းများ</span></button>
-                <button onclick="closeSideMenu();sync(true)" class="w-full p-3 rounded-xl bg-emerald-600/20 text-emerald-300 flex items-center gap-3 text-sm font-bold"><span>🔄</span><span>ပြန်လည်ချိတ်ဆက်ရန်</span></button>
+                ${!st.me.isAdmin ? `<button onclick="closeSideMenu();openAdminGate()" class="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center gap-3 text-xs font-semibold text-slate-400"><span>🔐</span><span>Admin Login</span></button>` : ""}
               </div>
             </div>
           </aside>
@@ -970,7 +1210,6 @@
     }
     function closeSideMenu() { document.getElementById("drawerRoot").innerHTML = ""; }
 
-    // Full Creator Dashboard with separate Location, Gender, and Age Group blocks
     function openDashboardModal() {
       playSong("notif");
       const myPosts = st.posts.filter(p => p.authorId === st.me.id && !st.deletedIds[p.id]);
@@ -982,83 +1221,48 @@
 
       const allUsers = Object.values(st.users || {}).filter(Boolean);
       const totalU = Math.max(1, allUsers.length);
-
-      // 1. Location breakdown
       const cityMap = {};
       allUsers.forEach(u => { const c = (u.city || "").trim() || "မသတ်မှတ်ရသေး"; cityMap[c] = (cityMap[c] || 0) + 1; });
       const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]);
 
-      // 2. Gender breakdown
       let male = 0, female = 0, otherG = 0;
       allUsers.forEach(u => { if (u.gender === "ကျား") male++; else if (u.gender === "မ") female++; else otherG++; });
       const malePct = Math.round((male / totalU) * 100);
       const femalePct = Math.round((female / totalU) * 100);
       const otherPct = Math.max(0, 100 - malePct - femalePct);
 
-      // 3. Age group breakdown
       const ages = { "18 နှစ်အောက်": 0, "18 - 24 နှစ်": 0, "25 - 34 နှစ်": 0, "35 နှစ်အထက်": 0, "မဖြည့်ရသေး": 0 };
       allUsers.forEach(u => {
         const a = Number(u.age || 0);
-        if (!a) ages["မဖြည့်ရသေး"]++;
-        else if (a < 18) ages["18 နှစ်အောက်"]++;
-        else if (a <= 24) ages["18 - 24 နှစ်"]++;
-        else if (a <= 34) ages["25 - 34 နှစ်"]++;
-        else ages["35 နှစ်အထက်"]++;
+        if (!a) ages["မဖြည့်ရသေး"]++; else if (a < 18) ages["18 နှစ်အောက်"]++; else if (a <= 24) ages["18 - 24 နှစ်"]++; else if (a <= 34) ages["25 - 34 နှစ်"]++; else ages["35 နှစ်အထက်"]++;
       });
 
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3.5 animate-slide-up max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div>
-                <h3 class="text-base font-bold text-white">📊 Creator Dashboard</h3>
-                <div class="text-[11px] text-emerald-400">စုစုပေါင်း အသုံးပြုသူ ${allUsers.length} ဦး</div>
-              </div>
+              <div><h3 class="text-base font-bold text-white">📊 Creator Dashboard</h3><div class="text-[11px] text-emerald-400">စုစုပေါင်း အသုံးပြုသူ ${allUsers.length} ဦး</div></div>
               <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
             </div>
-
-            <!-- Overview Metrics -->
             <div class="grid grid-cols-3 gap-2">
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center"><div class="text-lg font-bold text-emerald-400">${totalViews}</div><div class="text-[11px] text-slate-400 font-semibold">Views</div></div>
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center"><div class="text-lg font-bold text-sky-400">${totalEng}</div><div class="text-[11px] text-slate-400 font-semibold">Engagement</div></div>
               <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center"><div class="text-lg font-bold text-amber-400">${engRate}%</div><div class="text-[11px] text-slate-400 font-semibold">စိတ်ဝင်စားမှု</div></div>
             </div>
-
-            <!-- Block 1: Location (တည်နေရာ) -->
             <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 space-y-2.5">
-              <div class="text-xs font-bold text-emerald-300 flex items-center justify-between">
-                <span>📍 တည်နေရာ (Location / မြို့နယ်များ)</span>
-                <span class="text-[11px] text-slate-400">${allUsers.length} ဦး</span>
-              </div>
-              ${topCities.map(([city, cnt]) => {
-                const pct = Math.round((cnt / totalU) * 100);
-                return `<div class="space-y-1"><div class="flex justify-between text-xs"><span class="text-slate-200">${esc(city)}</span><span class="text-emerald-400 font-bold">${pct}% (${cnt} ဦး)</span></div><div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:${pct}%"></div></div></div>`;
-              }).join("")}
+              <div class="text-xs font-bold text-emerald-300 flex items-center justify-between"><span>📍 တည်နေရာ (Location / မြို့နယ်များ)</span><span class="text-[11px] text-slate-400">${allUsers.length} ဦး</span></div>
+              ${topCities.map(([city, cnt]) => { const pct = Math.round((cnt / totalU) * 100); return `<div class="space-y-1"><div class="flex justify-between text-xs"><span class="text-slate-200">${esc(city)}</span><span class="text-emerald-400 font-bold">${pct}% (${cnt} ဦး)</span></div><div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:${pct}%"></div></div></div>`; }).join("")}
             </div>
-
-            <!-- Block 2: Gender (ကျား / မ) -->
             <div class="bg-slate-900 border border-sky-500/30 rounded-2xl p-3.5 space-y-2.5">
               <div class="text-xs font-bold text-sky-300">👥 ကျား / မ အချိုးအစား (Gender)</div>
-              <div class="space-y-1">
-                <div class="flex justify-between text-xs"><span class="text-sky-300 font-semibold">👨 အမျိုးသား (ကျား)</span><span class="font-bold text-white">${malePct}% (${male} ဦး)</span></div>
-                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-sky-500 rounded-full" style="width:${malePct}%"></div></div>
-              </div>
-              <div class="space-y-1">
-                <div class="flex justify-between text-xs"><span class="text-rose-300 font-semibold">👩 အမျိုးသမီး (မ)</span><span class="font-bold text-white">${femalePct}% (${female} ဦး)</span></div>
-                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-rose-500 rounded-full" style="width:${femalePct}%"></div></div>
-              </div>
+              <div class="space-y-1"><div class="flex justify-between text-xs"><span class="text-sky-300 font-semibold">👨 အမျိုးသား (ကျား)</span><span class="font-bold text-white">${malePct}% (${male} ဦး)</span></div><div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-sky-500 rounded-full" style="width:${malePct}%"></div></div></div>
+              <div class="space-y-1"><div class="flex justify-between text-xs"><span class="text-rose-300 font-semibold">👩 အမျိုးသမီး (မ)</span><span class="font-bold text-white">${femalePct}% (${female} ဦး)</span></div><div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-rose-500 rounded-full" style="width:${femalePct}%"></div></div></div>
               ${otherG > 0 ? `<div class="text-[11px] text-slate-400">မဖြည့်ရသေးသူ — ${otherPct}% (${otherG} ဦး)</div>` : ""}
             </div>
-
-            <!-- Block 3: Age Groups (အသက်အရွယ်အပိုင်းအခြား) -->
             <div class="bg-slate-900 border border-amber-500/30 rounded-2xl p-3.5 space-y-2.5">
               <div class="text-xs font-bold text-amber-300">🎂 အသက်အရွယ်အပိုင်းအခြား (Age Range)</div>
-              ${Object.entries(ages).map(([label, cnt]) => {
-                const pct = Math.round((cnt / totalU) * 100);
-                return `<div class="space-y-1"><div class="flex justify-between text-xs"><span class="text-slate-200">${label}</span><span class="text-amber-300 font-bold">${pct}% (${cnt} ဦး)</span></div><div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div></div></div>`;
-              }).join("")}
+              ${Object.entries(ages).map(([label, cnt]) => { const pct = Math.round((cnt / totalU) * 100); return `<div class="space-y-1"><div class="flex justify-between text-xs"><span class="text-slate-200">${label}</span><span class="text-amber-300 font-bold">${pct}% (${cnt} ဦး)</span></div><div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-amber-400 rounded-full" style="width:${pct}%"></div></div></div>`; }).join("")}
             </div>
-
             <button onclick="openSettingsModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-bold">📍 မိမိ တည်နေရာ / ကျား-မ / အသက် ဖြည့်ရန်</button>
           </div>
         </div>`;
@@ -1074,10 +1278,14 @@
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up max-h-[88vh] overflow-y-auto">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">⚙️ ပရိုဖိုင် & Location ပြင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-white">⚙️ Bio, Telegram & Profile ပြင်ရန်</h3><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
             <div class="space-y-2.5">
               <input id="pName" type="text" value="${esc(st.me.name)}" placeholder="နာမည်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
               <input id="pBio" type="text" value="${esc(st.me.bio || "")}" placeholder="မိတ်ဆက်စာ (Bio)" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-sky-300">✈️ Telegram Link (လူတိုင်း နှိပ်ဝင်နိုင်ရန်)</label>
+                <input id="pTelegram" type="text" value="${esc(st.me.telegram || "")}" placeholder="ဥပမာ @snap105 သို့မဟုတ် https://t.me/snap105" class="w-full bg-slate-900 text-sky-200 border border-sky-500/40 rounded-xl px-3.5 py-2.5 text-sm"/>
+              </div>
               <input id="pPhone" type="text" value="${esc(st.me.phone || "")}" placeholder="ဖုန်းနံပါတ်" class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm"/>
               <div class="grid grid-cols-2 gap-2">
                 <select id="pCity" class="bg-slate-900 text-white border border-slate-700 rounded-xl px-3 py-2.5 text-xs"><option value="">-- မြို့နယ်ရွေးပါ --</option>${CITIES.map(c => `<option value="${c}" ${st.me.city === c ? "selected" : ""}>${c}</option>`).join("")}</select>
@@ -1111,11 +1319,12 @@
       const n = (document.getElementById("pName").value || "").trim(); if (!n) return toast("နာမည် ထည့်ပေးပါ");
       st.me.name = n;
       st.me.bio = (document.getElementById("pBio").value || "").trim();
+      st.me.telegram = (document.getElementById("pTelegram").value || "").trim();
       st.me.phone = (document.getElementById("pPhone").value || "").trim();
       st.me.city = document.getElementById("pCity").value || "";
       st.me.gender = document.getElementById("pGender").value || "";
       st.me.age = (document.getElementById("pAge").value || "").trim();
-      saveMe(); st.users[st.me.id] = st.me; playSong("like"); closeModal(); render(); toast("သိမ်းဆည်းပြီးပါပြီ");
+      saveMe(); st.users[st.me.id] = st.me; playSong("like"); closeModal(); render(); toast("သိမ်းဆည်းပြီးပါပြီ ✓");
       fbPut(`users/${st.me.id}`, st.me).catch(() => {});
     }
     function onPickAvatar(e) {
@@ -1143,10 +1352,10 @@
       saveMe(); render(); fbPut(`users/${st.me.id}`, st.me).catch(() => {});
     }
 
-    // View Other User's Profile Modal (Including ALL their visible posts!)
     function openUserModal(uid) {
       const u = uInfo(uid), r = uRating(uid), isF = (st.me.friends || []).includes(uid), isFol = (st.me.following || []).includes(uid), own = uid === st.me.id;
       const userPosts = st.posts.filter(p => p.authorId === uid && canSeePost(p)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const tgUrl = formatTelegramUrl(u.telegram);
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
           <div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[90vh] overflow-y-auto animate-slide-up">
@@ -1164,6 +1373,7 @@
                 </div>
                 ${u.city ? `<div class="text-xs text-slate-400 mt-0.5">📍 ${esc(u.city)}</div>` : ""}
                 <p class="text-xs text-slate-300 mt-0.5">${esc(u.bio || "")}</p>
+                ${tgUrl ? `<a href="${esc(tgUrl)}" target="_blank" rel="noopener" class="mt-1.5 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 text-xs font-bold">✈️ Telegram: ${esc(formatTelegramDisplay(u.telegram))}</a>` : ""}
               </div>
             </div>
             <div class="grid grid-cols-4 gap-2 text-center bg-slate-900 p-2 rounded-2xl">
@@ -1190,20 +1400,216 @@
         </div>`;
     }
 
-    // Full Chat System
-    const roomId = (a, b) => [a, b].sort().join("__");
-    function startVoiceCall(oid) {
-      const cid = "CALL-" + Date.now(), callObj = { id: cid, fromId: st.me.id, fromName: st.me.name, toId: oid, status: "ringing", createdAt: Date.now() };
-      st.activeCall = callObj; st.calls[cid] = callObj; startRingLoop(); notify(oid, "က ဖုန်းခေါ်နေပါသည် 📞"); fbPut(`calls/${cid}`, callObj).catch(() => {}); openCallModal(cid);
+    // =========================================================================
+    // REAL-TIME TWO-WAY VOICE CALL (WebRTC + Speaker/Mute + Mutual Hangup Tone)
+    // =========================================================================
+    const RTC_CFG = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }, { urls: "stun:stun1.l.google.com:19302" }] };
+
+    function cleanupWebRTC() {
+      if (st.callSecTimer) { clearInterval(st.callSecTimer); st.callSecTimer = null; }
+      st.callSeconds = 0;
+      st.appliedIce = {};
+      if (st.pc) { try { st.pc.close(); } catch (e) {} st.pc = null; }
+      if (st.localStream) { try { st.localStream.getTracks().forEach(t => t.stop()); } catch (e) {} st.localStream = null; }
+      const ra = document.getElementById("remoteAudio");
+      if (ra) ra.srcObject = null;
     }
+
+    function startCallTimer() {
+      if (st.callSecTimer) return;
+      st.callSeconds = 0;
+      st.callSecTimer = setInterval(() => {
+        st.callSeconds++;
+        const el = document.getElementById("callTimerText");
+        if (el) {
+          const m = String(Math.floor(st.callSeconds / 60)).padStart(2, "0");
+          const s = String(st.callSeconds % 60).padStart(2, "0");
+          el.textContent = `🎙️ စကားပြောနေပါသည် (${m}:${s})`;
+        }
+      }, 1000);
+    }
+
+    async function setupPeerConnection(cid, isCaller) {
+      cleanupWebRTC();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      st.localStream = stream;
+      const pc = new RTCPeerConnection(RTC_CFG);
+      st.pc = pc;
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.ontrack = event => {
+        const ra = document.getElementById("remoteAudio");
+        if (ra && event.streams && event.streams[0]) {
+          ra.srcObject = event.streams[0];
+          ra.volume = st.speakerOn ? 1.0 : 0.35;
+          ra.play().catch(() => {});
+        }
+      };
+
+      const roleKey = isCaller ? "callerIce" : "calleeIce";
+      let iceIdx = 0;
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          fbPut(`calls/${cid}/${roleKey}/${iceIdx++}`, event.candidate.toJSON()).catch(() => {});
+        }
+      };
+      return pc;
+    }
+
+    async function startVoiceCall(oid) {
+      const cid = "CALL-" + Date.now();
+      const callObj = { id: cid, fromId: st.me.id, fromName: st.me.name, toId: oid, status: "ringing", createdAt: Date.now() };
+      st.activeCall = callObj;
+      st.calls[cid] = callObj;
+      st.seenCallIds[cid] = true;
+      st.callMuted = false;
+      st.speakerOn = true;
+      startRingLoop("outgoing");
+      notify(oid, "က ဖုန်းခေါ်နေပါသည် 📞");
+      openCallModal(cid);
+
+      try {
+        const pc = await setupPeerConnection(cid, true);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        callObj.offer = { type: offer.type, sdp: offer.sdp };
+      } catch (e) {
+        toast("မိုက်ခရိုဖုန်း ခွင့်ပြုချက် လိုအပ်ပါသည်");
+      }
+      await fbPut(`calls/${cid}`, callObj).catch(() => {});
+    }
+
+    async function answerCall(cid) {
+      stopRingLoop();
+      const c = st.activeCall || st.calls[cid];
+      if (!c) return;
+      c.status = "connected";
+      st.activeCall = c;
+      playSong("like");
+      openCallModal(cid);
+
+      try {
+        const pc = await setupPeerConnection(cid, false);
+        if (c.offer) {
+          await pc.setRemoteDescription(new RTCSessionDescription(c.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await fbPut(`calls/${cid}/answer`, { type: answer.type, sdp: answer.sdp }).catch(() => {});
+        }
+        startCallTimer();
+      } catch (e) {
+        toast("အသံချိတ်ဆက်ရာတွင် မိုက်ခရိုဖုန်း ခွင့်ပြုပေးပါ");
+      }
+      await fbPut(`calls/${cid}/status`, "connected").catch(() => {});
+    }
+
+    function endCall(cid, remoteEnded = false) {
+      stopRingLoop();
+      cleanupWebRTC();
+      playSong("hangup"); // ဖုန်းကျသွားသည့် အသံ (တူ... တူ... တူ...)
+      if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "ended";
+      if (!remoteEnded) {
+        fbPut(`calls/${cid}/status`, "ended").catch(() => {});
+        toast("ဖုန်းချလိုက်ပါပြီ");
+      } else {
+        toast("တစ်ဖက်မှ ဖုန်းချသွားပါပြီ");
+      }
+      st.activeCall = null;
+      const mr = document.getElementById("modalRoot");
+      if (mr) mr.innerHTML = "";
+    }
+
+    function toggleCallMute() {
+      st.callMuted = !st.callMuted;
+      if (st.localStream) st.localStream.getAudioTracks().forEach(t => { t.enabled = !st.callMuted; });
+      if (st.activeCall) openCallModal(st.activeCall.id);
+    }
+
+    function toggleCallSpeaker() {
+      st.speakerOn = !st.speakerOn;
+      const ra = document.getElementById("remoteAudio");
+      if (ra) ra.volume = st.speakerOn ? 1.0 : 0.35;
+      toast(st.speakerOn ? "🔊 Speaker ဖွင့်ပြီး (အသံကျယ်)" : "🔈 Speaker ပိတ်ပြီး");
+      if (st.activeCall) openCallModal(st.activeCall.id);
+    }
+
+    async function handleCallSignaling(callsObj) {
+      // 1. Check incoming ringing calls (ignore calls older than 40 seconds)
+      Object.values(callsObj || {}).forEach(c => {
+        if (!c) return;
+        const fresh = (Date.now() - Number(c.createdAt || 0)) < 40000;
+        if (c.status === "ringing" && c.toId === st.me.id && fresh && !st.seenCallIds[c.id] && !st.activeCall) {
+          st.seenCallIds[c.id] = true;
+          st.activeCall = c;
+          st.callMuted = false;
+          st.speakerOn = true;
+          startRingLoop("incoming");
+          openCallModal(c.id);
+        }
+      });
+
+      // 2. Sync active call status & WebRTC SDP/ICE
+      if (!st.activeCall) return;
+      const live = callsObj[st.activeCall.id];
+      if (!live) return;
+
+      if (live.status === "ended") {
+        endCall(live.id, true);
+        return;
+      }
+
+      const isCaller = live.fromId === st.me.id;
+      if (live.status === "connected" && st.activeCall.status !== "connected") {
+        stopRingLoop();
+        st.activeCall.status = "connected";
+        openCallModal(live.id);
+        startCallTimer();
+      }
+
+      if (st.pc) {
+        if (isCaller && live.answer && !st.pc.currentRemoteDescription) {
+          try { await st.pc.setRemoteDescription(new RTCSessionDescription(live.answer)); } catch (e) {}
+        }
+        const remoteIceList = isCaller ? live.calleeIce : live.callerIce;
+        if (Array.isArray(remoteIceList)) {
+          for (let i = 0; i < remoteIceList.length; i++) {
+            if (remoteIceList[i] && !st.appliedIce[i]) {
+              st.appliedIce[i] = true;
+              try { await st.pc.addIceCandidate(new RTCIceCandidate(remoteIceList[i])); } catch (e) {}
+            }
+          }
+        }
+      }
+    }
+
     function openCallModal(cid) {
       const c = st.activeCall || st.calls[cid]; if (!c) return;
       const o = uInfo(c.fromId === st.me.id ? c.toId : c.fromId), isIn = c.toId === st.me.id && c.status === "ringing";
-      document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-sm rounded-3xl p-6 text-center space-y-5"><div class="flex justify-center">${avatar(o, "w-20 h-20 text-2xl")}</div><div><h3 class="text-base font-bold text-white flex items-center justify-center gap-1">${esc(o.name)} ${blueBadge(o)}</h3><p class="text-sm text-emerald-400 font-semibold mt-1">${c.status === "connected" ? "🎙️ ဖုန်းပြောနေပါသည်..." : (isIn ? "🔔 ဖုန်းဝင်လာပါသည်..." : "📞 ခေါ်ဆိုနေပါသည်...")}</p></div><div class="flex justify-center gap-4">${isIn ? `<button onclick="answerCall('${c.id}')" class="px-5 py-3 rounded-full bg-emerald-600 text-white text-xs font-bold">✓ လက်ခံ</button>` : ""}<button onclick="endCall('${c.id}')" class="px-5 py-3 rounded-full bg-rose-600 text-white text-xs font-bold">✕ ဖုန်းချ</button></div></div></div>`;
+      const connected = c.status === "connected";
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+          <div class="bg-[#0f172a] border border-emerald-500/30 w-full max-w-sm rounded-3xl p-6 text-center space-y-5 shadow-2xl">
+            <div class="flex justify-center">${avatar(o, "w-24 h-24 text-3xl")}</div>
+            <div>
+              <h3 class="text-lg font-bold text-white flex items-center justify-center gap-1">${esc(o.name)} ${blueBadge(o)}</h3>
+              <p id="callTimerText" class="text-sm text-emerald-400 font-semibold mt-1">${connected ? "🎙️ စကားပြောနေပါသည် (00:00)" : (isIn ? "🔔 ဖုန်းဝင်လာပါသည်..." : "📞 ခေါ်ဆိုနေပါသည်...")}</p>
+            </div>
+            ${connected ? `
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <button onclick="toggleCallSpeaker()" class="py-3 rounded-2xl text-xs font-bold border ${st.speakerOn ? "bg-emerald-600/20 border-emerald-400 text-emerald-300" : "bg-slate-800 border-slate-700 text-slate-300"}">${st.speakerOn ? "🔊 Speaker ဖွင့်" : "🔈 Speaker ပိတ်"}</button>
+                <button onclick="toggleCallMute()" class="py-3 rounded-2xl text-xs font-bold border ${st.callMuted ? "bg-amber-500/20 border-amber-400 text-amber-300" : "bg-slate-800 border-slate-700 text-slate-300"}">${st.callMuted ? "🔇 အသံပိတ်ထား" : "🎙️ မိုက်ဖွင့်ထား"}</button>
+              </div>` : ""}
+            <div class="flex justify-center gap-4 pt-2">
+              ${isIn ? `<button onclick="answerCall('${c.id}')" class="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg">📞 ဖုန်းကိုင်မည်</button>` : ""}
+              <button onclick="endCall('${c.id}', false)" class="px-6 py-3.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold shadow-lg">✕ ဖုန်းချမည်</button>
+            </div>
+          </div>
+        </div>`;
     }
-    function answerCall(cid) { stopRingLoop(); if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "connected"; playSong("like"); fbPut(`calls/${cid}/status`, "connected").catch(() => {}); openCallModal(cid); }
-    function endCall(cid) { stopRingLoop(); if (st.activeCall && st.activeCall.id === cid) st.activeCall.status = "ended"; playSong("angry"); fbPut(`calls/${cid}/status`, "ended").catch(() => {}); st.activeCall = null; document.getElementById("modalRoot").innerHTML = ""; }
 
+    // =========================================================================
+    // CHAT SYSTEM
+    // =========================================================================
     function toggleHideSeen() {
       st.me.hideSeen = !st.me.hideSeen; saveMe(); playSong("notif");
       toast(st.me.hideSeen ? "Seen ပိတ်ပြီး" : "Seen ဖွင့်ပြီး");
@@ -1213,7 +1619,19 @@
     function markRoomSeen(oid) {
       if (!oid || st.me.hideSeen) return;
       const rid = roomId(st.me.id, oid), room = st.chats[rid]; if (!room) return;
-      Object.values(room).forEach(m => { if (m && m.senderId !== st.me.id && !m.seenAt) { m.seenAt = Date.now(); fbPut(`chats/${rid}/${m.id}/seenAt`, m.seenAt).catch(() => {}); } });
+      let changed = false;
+      Object.values(room).forEach(m => {
+        if (m && m.senderId !== st.me.id && !m.seenAt) {
+          m.seenAt = Date.now();
+          changed = true;
+          fbPut(`chats/${rid}/${m.id}/seenAt`, m.seenAt).catch(() => {});
+        }
+      });
+      if (changed) {
+        const unreadChat = countUnreadChats();
+        const cb = document.getElementById("chatBadge");
+        if (cb) { if (unreadChat > 0) { cb.textContent = unreadChat; cb.classList.remove("hidden"); } else cb.classList.add("hidden"); }
+      }
     }
     function openDeleteMsgMenu(mid) {
       if (!st.chatUid) return;
@@ -1245,6 +1663,7 @@
     function sendStickerIcon(ic) { if (!st.chatUid) return; playSong("love"); sendChatPayload({ text: ic, image: "", audio: "", video: "" }); st.showStickers = false; const sb = document.getElementById("stickerBar"); if (sb) sb.classList.add("hidden"); }
     function sendQuickChat(txt) { if (!st.chatUid) return; sendChatPayload({ text: txt, image: "", audio: "", video: "" }); }
 
+    const roomId = (a, b) => [a, b].sort().join("__");
     function openChat(oid) {
       st.chatUid = oid; st.chatImg = null; st.chatVideo = null; st.showStickers = false; const o = uInfo(oid);
       if (!st.me.hideSeen) markRoomSeen(oid);
@@ -1255,7 +1674,7 @@
               <div onclick="openUserModal('${o.id}')" class="flex items-center gap-2 cursor-pointer min-w-0">${avatar(o, "w-10 h-10 text-sm")}<div class="min-w-0"><div class="text-[15px] font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</div><div class="text-[11px] text-emerald-300 truncate">${esc(onlineText(o.id))}</div></div></div>
               <div class="flex items-center gap-1.5 shrink-0">
                 <button onclick="toggleHideSeen()" class="px-2 py-1.5 rounded-full text-[11px] font-bold bg-slate-800 text-slate-200">${st.me.hideSeen ? "Seen ပိတ်" : "Seen ပြ"}</button>
-                <button onclick="startVoiceCall('${o.id}')" class="px-2.5 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold">📞</button>
+                <button onclick="startVoiceCall('${o.id}')" class="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">📞 ခေါ်မည်</button>
                 <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
               </div>
             </div>
@@ -1340,16 +1759,20 @@
       sendChatPayload({ text, image: st.chatImg || "", audio: "", video: st.chatVideo || "" }); inp.value = "";
     }
     function closeModal() {
+      if (st.activeCall) {
+        endCall(st.activeCall.id, false);
+        return;
+      }
       stopRingLoop();
       if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
       if (st.recorder && st.recorder.state === "recording") { try { st.recorder.stop(); } catch (e) {} }
-      st.chatUid = null; st.activeCall = null; st.showStickers = false;
+      st.chatUid = null; st.showStickers = false;
       document.getElementById("modalRoot").innerHTML = "";
     }
 
     render();
     sync(true);
-    setInterval(() => sync(false), 3000);
+    setInterval(() => sync(false), 1500);
   </script>
 </body>
 </html>
