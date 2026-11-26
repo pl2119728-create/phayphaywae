@@ -26,12 +26,13 @@
     .nav-btn[aria-current=page] .dock-orb { transform:translateY(-3px) scale(1.1); filter:saturate(1.1); box-shadow:0 0 0 2px #101829,0 0 0 3px hsl(var(--h) 76% 70%); }
     .rx-item { transition: transform .12s ease; user-select: none; -webkit-user-select: none; }
     .rx-item.rx-hover { transform: scale(1.45) translateY(-6px); }
+    .story-ring { padding: 2.5px; border-radius: 9999px; background: linear-gradient(135deg, #34d399, #38bdf8, #f59e0b); box-shadow: 0 0 0 2px #0f172a; }
   </style>
 </head>
 <body class="bg-[#05080f] text-slate-100">
   <div id="nightOverlay" class="hidden fixed inset-0 z-40 pointer-events-none bg-black/35"></div>
 
-  <!-- Auth Screen (Phone + Password) -->
+  <!-- Auth Screen (Phone / User ID + Password) -->
   <div id="authScreen" class="hidden fixed inset-0 z-50 bg-[#05080f] flex items-center justify-center p-4 overflow-y-auto">
     <div class="w-full max-w-md bg-[#0f172a] border border-slate-700/80 rounded-3xl p-6 space-y-5 shadow-2xl">
       <div class="text-center space-y-1.5">
@@ -51,8 +52,8 @@
           <input id="authName" type="text" placeholder="ဥပမာ - ကျော်ကျော်" class="mt-1 w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-base focus:border-emerald-500 focus:outline-none"/>
         </div>
         <div>
-          <label class="text-xs font-bold text-slate-300">ဖုန်းနံပါတ်</label>
-          <input id="authPhone" type="tel" inputmode="numeric" placeholder="09xxxxxxxxx" class="mt-1 w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-base focus:border-emerald-500 focus:outline-none"/>
+          <label id="authPhoneLabel" class="text-xs font-bold text-slate-300">ဖုန်းနံပါတ် (သို့) User ID</label>
+          <input id="authPhone" type="text" placeholder="09xxxxxxxxx သို့မဟုတ် PPW-xxxxxx" class="mt-1 w-full bg-slate-900 text-white border border-slate-700 rounded-xl px-4 py-3 text-base focus:border-emerald-500 focus:outline-none"/>
         </div>
         <div>
           <label class="text-xs font-bold text-slate-300">Password (လျှို့ဝှက်နံပါတ်)</label>
@@ -84,7 +85,6 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <!-- Top Search Toggle Button next to Notification -->
           <button onclick="toggleTopSearch()" class="w-10 h-10 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-100 flex items-center justify-center shrink-0 active:scale-95 transition" title="ရှာဖွေရန်">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </button>
@@ -110,7 +110,7 @@
 
     <main id="mainContent" class="flex-1 overflow-y-auto"></main>
 
-    <!-- Bottom Dock (Replaced Friends with Profile on far right) -->
+    <!-- Bottom Dock -->
     <nav class="market-dock" aria-label="အောက်ခြေမီနူး">
       <button onclick="switchTab('home')" id="nav-home" aria-current="page" class="nav-btn text-emerald-400">
         <span class="dock-orb" style="--h:158"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></span>
@@ -154,7 +154,7 @@
     const TELEGRAM_HANDLE = "@snap105";
     const TELEGRAM_URL = "https://t.me/snap105";
     const ACCOUNT_KEY = "ppw_main_account";
-    const CACHE_KEY = "ppw_fast_cache_v6";
+    const CACHE_KEY = "ppw_fast_cache_v7";
 
     const TRADE_CATS = ["Facebook Page", "YouTube Account", "TikTok Account", "Instagram / RedNote", "Monetized Page / Channel"];
     const FEED_FILTERS = ["အားလုံး", "စိတ်ဝင်စားမှုများ", "အသစ်ရောက်သူများ", ...TRADE_CATS];
@@ -234,7 +234,7 @@
 
     let st = {
       tab: "home",
-      viewProfileUid: null, // For full-screen Friend/User Profile view
+      viewProfileUid: null,
       adminFilter: "pending",
       authMode: "login",
       me: getStoredUser(),
@@ -273,15 +273,15 @@
     }
 
     // =========================================================================
-    // AUTHENTICATION (Phone Number + Password, No Duplicate Phone Numbers)
+    // AUTHENTICATION (Phone Number OR User ID + Password)
     // =========================================================================
-    function cleanPhone(raw) {
-      return String(raw || "").replace(/[^0-9]/g, "");
-    }
+    function cleanPhone(raw) { return String(raw || "").replace(/[^0-9]/g, ""); }
     function setAuthMode(mode) {
       st.authMode = mode;
       const isReg = mode === "register";
       document.getElementById("authNameWrap").classList.toggle("hidden", !isReg);
+      document.getElementById("authPhoneLabel").textContent = isReg ? "ဖုန်းနံပါတ်" : "ဖုန်းနံပါတ် (သို့) User ID";
+      document.getElementById("authPhone").placeholder = isReg ? "09xxxxxxxxx" : "09xxxxxxxxx သို့မဟုတ် PPW-xxxxxx";
       document.getElementById("authSubmitBtn").textContent = isReg ? "အကောင့်အသစ် ဖွင့်မည်" : "ဝင်ရောက်မည်";
       document.getElementById("authTabLogin").className = `py-2.5 rounded-xl text-sm font-bold transition ${!isReg ? "bg-emerald-600 text-white" : "text-slate-400"}`;
       document.getElementById("authTabReg").className = `py-2.5 rounded-xl text-sm font-bold transition ${isReg ? "bg-emerald-600 text-white" : "text-slate-400"}`;
@@ -293,12 +293,15 @@
       el.classList.remove("hidden");
     }
     async function submitAuth() {
-      const phone = cleanPhone(document.getElementById("authPhone").value);
+      const rawInput = (document.getElementById("authPhone").value || "").trim();
+      const phone = cleanPhone(rawInput);
+      const upperId = rawInput.toUpperCase();
       const pass = (document.getElementById("authPass").value || "").trim();
       const name = (document.getElementById("authName").value || "").trim();
       const btn = document.getElementById("authSubmitBtn");
 
-      if (phone.length < 7) return showAuthErr("ဖုန်းနံပါတ် မှန်ကန်စွာ ထည့်ပေးပါ (ဥပမာ 09xxxxxxxxx)");
+      const isIdLogin = st.authMode === "login" && upperId.startsWith("PPW-");
+      if (!isIdLogin && phone.length < 7) return showAuthErr("ဖုန်းနံပါတ် (သို့) User ID မှန်ကန်စွာ ထည့်ပေးပါ");
       if (pass.length < 4) return showAuthErr("Password အနည်းဆုံး ၄ လုံး ထည့်ပေးပါ");
       if (st.authMode === "register" && !name) return showAuthErr("သင့်နာမည် ထည့်ပေးပါ");
 
@@ -309,10 +312,11 @@
       try {
         const allUsers = (await fbGet("users")) || {};
         st.users = allUsers;
-        const matched = Object.values(allUsers).find(u => u && cleanPhone(u.phone) === phone);
+        const userList = Object.values(allUsers).filter(Boolean);
 
         if (st.authMode === "register") {
-          if (matched) {
+          const exists = userList.find(u => cleanPhone(u.phone) === phone);
+          if (exists) {
             btn.disabled = false; btn.textContent = "အကောင့်အသစ် ဖွင့်မည်";
             return showAuthErr("ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ဖွင့်ပြီးသား ရှိနေပါသည် — အကောင့်ဝင်ရန် မှ ဝင်ပါ");
           }
@@ -331,10 +335,21 @@
           render();
           sync(true);
         } else {
-          if (!matched) {
+          let matches = isIdLogin
+            ? userList.filter(u => u.id === upperId)
+            : userList.filter(u => cleanPhone(u.phone) === phone);
+
+          if (!matches.length) {
             btn.disabled = false; btn.textContent = "ဝင်ရောက်မည်";
-            return showAuthErr("ဤဖုန်းနံပါတ်ဖြင့် အကောင့်မတွေ့ပါ — အကောင့်အသစ်ဖွင့်ပါ");
+            return showAuthErr("အကောင့်မတွေ့ပါ — ဖုန်းနံပါတ် ပြန်စစ်ပါ (သို့) အကောင့်အသစ်ဖွင့်ပါ");
           }
+
+          matches.sort((a, b) => {
+            const pScore = (u) => (u.password === pass ? 1000 : 0) + (u.id === OWNER_ID ? 500 : 0) + (u.isAdmin ? 200 : 0) + (u.blueMark ? 100 : 0) + ((u.friends || []).length * 10);
+            return pScore(b) - pScore(a);
+          });
+          const matched = matches[0];
+
           if (matched.password && matched.password !== pass) {
             btn.disabled = false; btn.textContent = "ဝင်ရောက်မည်";
             return showAuthErr("Password မှားယွင်းနေပါသည်");
@@ -421,6 +436,12 @@
       return new Date(Number(ts)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     }
 
+    // Active Story Helper (for double ring on avatars)
+    function getActiveMyDay(uid) {
+      const now = Date.now();
+      return st.myday.find(d => d && d.authorId === uid && Number(d.expiresAt || ((d.createdAt || 0) + 24 * 3600000)) > now) || null;
+    }
+
     // Exact Online / Offline with Offline Time
     function parsePresence(uid) {
       if (st.me && uid === st.me.id) return { online: true, lastSeen: Date.now() };
@@ -503,28 +524,24 @@
       toast(st.soundOn ? "အသံပိုင်း ဖွင့်ပြီး" : "အသံပိုင်း ပိတ်ပြီး");
     }
 
-    // Top Header Search Bar
     function toggleTopSearch(forceState) {
       const bar = document.getElementById("topSearchBar");
       const inp = document.getElementById("topSearchInp");
       if (!bar) return;
       const show = typeof forceState === "boolean" ? forceState : bar.classList.contains("hidden");
       bar.classList.toggle("hidden", !show);
-      if (show && inp) {
-        inp.value = st.q;
-        inp.focus();
-      } else if (!show) {
-        st.q = "";
-        render();
-      }
+      if (show && inp) { inp.value = st.q; inp.focus(); }
+      else if (!show) { st.q = ""; if (st.tab === "explore") updateExploreResults(); else render(); }
     }
     function onTopSearchInput(val) {
       st.q = val;
       if (st.tab !== "explore") {
         st.tab = "explore";
         updateDockHighlight();
+        render();
+      } else {
+        updateExploreResults();
       }
-      render();
     }
 
     const uInfo = id => {
@@ -549,13 +566,14 @@
       return c;
     }
 
-    function avatar(u, sz = "w-11 h-11 text-base", showOnline = true) {
+    function avatar(u, sz = "w-11 h-11 text-base", showOnline = true, showStoryRing = false) {
       const x = typeof u === "string" ? uInfo(u) : (u || st.me || { name: "U" });
+      const hasStory = showStoryRing && x && x.id && !!getActiveMyDay(x.id);
       const onlineDot = showOnline && x && x.id && isOnline(x.id) ? `<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#0f172a]"></span>` : "";
       const inner = (x && x.photo)
-        ? `<img src="${x.photo}" class="${sz} rounded-full object-cover shadow-sm border-2 border-emerald-500/40 bg-slate-800"/>`
-        : `<div class="${sz} rounded-full bg-gradient-to-br ${x.color || COLORS[0]} text-white font-bold flex items-center justify-center shadow-sm">${esc((x.name || "U").trim().charAt(0).toUpperCase())}</div>`;
-      return `<div class="relative inline-block shrink-0">${inner}${onlineDot}</div>`;
+        ? `<img src="${x.photo}" class="${sz} rounded-full object-cover shadow-sm ${hasStory ? "border-2 border-[#0f172a]" : "border-2 border-emerald-500/40"} bg-slate-800"/>`
+        : `<div class="${sz} rounded-full bg-gradient-to-br ${x.color || COLORS[0]} text-white font-bold flex items-center justify-center shadow-sm ${hasStory ? "border-2 border-[#0f172a]" : ""}">${esc((x.name || "U").trim().charAt(0).toUpperCase())}</div>`;
+      return `<div class="relative inline-block shrink-0 ${hasStory ? "story-ring" : ""}">${inner}${onlineDot}</div>`;
     }
 
     function canSeePost(p) {
@@ -579,15 +597,15 @@
       return `<span class="text-xs text-slate-400">🌍</span>`;
     }
 
-    // Real Unique Views Counter
+    // Real Unique Views (Strictly 0 for new posts; +1 per unique other user)
     function getPostRealViews(p) {
-      if (!p) return 0;
-      return Object.keys(p.viewers || {}).length;
+      if (!p || !p.viewers || typeof p.viewers !== "object") return 0;
+      return Object.keys(p.viewers).length;
     }
     function recordRealView(pid) {
       if (!st.me || st.viewedThisSession[pid]) return;
       const p = st.posts.find(x => x.id === pid);
-      if (!p || p.authorId === st.me.id) return; // Don't count own views
+      if (!p || p.authorId === st.me.id) return;
       st.viewedThisSession[pid] = true;
       if (!p.viewers) p.viewers = {};
       if (!p.viewers[st.me.id]) {
@@ -596,12 +614,21 @@
       }
     }
 
-    function totalReactions(p) {
+    function getReactionList(p) {
+      const list = [];
+      const seen = {};
       const rx = (p && p.reactions) || {};
-      let sum = Object.keys((p && p.likes) || {}).length;
-      Object.values(rx).forEach(map => { sum += Object.keys(map || {}).length; });
-      return sum;
+      REACTIONS.forEach(r => {
+        Object.keys(rx[r.key] || {}).forEach(uid => {
+          if (!seen[uid]) { seen[uid] = true; list.push({ uid, key: r.key, icon: r.icon, label: r.label }); }
+        });
+      });
+      Object.keys((p && p.likes) || {}).forEach(uid => {
+        if (!seen[uid]) { seen[uid] = true; list.push({ uid, key: "like", icon: "👍", label: "Like" }); }
+      });
+      return list;
     }
+    function totalReactions(p) { return getReactionList(p).length; }
     function userReaction(p) {
       if (!st.me) return null;
       const rx = (p && p.reactions) || {};
@@ -618,6 +645,36 @@
       });
       return icons.slice(0, 3).join("");
     }
+    function openReactionsModal(pid) {
+      const p = st.posts.find(x => x.id === pid); if (!p) return;
+      const list = getReactionList(p);
+      document.getElementById("modalRoot").innerHTML = `
+        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center">
+          <div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 max-h-[80vh] flex flex-col animate-slide-up">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="text-base font-bold text-white">Reaction ပေးထားသူများ (${list.length})</h3>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-2">
+              ${list.length ? list.map(item => {
+                const u = uInfo(item.uid);
+                return `
+                  <div onclick="openUserProfile('${u.id}')" class="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition">
+                    <div class="flex items-center gap-3 min-w-0">
+                      ${avatar(u, "w-11 h-11 text-base")}
+                      <div class="min-w-0">
+                        <div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div>
+                        <div class="text-xs text-slate-400">${esc(onlineText(u.id))}</div>
+                      </div>
+                    </div>
+                    <span class="text-2xl shrink-0">${item.icon}</span>
+                  </div>`;
+              }).join("") : `<div class="text-center text-sm text-slate-400 py-8">Reaction ပေးထားသူ မရှိသေးပါ</div>`}
+            </div>
+          </div>
+        </div>`;
+    }
+
     function engagementScore(p) { return totalReactions(p) * 3 + Object.keys((p && p.comments) || {}).length * 5; }
     function feedScore(p) {
       const ageHours = Math.max(0.2, (Date.now() - (p.createdAt || Date.now())) / 3600000);
@@ -658,7 +715,7 @@
         const oid = rk.split("__").find(x => x !== st.me.id);
         if (st.chatUid && st.chatUid === oid) return;
         Object.values(mObj || {}).forEach(m => {
-          if (m && m.senderId !== st.me.id && !m.readByMe && !(m.deletedFor && m.deletedFor[st.me.id])) {
+          if (m && m.senderId !== st.me.id && !m.seenAt && !(m.deletedFor && m.deletedFor[st.me.id])) {
             unreadMsgs++;
           }
         });
@@ -727,7 +784,7 @@
         const cb = document.getElementById("chatBadge");
         if (cb) { if (unreadChat > 0) { cb.textContent = unreadChat > 99 ? "99+" : unreadChat; cb.classList.remove("hidden"); } else cb.classList.add("hidden"); }
 
-        if (st.chatUid) markRoomReadLocally(st.chatUid);
+        if (st.chatUid) markRoomSeen(st.chatUid);
 
         const activeNow = document.activeElement;
         const tag = activeNow ? activeNow.tagName : "";
@@ -801,32 +858,27 @@
     }
 
     function switchTab(t) {
-      st.tab = t;
-      st.viewProfileUid = null;
-      playSong("notif");
-      updateDockHighlight();
+      st.tab = t; st.viewProfileUid = null; playSong("notif"); updateDockHighlight();
       if (t === "notifications") {
         st.notifs.filter(n => !n.read).forEach(n => { n.read = true; fbPut(`notifications/${st.me.id}/${n.id}/read`, true).catch(() => {}); });
         const nb = document.getElementById("notifBadge"); if (nb) nb.classList.add("hidden");
       }
-      render();
-      window.scrollTo(0, 0);
+      render(); window.scrollTo(0, 0);
     }
 
-    // Open ANY user's full Profile page directly (used when clicking Friends grid or avatars)
     function openUserProfile(uid) {
       if (!st.me) return;
-      closeModal();
-      closeSideMenu();
-      if (uid === st.me.id) {
-        switchTab("profile");
-        return;
-      }
-      st.viewProfileUid = uid;
-      st.tab = "userProfile";
-      updateDockHighlight();
-      render();
-      window.scrollTo(0, 0);
+      closeModal(); closeSideMenu();
+      if (uid === st.me.id) { switchTab("profile"); return; }
+      st.viewProfileUid = uid; st.tab = "userProfile";
+      updateDockHighlight(); render(); window.scrollTo(0, 0);
+    }
+
+    // Click avatar on Newsfeed: opens Story if active, otherwise opens Profile
+    function onFeedAvatarClick(uid) {
+      const md = getActiveMyDay(uid);
+      if (md) viewMyDay(md.id);
+      else openUserProfile(uid);
     }
 
     function getFilteredPosts() {
@@ -864,7 +916,7 @@
     function renderMyDayStrip() {
       const now = Date.now();
       const activeDays = st.myday.filter(d => d && Number(d.expiresAt || ((d.createdAt || 0) + 24 * 3600000)) > now);
-      return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3.5 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-15 h-15 w-[60px] h-[60px] rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-2xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${activeDays.map(d => { const du = uInfo(d.authorId); const vCnt = Object.keys(d.viewers || {}).length; return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1 shrink-0 max-w-[76px] relative"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base", false)}</div>${vCnt > 0 ? `<span class="absolute top-0 right-0 px-1.5 rounded-full bg-black/80 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">👁️${vCnt}</span>` : ""}<span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
+      return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3.5 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-[60px] h-[60px] rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-2xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${activeDays.map(d => { const du = uInfo(d.authorId); const vCnt = Object.keys(d.viewers || {}).length; return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1 shrink-0 max-w-[76px] relative"><div class="story-ring">${avatar(du, "w-14 h-14 text-base", false, false)}</div>${vCnt > 0 ? `<span class="absolute top-0 right-0 px-1.5 rounded-full bg-black/80 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">👁️${vCnt}</span>` : ""}<span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
     }
 
     function onQuickGalleryPost(e) {
@@ -913,24 +965,20 @@
     function respondTag(pid, status) {
       const p = st.posts.find(x => x.id === pid);
       if (!p) return;
-      p.tagStatus = status;
-      saveFastCache();
+      p.tagStatus = status; saveFastCache();
       fbPut(`posts/${pid}/tagStatus`, status).catch(() => {});
       if (status === "approved") {
-        playSong("love");
-        notify(p.authorId, "က သင့် Tag တွဲထားသော ပို့စ်ကို လက်ခံလိုက်ပါပြီ ✓");
+        playSong("love"); notify(p.authorId, "က သင့် Tag တွဲထားသော ပို့စ်ကို လက်ခံလိုက်ပါပြီ ✓");
         toast("✓ Tag လက်ခံပြီးပါပြီ — နှစ်ယောက်လုံးရဲ့ Profile မှာ ပေါ်နေပါပြီ");
       } else {
-        playSong("angry");
-        notify(p.authorId, "က သင့် Tag တွဲထားသော ပို့စ်ကို ငြင်းပယ်ခဲ့ပါသည်");
+        playSong("angry"); notify(p.authorId, "က သင့် Tag တွဲထားသော ပို့စ်ကို ငြင်းပယ်ခဲ့ပါသည်");
         toast("Tag ကို ငြင်းပယ်လိုက်ပါပြီ");
       }
       render();
     }
 
     function renderProfileView(uid) {
-      const u = uInfo(uid), own = uid === st.me.id;
-      const r = uRating(uid);
+      const u = uInfo(uid), own = uid === st.me.id, r = uRating(uid);
       const userPosts = st.posts.filter(p => !st.deletedIds[p.id] && canSeePost(p) && (p.authorId === uid || (p.taggedUserId === uid && p.tagStatus === "approved"))).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       const fCount = (u.friends || []).length, followingCount = (u.following || []).length, followerCount = followersCount(uid);
       const activeNote = u.note && (Date.now() - (u.noteAt || 0) < 24 * 3600000) ? u.note : "";
@@ -957,10 +1005,10 @@
               ${own ? `<button onclick="openNoteModal()" class="pointer-events-auto mb-1.5 px-3.5 py-1 rounded-full bg-slate-800/95 border border-slate-600 text-xs text-slate-200 shadow-md max-w-[260px] truncate">${activeNote ? `💭 ${esc(activeNote)}` : "Share a note..."}</button>` : (activeNote ? `<div class="pointer-events-auto mb-1.5 px-3.5 py-1 rounded-full bg-slate-800/95 border border-slate-600 text-xs text-slate-200 shadow-md max-w-[260px] truncate">💭 ${esc(activeNote)}</div>` : `<div class="h-4"></div>`)}
               ${own ? `
                 <label class="pointer-events-auto relative cursor-pointer">
-                  ${avatar(u, "w-24 h-24 text-3xl", false)}
+                  ${avatar(u, "w-24 h-24 text-3xl", false, true)}
                   <span class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow border-2 border-[#0f172a]">📷</span>
                   <input type="file" accept="image/*" onchange="onPickAvatar(event)" class="hidden"/>
-                </label>` : `<div class="pointer-events-auto">${avatar(u, "w-24 h-24 text-3xl", true)}</div>`}
+                </label>` : `<div onclick="onFeedAvatarClick('${u.id}')" class="pointer-events-auto cursor-pointer">${avatar(u, "w-24 h-24 text-3xl", true, true)}</div>`}
 
               <h2 class="pointer-events-auto mt-2.5 text-lg font-bold text-white flex items-center justify-center gap-1 text-center">${esc(u.name)} ${blueBadge(u)}</h2>
               <div class="pointer-events-auto text-xs font-semibold mt-0.5 ${isOnline(uid) ? "text-emerald-400" : "text-slate-400"}">${esc(onlineText(uid))}</div>
@@ -990,10 +1038,7 @@
             ${own ? renderPendingTagBanner() : ""}
             <div class="bg-[#0f172a] rounded-2xl p-3.5 border border-slate-800 space-y-2.5">
               <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-base font-bold text-white">မိတ်ဆွေများ (Friends)</h3>
-                  <div class="text-xs text-slate-400">မိတ်ဆွေ ${fCount} ယောက်</div>
-                </div>
+                <div><h3 class="text-base font-bold text-white">မိတ်ဆွေများ (Friends)</h3><div class="text-xs text-slate-400">မိတ်ဆွေ ${fCount} ယောက်</div></div>
                 <button onclick="switchTab('friends')" class="text-xs font-bold text-emerald-400">+ မိတ်ဆွေရှာရန်</button>
               </div>
               ${renderFriendsGrid(uid, 6)}
@@ -1010,6 +1055,34 @@
         </div>`;
     }
 
+    // Separate live-list updaters so keyboard NEVER closes while typing in Search!
+    function buildExploreResultsHtml() {
+      const q = st.q.trim().toLowerCase();
+      const res = st.posts.filter(p => canSeePost(p) && (!q || [p.text, p.category, p.price, uInfo(p.authorId).name].join(" ").toLowerCase().includes(q)));
+      const matchedUsers = q ? Object.values(st.users || {}).filter(u => u && u.id !== st.me.id && ((u.name || "").toLowerCase().includes(q) || (u.id || "").toLowerCase().includes(q))) : [];
+      return `
+        ${matchedUsers.length ? `<div class="space-y-2"><div class="text-xs font-bold text-emerald-400">👤 တွေ့ရှိသော အသုံးပြုသူများ</div>${matchedUsers.map(u => `<div onclick="openUserProfile('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(u, "w-11 h-11 text-base", true, true)}<div class="min-w-0 flex-1"><div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400">${esc(onlineText(u.id))}</div></div><span class="text-emerald-400 text-xs font-bold">Profile ›</span></div>`).join("")}</div>` : ""}
+        <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => canSeePost(p) && matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
+        <div class="space-y-3.5">${res.map(postCard).join("")}</div>`;
+    }
+    function updateExploreResults() {
+      const box = document.getElementById("exploreResultsBox");
+      if (box) box.innerHTML = buildExploreResultsHtml();
+    }
+
+    function buildFriendsListHtml() {
+      const q = st.fq.trim().toLowerCase();
+      const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
+      return users.length ? users.map(u => {
+        const isF = (st.me.friends || []).includes(u.id);
+        return `<div class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2"><div onclick="openUserProfile('${u.id}')" class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base", true, true)}<div class="min-w-0"><div class="text-base font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400 truncate">${esc(onlineText(u.id))}</div></div></div><button onclick="openChat('${u.id}')" class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button><button onclick="toggleFriend('${u.id}')" class="px-3 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button></div>`;
+      }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`;
+    }
+    function updateFriendsList() {
+      const box = document.getElementById("friendsListBox");
+      if (box) box.innerHTML = buildFriendsListHtml();
+    }
+
     function render() {
       if (!st.me) return;
       const el = document.getElementById("mainContent");
@@ -1020,7 +1093,7 @@
         el.innerHTML = `
           ${renderMyDayStrip()}
           <div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800 flex items-center gap-2.5">
-            <div onclick="switchTab('profile')" class="cursor-pointer shrink-0">${avatar(st.me, "w-11 h-11 text-base")}</div>
+            <div onclick="switchTab('profile')" class="cursor-pointer shrink-0">${avatar(st.me, "w-11 h-11 text-base", true, true)}</div>
             <button onclick="openComposerModal()" class="flex-1 min-w-0 text-left bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/70 text-slate-300 text-sm px-4 py-3 rounded-full font-medium truncate">အရောင်းပို့စ်တင်ရန် (Page / YouTube)...</button>
             <label class="w-11 h-11 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition" title="Gallery မှ ပုံရွေးတင်ရန်">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 15l-5-5L5 21"/></svg>
@@ -1036,14 +1109,9 @@
           </div>
           <div class="p-3 space-y-4">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် အရောင်းပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
       } else if (st.tab === "explore") {
-        const q = st.q.trim().toLowerCase();
-        const res = st.posts.filter(p => canSeePost(p) && (!q || [p.text, p.category, p.price, uInfo(p.authorId).name].join(" ").toLowerCase().includes(q)));
-        const matchedUsers = q ? Object.values(st.users || {}).filter(u => u && u.id !== st.me.id && ((u.name || "").toLowerCase().includes(q) || (u.id || "").toLowerCase().includes(q))) : [];
         el.innerHTML = `<div class="p-3.5 space-y-3.5">
-          <input type="search" value="${esc(st.q)}" oninput="st.q=this.value;render()" placeholder="စာသား၊ #hashtag၊ ရောင်းသူနာမည် သို့မဟုတ် User ID ရှာရန်..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 text-base"/>
-          ${matchedUsers.length ? `<div class="space-y-2"><div class="text-xs font-bold text-emerald-400">👤 တွေ့ရှိသော အသုံးပြုသူများ</div>${matchedUsers.map(u => `<div onclick="openUserProfile('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(u, "w-11 h-11 text-base")}<div class="min-w-0 flex-1"><div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400">${esc(onlineText(u.id))}</div></div><span class="text-emerald-400 text-xs font-bold">Profile ›</span></div>`).join("")}</div>` : ""}
-          <div class="grid grid-cols-2 gap-2.5">${TRADE_CATS.map(c => `<button onclick="st.cat='${c}';switchTab('home')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 text-left"><div class="text-sm font-bold text-white">${c}</div><div class="text-xs text-slate-400 mt-0.5">ပို့စ် ${st.posts.filter(p => canSeePost(p) && matchesCategoryOrTag(p, c)).length} ခု</div></button>`).join("")}</div>
-          <div class="space-y-3.5">${res.map(postCard).join("")}</div>
+          <input id="exploreSearchInp" type="search" value="${esc(st.q)}" oninput="st.q=this.value;updateExploreResults()" placeholder="စာသား၊ #hashtag၊ ရောင်းသူနာမည် သို့မဟုတ် User ID ရှာရန်..." class="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-4 py-3 text-base focus:border-emerald-500 focus:outline-none"/>
+          <div id="exploreResultsBox" class="space-y-3.5">${buildExploreResultsHtml()}</div>
         </div>`;
       } else if (st.tab === "chats") {
         const rooms = Object.entries(st.chats || {}).filter(([k]) => k.includes(st.me.id));
@@ -1062,14 +1130,14 @@
               ${rooms.length ? rooms.map(([k, mObj], idx) => {
                 const oid = k.split("__").find(x => x !== st.me.id) || st.me.id, o = uInfo(oid);
                 const ms = Object.values(mObj || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
-                const unreadInRoom = ms.filter(m => m.senderId !== st.me.id && !m.readByMe).length;
+                const unreadInRoom = ms.filter(m => m.senderId !== st.me.id && !m.seenAt).length;
                 const last = ms[ms.length - 1];
                 const isTyping = !!(st.typing[k] && st.typing[k][oid] && (Date.now() - st.typing[k][oid] < 4500));
                 const preview = isTyping ? "✍️ စာရိုက်နေပါသည်..." : (last ? (last.deletedForAll ? "🚫 မက်ဆေ့ချ် ဖျက်ပြီး" : (last.text || (last.audio ? "🎙️ အသံ" : "📷 ဓာတ်ပုံ"))) : "စကားစပြောရန် နှိပ်ပါ");
                 return `
                   <div onclick="openChat('${oid}')" class="bg-[#0f172a] p-3.5 rounded-2xl border ${unreadInRoom > 0 ? "border-emerald-500/50 bg-emerald-950/20" : "border-slate-800"} flex items-center gap-3 cursor-pointer">
                     <span class="w-7 h-7 rounded-full ${unreadInRoom > 0 ? "bg-rose-500" : "bg-emerald-600"} text-white text-xs font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
-                    ${avatar(o, "w-12 h-12 text-base")}
+                    ${avatar(o, "w-12 h-12 text-base", true, true)}
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center justify-between gap-2">
                         <span class="text-base font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</span>
@@ -1086,9 +1154,17 @@
             ${others.length ? `<div class="space-y-2.5 pt-2 border-t border-slate-800"><h3 class="text-sm font-bold text-slate-300 px-1">စာပို့နိုင်သူများ</h3><div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">${others.map(u => `<button onclick="openChat('${u.id}')" class="bg-[#0f172a] p-3 rounded-2xl border border-slate-800 flex flex-col items-center gap-1.5 min-w-[92px] shrink-0">${avatar(u, "w-12 h-12 text-base")}<span class="text-xs font-bold text-white truncate w-full text-center">${esc(u.name)}</span><span class="text-xs text-emerald-400 font-bold">စာပို့မည်</span></button>`).join("")}</div></div>` : ""}
           </div>`;
       } else if (st.tab === "friends") {
-        const q = st.fq.trim().toLowerCase();
-        const users = Object.values(st.users).filter(u => u && u.id !== st.me.id && (!q || u.id.toLowerCase().includes(q) || (u.name || "").toLowerCase().includes(q)));
-        el.innerHTML = `<div class="p-3.5 space-y-4"><div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white space-y-2"><div class="text-xs text-emerald-100">သင့် Friend Add ID</div><div class="flex items-center justify-between gap-2"><span class="text-base font-bold font-mono">${esc(st.me.id)}</span><button onclick="copyUserId('${st.me.id}')" class="px-3 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-bold">📋 ID ကူးမည်</button></div></div><input type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;render()" placeholder="User ID (PPW-xxxxxx) သို့မဟုတ် နာမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-base"/><div class="space-y-2.5">${users.length ? users.map(u => { const isF = (st.me.friends || []).includes(u.id); return `<div class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2"><div onclick="openUserProfile('${u.id}')" class="flex items-center gap-3 cursor-pointer flex-1 min-w-0">${avatar(u, "w-12 h-12 text-base")}<div class="min-w-0"><div class="text-base font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div><div class="text-xs text-slate-400 truncate">${esc(onlineText(u.id))}</div></div></div><button onclick="openChat('${u.id}')" class="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-bold">စာပို့</button><button onclick="toggleFriend('${u.id}')" class="px-3 py-2 rounded-xl text-xs font-bold ${isF ? "bg-slate-800 text-slate-200" : "bg-emerald-600 text-white"}">${isF ? "မိတ်ဆွေ ✓" : "+ Add"}</button></div>`; }).join("") : `<div class="bg-[#0f172a] rounded-2xl p-6 text-center text-sm text-slate-400 border border-slate-800">အခြားအသုံးပြုသူ မတွေ့သေးပါ</div>`}</div></div>`;
+        el.innerHTML = `<div class="p-3.5 space-y-4">
+          <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-4 text-white space-y-2">
+            <div class="text-xs text-emerald-100">သင့် Friend Add ID</div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-base font-bold font-mono">${esc(st.me.id)}</span>
+              <button onclick="copyUserId('${st.me.id}')" class="px-3 py-1.5 rounded-xl bg-white text-emerald-800 text-xs font-bold">📋 ID ကူးမည်</button>
+            </div>
+          </div>
+          <input id="friendSearchInp" type="text" value="${esc(st.fq)}" oninput="st.fq=this.value;updateFriendsList()" placeholder="User ID (PPW-xxxxxx) သို့မဟုတ် နာမည် ရှာရန်..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-2xl px-4 py-3 text-base focus:border-emerald-500 focus:outline-none"/>
+          <div id="friendsListBox" class="space-y-2.5">${buildFriendsListHtml()}</div>
+        </div>`;
       } else if (st.tab === "notifications") {
         el.innerHTML = `<div class="p-3.5 space-y-3"><h2 class="text-base font-bold text-white px-1">အကြောင်းကြားစာများ</h2>${renderPendingTagBanner()}${st.notifs.length ? st.notifs.map(n => `<div onclick="openUserProfile('${n.fromId}')" class="bg-[#0f172a] p-3.5 rounded-2xl border border-slate-800 flex items-center gap-3 cursor-pointer">${avatar(n.fromId, "w-11 h-11 text-sm")}<div><p class="text-sm text-slate-100"><span class="font-bold">${esc(n.fromName)}</span> ${esc(n.text)}</p><span class="text-xs text-slate-400">${ago(n.createdAt)}</span></div></div>`).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center text-sm text-slate-400 border border-slate-800">အကြောင်းကြားစာ မရှိသေးပါ</div>`}</div>`;
       } else if (st.tab === "profile") {
@@ -1099,7 +1175,7 @@
     }
 
     // =========================================================================
-    // POST CARD (3-Pill Bar: Like [Long-Press], Comment, Share)
+    // POST CARD (Story Ring on Avatar, Clickable Like Count, Commenter Profile)
     // =========================================================================
     function postCard(p) {
       const au = uInfo(p.authorId), myRx = userReaction(p), boosted = isBoosted(p), own = p.authorId === st.me.id;
@@ -1116,7 +1192,7 @@
           ${boosted ? `<div class="px-3.5 py-1.5 bg-amber-500/20 border-b border-amber-500/30 rounded-t-2xl flex justify-between text-xs font-bold text-amber-300"><span>⚡ BOOSTED • Top ပို့စ်</span><span>${remainingHours(p.boostedUntil)}</span></div>` : ""}
           <div class="p-3.5 pb-2 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0">
-              <div onclick="openUserProfile('${p.authorId}')" class="cursor-pointer">${avatar(au, "w-11 h-11 text-base")}</div>
+              <div onclick="onFeedAvatarClick('${p.authorId}')" class="cursor-pointer">${avatar(au, "w-11 h-11 text-base", true, true)}</div>
               <div class="min-w-0">
                 <div class="flex items-center gap-1 flex-wrap leading-snug">
                   <span onclick="openUserProfile('${p.authorId}')" class="text-base font-bold text-white cursor-pointer">${esc(au.name)}</span>
@@ -1146,10 +1222,13 @@
 
           ${(totRx > 0 || cmts.length > 0 || shareCnt > 0 || realViews > 0) ? `
             <div class="px-3.5 pt-2.5 pb-1 flex items-center justify-between text-xs text-slate-400">
-              <div class="flex items-center gap-1">${rxIcons ? `<span class="text-sm">${rxIcons}</span>` : ""}<span>${totRx > 0 ? totRx : ""}</span></div>
+              <button onclick="openReactionsModal('${p.id}')" class="flex items-center gap-1.5 hover:text-white active:scale-95 transition">
+                ${rxIcons ? `<span class="text-base">${rxIcons}</span>` : ""}
+                <span class="font-semibold">${totRx > 0 ? totRx + " ဦး" : ""}</span>
+              </button>
               <div class="flex items-center gap-3">
                 ${realViews > 0 ? `<span>👁️ ${realViews}</span>` : ""}
-                ${cmts.length > 0 ? `<span>${cmts.length} comments</span>` : ""}
+                ${cmts.length > 0 ? `<span onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];render()" class="cursor-pointer">${cmts.length} comments</span>` : ""}
                 ${shareCnt > 0 ? `<span>${shareCnt} shares</span>` : ""}
               </div>
             </div>` : ""}
@@ -1181,7 +1260,7 @@
             </button>
           </div>
 
-          ${exp ? `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 rounded-b-2xl space-y-2.5">${cmts.map(c => { const cu = uInfo(c.authorId); return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2.5 text-sm flex items-start gap-2.5">${avatar(cu, "w-8 h-8 text-xs")}<div class="text-sm text-slate-100"><span onclick="openUserProfile('${cu.id}')" class="font-bold text-white cursor-pointer">${esc(cu.name)}</span><div class="mt-0.5">${esc(c.text)}</div></div></div>`; }).join("")}<div class="flex items-center gap-2"><input id="ci-${p.id}" type="text" placeholder="မှတ်ချက်ရေးရန်..." onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-4 py-2.5 text-sm"/><button onclick="addCmt('${p.id}')" class="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-bold">ပို့</button></div></div>` : ""}
+          ${exp ? `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 rounded-b-2xl space-y-2.5">${cmts.map(c => { const cu = uInfo(c.authorId); return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2.5 text-sm flex items-start gap-2.5"><div onclick="openUserProfile('${cu.id}')" class="cursor-pointer shrink-0">${avatar(cu, "w-8 h-8 text-xs", true, true)}</div><div class="text-sm text-slate-100 min-w-0"><span onclick="openUserProfile('${cu.id}')" class="font-bold text-white cursor-pointer inline-flex items-center gap-1">${esc(cu.name)} ${blueBadge(cu)}</span><div class="mt-0.5">${esc(c.text)}</div></div></div>`; }).join("")}<div class="flex items-center gap-2"><input id="ci-${p.id}" type="text" placeholder="မှတ်ချက်ရေးရန်..." onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 bg-slate-800 text-white border border-slate-700 rounded-full px-4 py-2.5 text-sm"/><button onclick="addCmt('${p.id}')" class="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-bold">ပို့</button></div></div>` : ""}
         </article>`;
     }
 
@@ -1260,9 +1339,6 @@
       fbPut(`posts/${id}/comments/${cid}`, c).catch(() => {});
     }
 
-    // =========================================================================
-    // POST COMPOSER MODAL
-    // =========================================================================
     function openComposerModal(preloadedImg = null) {
       st.img = preloadedImg || null;
       const allUsers = Object.values(st.users || {}).filter(u => u && u.id !== st.me.id);
@@ -1555,7 +1631,7 @@
     function viewMyDay(id) {
       const d = st.myday.find(x => x.id === id); if (!d) return;
       if (!d.viewers) d.viewers = {};
-      if (!d.viewers[st.me.id]) { d.viewers[st.me.id] = true; fbPut(`myday/${id}/viewers/${st.me.id}`, true).catch(() => {}); }
+      if (d.authorId !== st.me.id && !d.viewers[st.me.id]) { d.viewers[st.me.id] = true; fbPut(`myday/${id}/viewers/${st.me.id}`, true).catch(() => {}); }
       const au = uInfo(d.authorId), own = d.authorId === st.me.id, rx = d.reactions || {};
       const expTs = Number(d.expiresAt || ((d.createdAt || 0) + 24 * 3600000));
       document.getElementById("modalRoot").innerHTML = `
@@ -1611,7 +1687,6 @@
     }
     function closeSideMenu() { document.getElementById("drawerRoot").innerHTML = ""; }
 
-    // Creator Dashboard with Real Unique Views
     function openDashboardModal() {
       playSong("notif");
       const myPosts = st.posts.filter(p => p.authorId === st.me.id && !st.deletedIds[p.id]);
@@ -1758,16 +1833,16 @@
     }
 
     // =========================================================================
-    // CHAT SYSTEM (No Seen, No Call, No Video, Exact Offline Time, Uniform Bar)
+    // CHAT SYSTEM (✓ Delivered, ✓✓ Seen, Exact Offline Time, Uniform Bar)
     // =========================================================================
-    function markRoomReadLocally(oid) {
+    function markRoomSeen(oid) {
       if (!oid) return;
       const rid = roomId(st.me.id, oid), room = st.chats[rid]; if (!room) return;
       let changed = false;
       Object.values(room).forEach(m => {
-        if (m && m.senderId !== st.me.id && !m.readByMe) {
-          m.readByMe = true; changed = true;
-          fbPut(`chats/${rid}/${m.id}/readByMe`, true).catch(() => {});
+        if (m && m.senderId !== st.me.id && !m.seenAt) {
+          m.seenAt = Date.now(); changed = true;
+          fbPut(`chats/${rid}/${m.id}/seenAt`, m.seenAt).catch(() => {});
         }
       });
       if (changed) {
@@ -1809,13 +1884,13 @@
     const roomId = (a, b) => [a, b].sort().join("__");
     function openChat(oid) {
       st.chatUid = oid; st.chatImg = null; st.showStickers = false; const o = uInfo(oid);
-      markRoomReadLocally(oid);
+      markRoomSeen(oid);
       document.getElementById("modalRoot").innerHTML = `
         <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
           <div class="bg-[#0b1120] border border-slate-700 w-full max-w-lg rounded-t-3xl sm:rounded-3xl flex flex-col h-[92vh] animate-slide-up overflow-hidden">
             <div class="px-3.5 py-3 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between gap-2">
               <div onclick="openUserProfile('${o.id}')" class="flex items-center gap-2.5 cursor-pointer min-w-0">
-                ${avatar(o, "w-11 h-11 text-base")}
+                ${avatar(o, "w-11 h-11 text-base", true, true)}
                 <div class="min-w-0">
                   <div class="text-base font-bold text-white truncate flex items-center gap-1">${esc(o.name)} ${blueBadge(o)}</div>
                   <div class="text-xs font-semibold truncate ${isOnline(o.id) ? "text-emerald-400" : "text-slate-400"}">${esc(onlineText(o.id))}</div>
@@ -1870,7 +1945,8 @@
       const ms = Object.values(st.chats[roomId(st.me.id, st.chatUid)] || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => a.createdAt - b.createdAt);
       box.innerHTML = ms.length ? ms.map(m => {
         const me = m.senderId === st.me.id, isPureSticker = !m.deletedForAll && !m.image && !m.audio && STICKER_ICONS.includes((m.text || "").trim());
-        return `<div class="flex items-end ${me ? "justify-end" : "justify-start"}"><div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-5xl py-1 px-2" : `max-w-[82%] px-4 py-2.5 rounded-2xl text-base space-y-1.5 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${m.audio ? `<audio controls src="${m.audio}" class="w-52 h-9"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}</div></div>`;
+        const tick = me ? (m.seenAt ? `<span class="text-sky-200 font-bold">✓✓</span>` : `<span class="text-emerald-200/80 font-bold">✓</span>`) : "";
+        return `<div class="flex items-end ${me ? "justify-end" : "justify-start"}"><div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-5xl py-1 px-2" : `max-w-[82%] px-4 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${m.audio ? `<audio controls src="${m.audio}" class="w-52 h-9"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}${me ? `<div class="text-[11px] text-right leading-none">${tick}</div>` : ""}</div></div>`;
       }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
       box.scrollTop = box.scrollHeight;
       renderTypingBanner();
@@ -1878,7 +1954,7 @@
     function sendChatPayload({ text, image, audio }) {
       if (!st.chatUid) return;
       const rid = roomId(st.me.id, st.chatUid), mid = "M-" + Date.now();
-      const m = { id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "", readByMe: false, deletedFor: {}, deletedForAll: false, createdAt: Date.now() };
+      const m = { id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "", seenAt: 0, deletedFor: {}, deletedForAll: false, createdAt: Date.now() };
       if (!st.chats[rid]) st.chats[rid] = {}; st.chats[rid][mid] = m;
       clearChatAttach(); fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {}); renderMsgs();
       notify(st.chatUid, "က စာပို့လိုက်သည်"); fbPut(`chats/${rid}/${mid}`, m).catch(() => {});
@@ -1895,7 +1971,6 @@
       document.getElementById("modalRoot").innerHTML = "";
     }
 
-    // Boot: Check if user is logged in, otherwise show Phone + Password Auth Screen
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
       setAuthMode("login");
