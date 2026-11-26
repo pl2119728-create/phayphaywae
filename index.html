@@ -466,7 +466,8 @@
 
     async function fbGet(path, signal) {
       const { bucket, itemId, sub } = parsePath(path);
-      let url = `${SUPABASE_URL}/rest/v1/ppw_kv?bucket=eq.${encodeURIComponent(bucket)}&select=item_id,data`;
+      const table = ["posts", "users"].includes(bucket) ? "ppw_public_feed" : "ppw_kv";
+      let url = `${SUPABASE_URL}/rest/v1/${table}?bucket=eq.${encodeURIComponent(bucket)}&select=item_id,data`;
       if (itemId) url += `&item_id=eq.${encodeURIComponent(itemId)}`;
       const response = await fetch(url, { headers: SB_HEADERS, signal });
       if (!response.ok) throw new Error("Supabase HTTP " + response.status);
