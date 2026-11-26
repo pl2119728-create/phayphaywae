@@ -92,7 +92,7 @@
 
   <script>
     const DB = "https://phay-phay-wae-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const APP_URL = "https://pl2119728-create.github.io";
+    const APP_URL = "https://pl2119728-create.github.io/phayphaywae/";
     const OWNER_ID = "PPW-565435";
     const ADMIN_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
     const ADMIN_PIN = "2026";
@@ -451,7 +451,7 @@
     }
 
     async function fbGet(path, signal) {
-      const response = await fetch(`${DB}/${path}.json`, {signal});
+      const response = await fetch(`${DB}/${path}.json`, { signal });
       if (!response.ok) throw new Error("Firebase HTTP " + response.status);
       return response.json();
     }
@@ -713,24 +713,44 @@
       if (syncRunning) return;
       syncRunning = true;
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
       const read = path => fbGet(path, controller.signal);
       try {
         fbPut(`presence/${st.me.id}`, Date.now()).catch(() => {});
         if (init) fbPut(`users/${st.me.id}`, st.me).catch(() => {});
-        const readVersion = dayReactionVersion;
-        const [po, md, us, pr, rv, ap, br, no, ch, ty, cl] = await Promise.all([
-          read("posts"), read("myday"), read("users"), read("presence"),
-          read("reviews"), read("appeals"), read("boostRequests"), read(`notifications/${st.me.id}`),
-          read("chats"), read("typing"), read("calls")
-        ]);
+
+        // အရေးကြီးဆုံး Posts ကို အရင်ဆုံး ဆွဲယူပြီး ချက်ချင်းပြသပေးမည်
+        const po = await read("posts");
         const rawPosts = po ? Object.values(po) : [];
         st.posts = rawPosts.filter(p => p && TRADE_CATS.includes(p.category) && !hasBlockedClothing(p.text) && (p.text || p.image));
+
+        const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        if (txt) txt.textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
+
+        const activeEl1 = document.activeElement;
+        if (!["INPUT", "TEXTAREA", "SELECT"].includes(activeEl1 ? activeEl1.tagName : "")) render();
+
+        // ကျန်ဒေတာများကို နောက်ကွယ်မှ ဆက်လက်ရယူမည်
+        const readVersion = dayReactionVersion;
+        const [md, us, pr, rv, ap, br, no, ch, ty, cl] = await Promise.all([
+          read("myday").catch(() => null),
+          read("users").catch(() => null),
+          read("presence").catch(() => null),
+          read("reviews").catch(() => null),
+          read("appeals").catch(() => null),
+          read("boostRequests").catch(() => null),
+          read(`notifications/${st.me.id}`).catch(() => null),
+          read("chats").catch(() => null),
+          read("typing").catch(() => null),
+          read("calls").catch(() => null)
+        ]);
+
         const dayCutoff = Date.now() - 24 * 3600000;
-        if (readVersion === dayReactionVersion) st.myday = md ? Object.values(md).filter(d => d && (d.createdAt || 0) >= dayCutoff).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
+        if (md && readVersion === dayReactionVersion) st.myday = Object.values(md).filter(d => d && (d.createdAt || 0) >= dayCutoff).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         refreshDayReactions();
-        st.users = us || {};
-        st.presence = pr || {};
+        if (us) st.users = us;
+        if (pr) st.presence = pr;
         if (st.users[st.me.id]) {
           st.me.blueMark = st.me.id === OWNER_ID ? true : !!st.users[st.me.id].blueMark;
           st.me.appealStatus = st.users[st.me.id].appealStatus || st.me.appealStatus || "none";
@@ -740,25 +760,30 @@
           saveMe();
         }
         st.users[st.me.id] = st.me;
-        st.reviews = rv || {};
-        st.appeals = ap || {};
-        st.boostRequests = br || {};
-        st.typing = ty || {};
-        st.calls = cl || {};
+        if (rv) st.reviews = rv;
+        if (ap) st.appeals = ap;
+        if (br) st.boostRequests = br;
+        if (ty) st.typing = ty;
+        if (cl) st.calls = cl;
         saveFastCache();
 
-        const nextNotifs = no ? Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) : [];
-        let newNotifSong = false;
-        nextNotifs.forEach(n => { if (!st.seenNotifIds[n.id]) { st.seenNotifIds[n.id] = true; if (!st.firstSync && !n.read) newNotifSong = true; } });
-        st.notifs = nextNotifs;
+        if (no) {
+          const nextNotifs = Object.values(no).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          let newNotifSong = false;
+          nextNotifs.forEach(n => { if (!st.seenNotifIds[n.id]) { st.seenNotifIds[n.id] = true; if (!st.firstSync && !n.read) newNotifSong = true; } });
+          st.notifs = nextNotifs;
+          if (newNotifSong) playSong("notif");
+        }
 
-        const nextChats = ch || {};
-        let newMsgSong = false;
-        Object.entries(nextChats).forEach(([rk, mObj]) => {
-          if (!rk.includes(st.me.id)) return;
-          Object.values(mObj || {}).forEach(m => { if (m && !st.seenMsgIds[m.id]) { st.seenMsgIds[m.id] = true; if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true; } });
-        });
-        st.chats = nextChats;
+        if (ch) {
+          let newMsgSong = false;
+          Object.entries(ch).forEach(([rk, mObj]) => {
+            if (!rk.includes(st.me.id)) return;
+            Object.values(mObj || {}).forEach(m => { if (m && !st.seenMsgIds[m.id]) { st.seenMsgIds[m.id] = true; if (!st.firstSync && m.senderId !== st.me.id) newMsgSong = true; } });
+          });
+          st.chats = ch;
+          if (newMsgSong) playSong("message");
+        }
 
         let incomingCall = null;
         Object.values(st.calls || {}).forEach(c => {
@@ -769,14 +794,8 @@
         st.firstSync = false;
 
         if (incomingCall && !st.activeCall) { st.activeCall = incomingCall; startRingLoop("incoming"); openCallModal(incomingCall.id); }
-        else if (newMsgSong) playSong("message");
-        else if (newNotifSong) playSong("notif");
 
         if (st.chatUid && !st.me.hideSeen) markRoomSeen(st.chatUid);
-
-        const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
-        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
-        if (txt) txt.textContent = "တိုက်ရိုက်ချိတ်ဆက်ပြီး";
 
         collectMatches();
         const unread = st.notifs.filter(n => !n.read).length + matches.filter(m => !m.read).length;
@@ -792,7 +811,7 @@
       } catch (e) {
         const dot = document.getElementById("syncDot"), txt = document.getElementById("syncText");
         if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400";
-        if (txt) txt.textContent = "ချိတ်ဆက်မှု မအောင်မြင်သေးပါ";
+        if (txt) txt.textContent = "ချိတ်ဆက်မှု ပြန်စမ်းနေသည်…";
       } finally {
         clearTimeout(timeout);
         controller.abort();
@@ -1587,7 +1606,7 @@
     if (new URL(location.href).searchParams.has("post")) { st.tab = "listing"; document.getElementById("nav-home").removeAttribute("aria-current"); }
     render();
     sync(true);
-    setInterval(() => sync(false), 2000);
+    setInterval(() => sync(false), 4000);
   </script>
 <script>
 (() => {
@@ -1721,7 +1740,7 @@
     loading=true;
     paint(0); label.textContent="ပို့စ်အသစ်များ ရယူနေသည်…";
     if(!reduced.matches && ball.animate)ball.animate([{transform:"translateY(34px)"},{transform:"translateY(-6px)"},{transform:"translateY(0)"}],{duration:310});
-    const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),12000);
+    const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),45000);
     try{
       const response=await fetch(DB+"/posts.json",{cache:"no-store",signal:controller.signal});
       if(!response.ok)throw new Error();
