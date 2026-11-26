@@ -92,7 +92,7 @@
 
   <script>
     const DB = "https://phay-phay-wae-default-rtdb.asia-southeast1.firebasedatabase.app";
-    const APP_URL = const SUPABASE_KEY = "sb_publishable_jZNALOr3YPWi0TUyKq3khg_mF8MKVhN";
+    const APP_URL = "https://pl2119728-create.github.io";
     const OWNER_ID = "PPW-565435";
     const ADMIN_NAME = "ပိုင်ဇော်ထက် (Paing Zaw Htet)";
     const ADMIN_PIN = "2026";
@@ -253,7 +253,6 @@
       window._tt = setTimeout(() => el.classList.add("hidden"), 2400);
     }
 
-    // 100% Reliable Copy for APK / WebView / Mobile Browsers
     function copyText(text, successMsg) {
       const done = () => { playSong("notif"); toast(successMsg || "Copy ကူးပြီးပါပြီ"); };
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -466,7 +465,6 @@
       fbPut(`posts/${p.id}/views`, p.views).catch(() => {});
     }
 
-    // Boost Payment Modal (KPay / Wave -> @snap105 Telegram -> 20,000 MMK / 24h Top)
     function openBoostModal(pid) {
       const p = st.posts.find(x => x.id === pid);
       if (!p) return;
@@ -830,7 +828,6 @@
       else if (st.cat === "အသစ်ရောက်သူများ") list = list.filter(p => isNewUser(p.authorId)).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       else if (st.cat !== "အားလုံး") list = list.filter(p => matchesCategoryOrTag(p, st.cat)).sort((a, b) => feedScore(b) - feedScore(a));
       else list.sort((a, b) => feedScore(b) - feedScore(a));
-      // Boosted posts (24h active) always stay at the very TOP
       list.sort((a, b) => (isBoosted(b) ? 1 : 0) - (isBoosted(a) ? 1 : 0));
       return list;
     }
@@ -846,7 +843,6 @@
       const activeDays = st.myday.filter(d => d && (d.createdAt || 0) >= dayCutoff);
       return `<div class="bg-[#0f172a] px-3.5 py-3 border-b border-slate-800"><div class="flex items-center gap-3 overflow-x-auto no-scrollbar"><button onclick="openMyDayModal()" class="flex flex-col items-center gap-1.5 shrink-0"><div class="w-14 h-14 rounded-full bg-emerald-500/20 border-2 border-dashed border-emerald-400 text-emerald-300 flex items-center justify-center text-xl font-bold">+</div><span class="text-xs font-bold text-emerald-300">MyDay</span></button>${activeDays.map(d => { const du = uInfo(d.authorId); const vCnt = Object.keys(d.viewers || {}).length; return `<button onclick="viewMyDay('${d.id}')" class="flex flex-col items-center gap-1 shrink-0 max-w-[72px] relative"><div class="p-0.5 rounded-full bg-gradient-to-tr from-emerald-400 to-sky-400">${avatar(du, "w-14 h-14 text-base", false)}</div>${vCnt > 0 ? `<span class="absolute top-0 right-0 px-1.5 py-0.2 rounded-full bg-black/80 text-[10px] text-emerald-300 font-bold border border-emerald-500/40">👁️${vCnt}</span>` : ""}<span class="text-xs font-semibold text-slate-200 truncate w-full text-center">${esc(du.name)}</span></button>`; }).join("")}</div></div>`;
     }
-
 
     const explore = { category: "", condition: "", price: "", available: false };
     function filterOptions(items, selected) {
@@ -967,7 +963,6 @@
             </div>
             <div class="p-3 space-y-3.5">${list.length ? list.map(postCard).join("") : `<div class="bg-[#0f172a] rounded-2xl p-8 text-center border border-slate-800 text-sm text-slate-400">ဤကဏ္ဍတွင် အရောင်းပို့စ် မရှိသေးပါ — ပထမဆုံး ပို့စ်တင်ကြည့်ပါ!</div>`}</div>`;
         } else if (st.tab === "explore") {
-
           const field = "block w-full rounded-xl bg-slate-900 border border-slate-700 text-white px-3 py-2.5 text-sm";
           el.innerHTML = `<section class="p-3.5 space-y-3">
             <label class="block text-xs">ပို့စ်ရှာရန်<input id="queryFilter" class="${field}" type="search" value="${esc(st.q)}" placeholder="စာသား၊ #hashtag၊ ရောင်းသူနာမည်"/></label>
@@ -1190,7 +1185,6 @@
       render();
     }
 
-    // MyDay (24h limit + Viewers list + Delete button)
     function openMyDayModal() {
       st.mydayImg = null;
       document.getElementById("modalRoot").innerHTML = `<div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center"><div class="bg-[#0f172a] border border-slate-700 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-4 space-y-3 animate-slide-up"><div class="flex items-center justify-between pb-2 border-b border-slate-800"><div><h3 class="text-base font-bold text-white">MyDay တင်ရန်</h3><div class="text-[11px] text-emerald-400">၂၄ နာရီသာ ခံမည် (အလိုအလျောက် ပျောက်မည်)</div></div><button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button></div><label class="block text-xs">အရောင်းပို့စ် တွဲတင်ရန်<select id="dayListing" class="block w-full rounded-xl bg-slate-900 p-2"><option value="">ပို့စ်ရွေးရန် (ရွေးချယ်နိုင်)</option>${st.posts.filter(p => p.authorId === st.me.id && !p.sold).map(p => `<option value="${esc(p.id)}">${esc((p.text || p.category).slice(0,60))} · ${esc(p.price || "CB")}</option>`).join("")}</select></label><textarea id="mdTxt" rows="3" placeholder="MyDay စာသား..." class="w-full bg-slate-900 text-white border border-slate-700 rounded-xl p-3 text-sm resize-none"></textarea><div id="mdImgBox" class="hidden relative flex justify-center py-2"><img id="mdImgPrev" src="" class="w-36 h-36 rounded-full object-cover border-4 border-emerald-500/50"/><button onclick="st.mydayImg=null;document.getElementById('mdImgBox').classList.add('hidden')" class="absolute top-2 right-12 w-7 h-7 rounded-full bg-black/70 text-white text-xs">✕</button></div><div class="flex items-center justify-between"><label class="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg cursor-pointer">📷<input type="file" accept="image/*" onchange="onPickMyDayImg(event)" class="hidden"/></label><button onclick="submitMyDay()" class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">MyDay တင်မည်</button></div></div></div>`;
@@ -1579,7 +1573,7 @@
     }
     function closeModal() {
       stopRingLoop();
-            if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
+      if (st.chatUid) fbPut(`typing/${roomId(st.me.id, st.chatUid)}/${st.me.id}`, 0).catch(() => {});
       if (st.recorder && st.recorder.state === "recording") {
         try { st.recorder.stop(); } catch (e) {}
       }
