@@ -1316,6 +1316,60 @@
       if (now - (window._lastBackAt || 0) < 2000) history.back();
       else { window._lastBackAt = now; toast("ထွက်ရန် Back ခလုတ်ကို ထပ်နှိပ်ပါ"); ensureBackGuard(); }
     });
+    // Fix 1: Reel Video 15MB Limit + Comment Input & Sync Bug
+    const _cmtStyle = document.createElement("style");
+    _cmtStyle.textContent = '#mainContent input[id^="ci-"]{min-width:0!important;width:100%!important;}';
+    document.head.appendChild(_cmtStyle);
+
+    onPickReelVideo = function(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 15 * 1024 * 1024) { e.target.value = ""; return toast("Reel ဗီဒီယိုဖိုင်ဆိုဒ် 15MB အောက်သာ တင်နိုင်ပါသည်"); }
+      const url = URL.createObjectURL(f), vid = document.createElement("video"); vid.preload = "metadata";
+      vid.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        if (vid.duration > 10.8) { e.target.value = ""; return toast("Reel ဗီဒီယိုသည် ၁၀ စက္ကန့်အတွင်းသာ တင်ခွင့်ရှိပါသည်"); }
+        toast("Reel ဗီဒီယို ပြင်ဆင်နေပါသည်...");
+        const reader = new FileReader();
+        reader.onload = ev => {
+          st.reelVideo = ev.target.result;
+          const area = document.getElementById("reelVideoArea");
+          if (area) area.innerHTML = `<div class="relative rounded-2xl overflow-hidden border border-rose-500/40 bg-black"><video controls playsinline src="${st.reelVideo}" class="w-full max-h-60 object-contain"></video><button type="button" onclick="st.reelVideo=null;openComposerModal(null,'reel')" class="absolute top-2 right-2 px-3 py-1 rounded-full bg-black/80 text-white text-xs font-bold">✕ ဖျက်</button></div>`;
+          toast(`✓ Reel ဗီဒီယို (${Math.round(vid.duration)}s) အသင့်ဖြစ်ပါပြီ`);
+        };
+        reader.readAsDataURL(f);
+      };
+      vid.src = url;
+    };
+
+    const _origOpenComposer = openComposerModal;
+    openComposerModal = function(preloadedImg = null, mode = "post") {
+      _origOpenComposer(preloadedImg, mode);
+      const area = document.getElementById("reelVideoArea");
+      if (area) area.innerHTML = area.innerHTML.replace("5MB max", "15MB max");
+    };
+
+    addCmt = async function(id) {
+      const inp = document.getElementById("ci-" + id); if (!inp) return;
+      const text = (inp.value || "").trim(); if (!text) return toast("မှတ်ချက်စာသား ရေးပေးပါ");
+      const p = st.posts.find(x => x && x.id === id); if (!p) return;
+      if (!p.comments || typeof p.comments !== "object") p.comments = {};
+      const cid = "C-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+      const c = { id: cid, authorId: st.me.id, text, createdAt: Date.now() };
+      p.comments[cid] = c;
+      st.openCmt[id] = true;
+      inp.value = "";
+      saveFastCache();
+      playSong("notif");
+      st.lastRenderSig = "";
+      safeRender(true);
+      try {
+        await fbPut(`posts/${id}/comments/${cid}`, c);
+        notify(p.authorId, "က မှတ်ချက်ရေးခဲ့သည်: " + text.slice(0, 20));
+        toast("✓ မှတ်ချက်ပို့ပြီးပါပြီ");
+      } catch (err) {
+        toast("မှတ်ချက်ပို့ရာတွင် လိုင်းနှေးနေပါသည် — ပြန်စမ်းပေးပါ");
+      }
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
