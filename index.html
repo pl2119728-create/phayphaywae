@@ -1979,6 +1979,129 @@
       };
       vid.src = url;
     };
+    // =========================================================================
+    // PATCH: Video Cut/Trim (up to 30s) + Faster Feed Video Loading
+    // =========================================================================
+    window._trimVideoState = { file: null, url: null, duration: 0, start: 0, end: 30 };
+
+    function updateTrimUI(changed) {
+      const s = window._trimVideoState;
+      const startEl = document.getElementById("trimStartRange");
+      const endEl = document.getElementById("trimEndRange");
+      const vidEl = document.getElementById("trimPreviewVid");
+      const lblEl = document.getElementById("trimInfoLbl");
+      if (!startEl || !endEl) return;
+
+      let stSec = parseFloat(startEl.value) || 0;
+      let enSec = parseFloat(endEl.value) || Math.min(30, s.duration);
+
+      if (changed === "start") {
+        if (enSec <= stSec + 1) enSec = Math.min(s.duration, stSec + 1);
+        if (enSec - stSec > 30) enSec = Math.min(s.duration, stSec + 30);
+      } else if (changed === "end") {
+        if (stSec >= enSec - 1) stSec = Math.max(0, enSec - 1);
+        if (enSec - stSec > 30) stSec = Math.max(0, enSec - 30);
+      }
+
+      s.start = Math.round(stSec * 10) / 10;
+      s.end = Math.round(enSec * 10) / 10;
+      startEl.value = s.start;
+      endEl.value = s.end;
+
+      const dur = Math.max(1, Math.round(s.end - s.start));
+      if (lblEl) lblEl.textContent = `✂️ ${Math.floor(s.start)}s မှ ${Math.floor(s.end)}s အထိ (စုစုပေါင်း ${dur} စက္ကန့်)`;
+      if (vidEl && changed) {
+        try { vidEl.currentTime = changed === "start" ? s.start : Math.max(s.start, s.end - 1); } catch (e) {}
+      }
+    }
+
+    async function uploadTrimmedReel() {
+      const s = window._trimVideoState;
+      if (!s.file) return toast("ဗီဒီယို ပြန်ရွေးပေးပါ");
+      const area = document.getElementById("reelVideoArea");
+      if (area) {
+        area.innerHTML = `<div class="p-6 rounded-2xl bg-slate-900 border border-rose-500/40 text-center space-y-2"><div class="text-2xl animate-bounce">☁️</div><div class="text-sm font-bold text-rose-300">ဗီဒီယိုဖြတ်ပြီး Cloudinary သို့ တင်နေပါသည်...</div><div class="text-xs text-slate-400">ဖိုင်ကြီးရင် ခဏစောင့်ပေးပါ</div></div>`;
+      }
+      try {
+        const fd = new FormData();
+        fd.append("file", s.file);
+        fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, {
+          method: "POST",
+          body: fd
+        });
+        const data = await res.json();
+        if (!res.ok || !data.secure_url) throw new Error(data.error ? data.error.message : "Upload failed");
+
+        const startSec = Math.max(0, Math.floor(s.start));
+        const endSec = Math.min(Math.ceil(s.duration), Math.max(startSec + 1, Math.ceil(s.end)));
+        const transform = s.duration > 30.8 || startSec > 0 || endSec < Math.floor(s.duration)
+          ? `so_${startSec},eo_${endSec},q_auto,f_auto`
+          : `q_auto,f_auto`;
+
+        st.reelVideo = data.secure_url.replace("/video/upload/", `/video/upload/${transform}/`);
+        if (s.url) { URL.revokeObjectURL(s.url); s.url = null; }
+
+        if (area) {
+          area.innerHTML = `<div class="relative rounded-2xl overflow-hidden border border-emerald-500/50 bg-black"><video controls playsinline preload="metadata" src="${st.reelVideo}" class="w-full max-h-60 object-contain"></video><button type="button" onclick="st.reelVideo=null;openComposerModal(null,'reel')" class="absolute top-2 right-2 px-3 py-1 rounded-full bg-black/80 text-white text-xs font-bold">✕ ဖျက်</button></div>`;
+        }
+        toast(`✓ Reel ဗီဒီယို (${endSec - startSec}s) ဖြတ်တင်ပြီးပါပြီ`);
+      } catch (err) {
+        toast("ဗီဒီယိုတင်မရပါ — လိုင်း/ဖိုင်ဆိုဒ် ပြန်စစ်ပေးပါ");
+        openComposerModal(null, "reel");
+      }
+    }
+
+    onPickReelVideo = function(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 90 * 1024 * 1024) {
+        e.target.value = "";
+        return toast("ဗီဒီယိုဖိုင်ဆိုဒ် 90MB အောက်သာ ရွေးနိုင်ပါသည်");
+      }
+      if (window._trimVideoState.url) URL.revokeObjectURL(window._trimVideoState.url);
+      const url = URL.createObjectURL(f), vid = document.createElement("video");
+      vid.preload = "metadata";
+      vid.onloadedmetadata = () => {
+        const dur = vid.duration || 0;
+        window._trimVideoState = { file: f, url, duration: dur, start: 0, end: Math.min(30, dur) };
+        const area = document.getElementById("reelVideoArea");
+        if (!area) return;
+
+        if (dur <= 30.8) {
+          uploadTrimmedReel();
+          return;
+        }
+
+        area.innerHTML = `
+          <div class="rounded-2xl overflow-hidden border border-amber-500/50 bg-slate-950 p-3 space-y-3">
+            <div class="text-xs font-bold text-amber-300 text-center">ဗီဒီယိုက ${Math.round(dur)} စက္ကန့် ရှည်နေပါသည် — ၃၀ စက္ကန့်အတွင်း ဖြတ်ယူပါ</div>
+            <video id="trimPreviewVid" controls playsinline src="${url}" class="w-full max-h-52 rounded-xl bg-black object-contain"></video>
+            <div id="trimInfoLbl" class="text-xs font-bold text-emerald-400 text-center">✂️ 0s မှ 30s အထိ (စုစုပေါင်း 30 စက္ကန့်)</div>
+            <div class="space-y-2 text-xs text-slate-300">
+              <div>
+                <div class="mb-1">စမည့်နေရာ (Start)</div>
+                <input id="trimStartRange" type="range" min="0" max="${Math.max(1, Math.floor(dur - 1))}" step="1" value="0" oninput="updateTrimUI('start')" class="w-full accent-emerald-500"/>
+              </div>
+              <div>
+                <div class="mb-1">ဆုံးမည့်နေရာ (End - အများဆုံး 30s)</div>
+                <input id="trimEndRange" type="range" min="1" max="${Math.ceil(dur)}" step="1" value="${Math.min(30, Math.ceil(dur))}" oninput="updateTrimUI('end')" class="w-full accent-rose-500"/>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="openComposerModal(null,'reel')" class="py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">ပြန်ရွေးမည်</button>
+              <button type="button" onclick="uploadTrimmedReel()" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">✂️ ဖြတ်ပြီး တင်မည်</button>
+            </div>
+          </div>`;
+      };
+      vid.src = url;
+    };
+
+    // Speed up Feed by preventing all videos from preloading at once
+    const _origPostCardSpeed = postCard;
+    postCard = function(p) {
+      let html = _origPostCardSpeed(p);
+      return html.replace(/<video(?![^>]*preload=)/g, '<video preload="metadata"');
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
