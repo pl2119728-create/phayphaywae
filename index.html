@@ -2102,6 +2102,58 @@
       let html = _origPostCardSpeed(p);
       return html.replace(/<video(?![^>]*preload=)/g, '<video preload="metadata"');
     };
+    // =========================================================================
+    // PATCH: Turbo Speed Boost (Lazy Images + Video Poster + Sync Throttle)
+    // =========================================================================
+    const _speedCss = document.createElement("style");
+    _speedCss.textContent = `
+      #mainContent article, #mainContent .rounded-3xl {
+        content-visibility: auto;
+        contain-intrinsic-size: 380px;
+      }
+    `;
+    document.head.appendChild(_speedCss);
+
+    // 1. Lazy-load all images & switch videos to preload="none" with Cloudinary poster
+    const _origPostCardTurbo = postCard;
+    postCard = function(p) {
+      let html = _origPostCardTurbo(p);
+      html = html.replace(/<img(?![^>]*loading=)/g, '<img loading="lazy" decoding="async"');
+      html = html.replace(/<video([^>]*)preload="metadata"([^>]*)src="([^"]+)"/g, (m, a, b, src) => {
+        const poster = src.includes("res.cloudinary.com")
+          ? ` poster="${src.replace(/\.(mp4|mov|webm)(\?.*)?$/i, ".jpg")}"`
+          : "";
+        return `<video${a}preload="none"${poster}${b}src="${src}"`;
+      });
+      return html;
+    };
+
+    // 2. Throttle background sync so it doesn't lag the UI every few seconds
+    window._lastBgSyncAt = 0;
+    const _origSyncTurbo = sync;
+    sync = function(force = false) {
+      const now = Date.now();
+      if (!force) {
+        if (document.hidden) return Promise.resolve();
+        if (now - window._lastBgSyncAt < 25000) return Promise.resolve();
+      }
+      window._lastBgSyncAt = now;
+      return _origSyncTurbo(force);
+    };
+
+    // 3. Keep fallback reload lightweight (latest 15 posts only)
+    ensurePostsLoaded = async function() {
+      if (!st.me || (Array.isArray(st.posts) && st.posts.length > 0)) return;
+      try {
+        const raw = await fbGet("posts", 'orderBy="$key"&limitToLast=15');
+        if (raw && typeof raw === "object") {
+          st.posts = Object.values(raw).filter(Boolean).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          saveFastCache();
+          st.lastRenderSig = "";
+          render();
+        }
+      } catch (e) {}
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
