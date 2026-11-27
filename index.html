@@ -2941,6 +2941,96 @@
         openCoverCropModal(inp, f);
       }
     }, true);
+    // =========================================================================
+    // PATCH: Force Header 1-Row (Left: Menu+Logo+Title | Right: Search+Noti)
+    // =========================================================================
+    const _forceHeaderCss = document.createElement("style");
+    _forceHeaderCss.textContent = `
+      /* အပေါ်ထွက်နေတဲ့ Logo အဟောင်းကို အပြီးဖျောက်ခြင်း */
+      #ppwCustomLogo { display: none !important; }
+
+      header, header > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        gap: 8px !important;
+      }
+      #ppwHdrLeft {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        margin-right: auto !important;
+      }
+      #ppwHdrRight {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin-left: auto !important;
+      }
+    `;
+    document.head.appendChild(_forceHeaderCss);
+
+    function forceAlignPpwHeader() {
+      const header = document.querySelector("header");
+      if (!header) return;
+
+      // Logo အဟောင်းရှိနေရင် ဖျက်ခြင်း
+      const oldTopLogo = document.getElementById("ppwCustomLogo");
+      if (oldTopLogo) oldTopLogo.remove();
+
+      if (document.getElementById("ppwHdrLeft")) return;
+
+      const btns = Array.from(header.querySelectorAll("button"));
+      if (btns.length < 3) return;
+
+      const menuBtn = btns[0]; // ☰
+      const searchBtn = btns[btns.length - 2]; // 🔍
+      const notiBtn = btns[btns.length - 1]; // 🔔
+
+      // ဘယ်ဘက်အုပ်စု (☰ + Logo + ဖြေးဖြေး ဝယ်)
+      const leftBox = document.createElement("div");
+      leftBox.id = "ppwHdrLeft";
+
+      const brandText = document.createElement("div");
+      brandText.className = "flex flex-col leading-tight";
+      brandText.innerHTML = `
+        <div class="flex items-center gap-1.5">
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 shadow shadow-emerald-500/30 shrink-0">
+            <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none"><path d="M6 8.5C6 6.84 7.34 5.5 9 5.5H15C16.66 5.5 18 6.84 18 8.5V17.5C18 19.16 16.66 20.5 15 20.5H9C7.34 20.5 6 19.16 6 17.5V8.5Z" stroke="#fff" stroke-width="2"/><path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="text-base font-extrabold text-white tracking-tight">ဖြေးဖြေး ဝယ်</span>
+        </div>
+        <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-0.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+          <span>တိုက်ရိုက်ချိတ်ဆက်ပြီး</span>
+        </div>`;
+
+      // ညာဘက်အုပ်စု (🔍 + 🔔)
+      const rightBox = document.createElement("div");
+      rightBox.id = "ppwHdrRight";
+
+      leftBox.appendChild(menuBtn);
+      leftBox.appendChild(brandText);
+      rightBox.appendChild(searchBtn);
+      rightBox.appendChild(notiBtn);
+
+      header.innerHTML = "";
+      header.appendChild(leftBox);
+      header.appendChild(rightBox);
+    }
+
+    setTimeout(forceAlignPpwHeader, 150);
+    const _origRenderForceHdr = render;
+    render = function() {
+      const out = _origRenderForceHdr();
+      forceAlignPpwHeader();
+      return out;
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
