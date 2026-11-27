@@ -3031,6 +3031,34 @@
       forceAlignPpwHeader();
       return out;
     };
+    // =========================================================================
+    // PATCH: Restore Original Header + Logo on RIGHT side of "ဖြေးဖြေး ဝယ်"
+    // =========================================================================
+    if (typeof _headerAlignCss !== "undefined" && _headerAlignCss.remove) _headerAlignCss.remove();
+    if (typeof _forceHeaderCss !== "undefined" && _forceHeaderCss.remove) _forceHeaderCss.remove();
+    document.querySelectorAll("#ppwCustomLogo, #ppwInlineLogo").forEach(el => el.remove());
+
+    forceAlignPpwHeader = function() {};
+    applyPpwBrandLogo = function() {
+      const header = document.querySelector("header");
+      if (!header) return;
+
+      document.querySelectorAll("#ppwCustomLogo, #ppwInlineLogo").forEach(el => el.remove());
+
+      const apkBadge = Array.from(header.querySelectorAll("span, a, button, div")).find(
+        el => el.children.length === 0 && (el.textContent || "").trim().toUpperCase() === "APK"
+      );
+
+      if (apkBadge && !document.getElementById("ppwRightLogo")) {
+        apkBadge.style.display = "none";
+        const logo = document.createElement("span");
+        logo.id = "ppwRightLogo";
+        logo.className = "inline-flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 ml-1.5 align-middle shadow shadow-emerald-500/30 shrink-0";
+        logo.innerHTML = `<svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="none"><path d="M6 8.5C6 6.84 7.34 5.5 9 5.5H15C16.66 5.5 18 6.84 18 8.5V17.5C18 19.16 16.66 20.5 15 20.5H9C7.34 20.5 6 19.16 6 17.5V8.5Z" stroke="#fff" stroke-width="2"/><path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        apkBadge.parentElement.insertBefore(logo, apkBadge.nextSibling);
+      }
+    };
+    setTimeout(applyPpwBrandLogo, 100);
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
