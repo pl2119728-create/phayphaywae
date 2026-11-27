@@ -2597,6 +2597,111 @@
       }
     `;
     document.head.appendChild(_unifiedGlassCss);
+    // =========================================================================
+    // PATCH: Real-Time Chat Sync (3.5s) + Exact Audio Duration + PPW Brand Logo
+    // =========================================================================
+
+    // 1. Replace "APK" badge with a sleek "ဖြေးဖြေး ဝယ်" SVG Brand Logo
+    function applyPpwBrandLogo() {
+      const header = document.querySelector("header");
+      if (!header || document.getElementById("ppwCustomLogo")) return;
+
+      // "APK" စာသားအဝိုင်းကို ဖျောက်ခြင်း
+      header.querySelectorAll("span, a, button, div").forEach(el => {
+        if (el.children.length === 0 && (el.textContent || "").trim().toUpperCase() === "APK") {
+          el.style.display = "none";
+        }
+      });
+
+      // "ဖြေးဖြေး ဝယ်" စာသားဘေးမှာ Logo ခပ်လန်းလန်းလေး ထည့်ခြင်း
+      const titleEl = Array.from(header.querySelectorAll("h1, div, span")).find(
+        el => el.children.length <= 2 && (el.textContent || "").includes("ဖြေးဖြေး ဝယ်")
+      );
+      if (titleEl && titleEl.parentElement) {
+        const logo = document.createElement("div");
+        logo.id = "ppwCustomLogo";
+        logo.className = "w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 via-emerald-600 to-teal-700 p-[1.5px] shadow-lg shadow-emerald-500/30 shrink-0 flex items-center justify-center mr-1.5";
+        logo.innerHTML = `
+          <div class="w-full h-full rounded-[10px] bg-slate-950/85 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 8.5C6 6.84 7.34 5.5 9 5.5H15C16.66 5.5 18 6.84 18 8.5V17.5C18 19.16 16.66 20.5 15 20.5H9C7.34 20.5 6 19.16 6 17.5V8.5Z" stroke="#34d399" stroke-width="1.8"/>
+              <path d="M9.5 5.5V4.5C9.5 3.12 10.62 2 12 2C13.38 2 14.5 3.12 14.5 4.5V5.5" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>`;
+        titleEl.parentElement.insertBefore(logo, titleEl);
+        titleEl.parentElement.style.display = "flex";
+        titleEl.parentElement.style.alignItems = "center";
+      }
+    }
+    setTimeout(applyPpwBrandLogo, 400);
+
+    // 2. Fix Voice Message Duration Bug (0:00 / 38:30 -> Exact Seconds)
+    function fixAudioDurationEl(audio) {
+      if (!audio || audio.dataset.durFixed) return;
+      audio.dataset.durFixed = "1";
+      audio.preload = "metadata";
+
+      const recalc = () => {
+        if (!isFinite(audio.duration) || audio.duration === 0 || audio.duration > 600) {
+          const onSeeked = () => {
+            audio.removeEventListener("timeupdate", onSeeked);
+            try { audio.currentTime = 0; } catch (e) {}
+          };
+          audio.addEventListener("timeupdate", onSeeked);
+          try { audio.currentTime = 1e101; } catch (e) {}
+        }
+      };
+      audio.addEventListener("loadedmetadata", recalc);
+      if (audio.readyState >= 1) recalc();
+    }
+
+    const _audioObserver = new MutationObserver(() => {
+      document.querySelectorAll("audio").forEach(fixAudioDurationEl);
+    });
+    _audioObserver.observe(document.body, { childList: true, subtree: true });
+
+    // 3. Fast Real-Time Message Delivery (Sync messages every 3.5s without lagging feed)
+    window._lastMsgCountSig = "";
+    async function fastSyncMessagesOnly() {
+      if (!st.me || document.hidden) return;
+      try {
+        const raw = await fbGet("messages");
+        if (!raw || typeof raw !== "object") return;
+        const arr = Object.values(raw).filter(Boolean);
+        const clean = typeof mergeCleanMessages === "function" ? mergeCleanMessages(arr) : arr;
+        const sig = `${clean.length}_${clean.length ? (clean[clean.length - 1].createdAt || 0) : 0}`;
+        if (sig !== window._lastMsgCountSig) {
+          window._lastMsgCountSig = sig;
+          st.messages = clean;
+          if (st.tab === "chats" || st.tab === "chat") {
+            st.lastRenderSig = "";
+            render();
+          }
+          // Chat modal ဖွင့်ထားရင် အထဲက စာတွေကိုပါ ချက်ချင်း Update လုပ်ပေးခြင်း
+          if (st.activeChatUid && typeof openChat === "function") {
+            const modalOpen = document.querySelector("#modalRoot .flex.flex-col");
+            if (modalOpen) {
+              const inp = modalOpen.querySelector('input[type="text"]');
+              const draft = inp ? inp.value : "";
+              openChat(st.activeChatUid);
+              const newInp = document.querySelector('#modalRoot input[type="text"]');
+              if (newInp && draft) newInp.value = draft;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    setInterval(fastSyncMessagesOnly, 3500);
+
+    // 4. Keep Logo visible after re-renders
+    const _origRenderLogoKeep = render;
+    render = function() {
+      const out = _origRenderLogoKeep();
+      applyPpwBrandLogo();
+      document.querySelectorAll("audio").forEach(fixAudioDurationEl);
+      return out;
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
