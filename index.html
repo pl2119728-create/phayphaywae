@@ -1413,6 +1413,275 @@
         ensureBackGuard();
       }
     }, true);
+    // =========================================================================
+    // PATCH: Auto-Pause Offscreen Video + Comment Sheet + 30s Reel + Smooth Like + Back Stack
+    // =========================================================================
+    st.navStack = Array.isArray(st.navStack) ? st.navStack : [];
+
+    function pauseAllVideosExcept(keepVid = null) {
+      document.querySelectorAll("video").forEach(v => {
+        if (v !== keepVid && !v.paused) {
+          try { v.pause(); } catch (e) {}
+        }
+      });
+    }
+
+    function pauseOffscreenVideos() {
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      document.querySelectorAll("video").forEach(v => {
+        if (v.paused) return;
+        const rect = v.getBoundingClientRect();
+        const visibleH = Math.min(rect.bottom, vh) - Math.max(rect.top, 0);
+        const isVisible = rect.width > 0 && rect.height > 0 && visibleH >= Math.min(rect.height * 0.45, 90);
+        if (!isVisible) {
+          try { v.pause(); } catch (e) {}
+        }
+      });
+    }
+
+    window.addEventListener("scroll", pauseOffscreenVideos, { passive: true });
+    document.addEventListener("scroll", pauseOffscreenVideos, { passive: true, capture: true });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) pauseAllVideosExcept(null);
+    });
+    document.addEventListener("play", e => {
+      if (e.target && e.target.tagName === "VIDEO") pauseAllVideosExcept(e.target);
+    }, true);
+
+    setInterval(() => {
+      if (st.me) pauseOffscreenVideos();
+    }, 600);
+
+    function pushNavStep(step) {
+      if (!step) return;
+      const prev = st.navStack[st.navStack.length - 1];
+      if (!prev || prev.tab !== step.tab || prev.uid !== step.uid) {
+        st.navStack.push({ tab: step.tab, uid: step.uid || null });
+        if (st.navStack.length > 25) st.navStack.shift();
+      }
+    }
+
+    const _origSwitchTabV = switchTab;
+    switchTab = function(t) {
+      pauseAllVideosExcept(null);
+      if (st.tab && st.tab !== "userProfile" && t !== st.tab) {
+        pushNavStep({ tab: st.tab, uid: null });
+      }
+      if (t === "home") st.navStack = [];
+      return _origSwitchTabV(t);
+    };
+
+    const _origOpenUserProfileV = openUserProfile;
+    openUserProfile = function(uid) {
+      pauseAllVideosExcept(null);
+      if (!st.me || uid === st.me.id) return _origOpenUserProfileV(uid);
+      if (st.tab === "userProfile" && st.viewProfileUid && st.viewProfileUid !== uid) {
+        pushNavStep({ tab: "userProfile", uid: st.viewProfileUid });
+      } else if (st.tab && st.tab !== "userProfile") {
+        pushNavStep({ tab: st.tab, uid: null });
+      }
+      closeModal();
+      closeSideMenu();
+      st.viewProfileUid = uid;
+      st.tab = "userProfile";
+      st.profileSubTab = "posts";
+      ensureBackGuard();
+      updateDockHighlight();
+      st.lastRenderSig = "";
+      render();
+      window.scrollTo(0, 0);
+    };
+
+    onPickReelVideo = function(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 25 * 1024 * 1024) { e.target.value = ""; return toast("30s Reel ဗီဒီယိုဖိုင်ဆိုဒ် 25MB အောက်သာ တင်နိုင်ပါသည်"); }
+      const url = URL.createObjectURL(f), vid = document.createElement("video");
+      vid.preload = "metadata";
+      vid.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        if (vid.duration > 30.8) { e.target.value = ""; return toast("Reel ဗီဒီယိုသည် ၃၀ စက္ကန့်အတွင်းသာ တင်ခွင့်ရှိပါသည်"); }
+        toast("Reel ဗီဒီယို ပြင်ဆင်နေပါသည်...");
+        const reader = new FileReader();
+        reader.onload = ev => {
+          st.reelVideo = ev.target.result;
+          const area = document.getElementById("reelVideoArea");
+          if (area) area.innerHTML = `<div class="relative rounded-2xl overflow-hidden border border-rose-500/40 bg-black"><video controls playsinline src="${st.reelVideo}" class="w-full max-h-60 object-contain"></video><button type="button" onclick="st.reelVideo=null;openComposerModal(null,'reel')" class="absolute top-2 right-2 px-3 py-1 rounded-full bg-black/80 text-white text-xs font-bold">✕ ဖျက်</button></div>`;
+          toast(`✓ Reel ဗီဒီယို (${Math.round(vid.duration)}s) အသင့်ဖြစ်ပါပြီ`);
+        };
+        reader.readAsDataURL(f);
+      };
+      vid.src = url;
+    };
+
+    const _origOpenComposerV = openComposerModal;
+    openComposerModal = function(preloadedImg = null, mode = "post") {
+      pauseAllVideosExcept(null);
+      _origOpenComposerV(preloadedImg, mode);
+      const html = document.getElementById("modalRoot").innerHTML;
+      if (html) {
+        document.getElementById("modalRoot").innerHTML = html
+          .replace(/Reel \(10s Video\)/g, "Reel (30s Video)")
+          .replace(/၁၀ စက္ကန့်အတွင်း Reel Video ရွေးရန်/g, "၃၀ စက္ကန့်အတွင်း Reel Video ရွေးရန်")
+          .replace(/10s max, 5MB max/g, "30s max, 25MB max")
+          .replace(/5MB max/g, "25MB max");
+      }
+      if (mode !== "reel") renderComposerPhotosPreview();
+    };
+
+    setReaction = function(pid, rKey) {
+      recordRealView(pid);
+      const p = st.posts.find(x => x && x.id === pid); if (!p || !st.me) return;
+      if (!p.reactions || typeof p.reactions !== "object") p.reactions = {};
+      REACTIONS.forEach(r => { if (!p.reactions[r.key] || typeof p.reactions[r.key] !== "object") p.reactions[r.key] = {}; });
+      const prev = userReaction(p);
+      REACTIONS.forEach(r => {
+        if (p.reactions[r.key][st.me.id]) {
+          delete p.reactions[r.key][st.me.id];
+          fbDel(`posts/${pid}/reactions/${r.key}/${st.me.id}`).catch(() => {});
+        }
+      });
+      if (p.likes && p.likes[st.me.id]) {
+        delete p.likes[st.me.id];
+        fbDel(`posts/${pid}/likes/${st.me.id}`).catch(() => {});
+      }
+      if (prev !== rKey) {
+        p.reactions[rKey][st.me.id] = true;
+        playSong(rKey);
+        notify(p.authorId, "က သင့်ပို့စ်ကို Reaction ပေးလိုက်ပါသည်");
+        fbPut(`posts/${pid}/reactions/${rKey}/${st.me.id}`, true).catch(() => {});
+      }
+      updateLiveLikeCounters();
+      saveFastCache();
+    };
+
+    function openCommentsSheet(pid) {
+      pauseAllVideosExcept(null);
+      const p = st.posts.find(x => x && x.id === pid); if (!p) return;
+      recordRealView(pid);
+      st.openCmt[pid] = true;
+      ensureBackGuard();
+      const cmts = p.comments ? Object.values(p.comments).filter(c => c && !isBlockedPair(c.authorId)).sort((a, b) => a.createdAt - b.createdAt) : [];
+      const ownPost = p.authorId === st.me.id;
+      document.getElementById("modalRoot").innerHTML = `
+        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/75 flex items-end justify-center">
+          <div onclick="event.stopPropagation()" class="bg-[#0f172a] border-t border-slate-700 w-full max-w-lg rounded-t-3xl flex flex-col max-h-[82vh] animate-slide-up overflow-hidden">
+            <div class="w-10 h-1.5 bg-slate-600 rounded-full mx-auto mt-2.5"></div>
+            <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <div class="text-sm font-bold text-white">💬 မှတ်ချက်များ (${cmts.length})</div>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button>
+            </div>
+            <div id="sheetCmtList" class="flex-1 overflow-y-auto p-3.5 space-y-2.5">
+              ${cmts.length ? cmts.map(c => {
+                const cu = uInfo(c.authorId), canEditC = c.authorId === st.me.id, canDelC = canEditC || ownPost;
+                return `<div class="bg-slate-900 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-sm flex items-start gap-2.5">
+                  <div onclick="closeModal();openUserProfile('${cu.id}')" class="cursor-pointer shrink-0">${avatar(cu, "w-8 h-8 text-xs", true, true)}</div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <span onclick="closeModal();openUserProfile('${cu.id}')" class="font-bold text-white cursor-pointer truncate">${esc(cu.name)} ${blueBadge(cu)}</span>
+                      <div class="flex items-center gap-2 shrink-0">
+                        ${canEditC ? `<button onclick="openEditCmtModal('${pid}','${c.id}')" class="text-[11px] font-bold text-sky-400">ပြင်</button>` : ""}
+                        ${canDelC ? `<button onclick="delCmt('${pid}','${c.id}')" class="text-[11px] font-bold text-rose-400">ဖျက်</button>` : ""}
+                      </div>
+                    </div>
+                    <div class="mt-1 text-slate-100 whitespace-pre-line">${esc(c.text)} ${c.editedAt ? `<span class="text-[10px] text-slate-500">(ပြင်ပြီး)</span>` : ""}</div>
+                  </div>
+                </div>`;
+              }).join("") : `<div class="text-center text-sm text-slate-400 py-10">မှတ်ချက် မရှိသေးပါ — ပထမဆုံး ရေးလိုက်ပါ</div>`}
+            </div>
+            <div class="p-3 bg-[#162033] border-t border-slate-800 flex items-center gap-2">
+              <input id="sheetCmtInp" type="text" placeholder="မှတ်ချက်ရေးရန်..." onkeydown="if(event.key==='Enter')submitSheetCmt('${pid}')" class="flex-1 min-w-0 bg-slate-900 text-white border border-slate-700 rounded-full px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none"/>
+              <button onclick="submitSheetCmt('${pid}')" class="px-4 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shrink-0">ပို့</button>
+            </div>
+          </div>
+        </div>`;
+      setTimeout(() => { const el = document.getElementById("sheetCmtInp"); if (el) el.focus(); }, 60);
+    }
+
+    async function submitSheetCmt(pid) {
+      const inp = document.getElementById("sheetCmtInp"); if (!inp) return;
+      const text = (inp.value || "").trim(); if (!text) return toast("မှတ်ချက်စာသား ရေးပေးပါ");
+      const p = st.posts.find(x => x && x.id === pid); if (!p) return;
+      if (!p.comments || typeof p.comments !== "object") p.comments = {};
+      const cid = "C-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+      const c = { id: cid, authorId: st.me.id, text, createdAt: Date.now() };
+      p.comments[cid] = c;
+      inp.value = "";
+      saveFastCache();
+      playSong("notif");
+      openCommentsSheet(pid);
+      try {
+        await fbPut(`posts/${pid}/comments/${cid}`, c);
+        notify(p.authorId, "က မှတ်ချက်ရေးခဲ့သည်: " + text.slice(0, 20));
+        toast("✓ မှတ်ချက်ပို့ပြီးပါပြီ");
+      } catch (e) {
+        toast("လိုင်းနှေးနေပါသည် — ပြန်စမ်းပေးပါ");
+      }
+    }
+
+    const _origPostCardV = postCard;
+    postCard = function(p) {
+      let html = _origPostCardV(p);
+      html = html.replace(
+        new RegExp(`st\\.openCmt\\['${p.id}'\\]=!st\\.openCmt\\['${p.id}'\\];safeRender\\(true\\)`, "g"),
+        `openCommentsSheet('${p.id}')`
+      );
+      return html;
+    };
+
+    window.addEventListener("popstate", () => {
+      if (!st.me) return;
+      pauseAllVideosExcept(null);
+      const mr = document.getElementById("modalRoot");
+      const dr = document.getElementById("drawerRoot");
+      const sb = document.getElementById("topSearchBar");
+
+      if (mr && mr.innerHTML.trim() !== "") {
+        closeModal();
+        ensureBackGuard();
+        return;
+      }
+      if (dr && dr.innerHTML.trim() !== "") {
+        closeSideMenu();
+        ensureBackGuard();
+        return;
+      }
+      if (sb && !sb.classList.contains("hidden")) {
+        toggleTopSearch(false);
+        ensureBackGuard();
+        return;
+      }
+      if (Array.isArray(st.navStack) && st.navStack.length > 0) {
+        const prevStep = st.navStack.pop();
+        st.viewProfileUid = prevStep.tab === "userProfile" ? prevStep.uid : null;
+        st.tab = prevStep.tab || "home";
+        st.profileSubTab = "posts";
+        ensureBackGuard();
+        updateDockHighlight();
+        st.lastRenderSig = "";
+        render();
+        window.scrollTo(0, 0);
+        return;
+      }
+      if (st.tab === "userProfile") {
+        st.viewProfileUid = null;
+        switchTab("home");
+        ensureBackGuard();
+        return;
+      }
+      if (st.tab !== "home") {
+        switchTab("home");
+        ensureBackGuard();
+        return;
+      }
+      const now = Date.now();
+      if (now - (window._lastBackAt || 0) < 2000) {
+        history.back();
+      } else {
+        window._lastBackAt = now;
+        toast("ထွက်ရန် Back ခလုတ်ကို ထပ်နှိပ်ပါ");
+        ensureBackGuard();
+      }
+    }, true);
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
