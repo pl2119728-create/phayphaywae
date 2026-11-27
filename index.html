@@ -1743,6 +1743,198 @@
       }
       return _origFbGetFast(path, query);
     };
+    // =========================================================================
+    // PATCH: Crisp SVG UI/UX + 3 Languages (MY/EN/TH) + Messenger Notes Strip
+    // =========================================================================
+    st.lang = localStorage.getItem("ppw_lang") || "my";
+
+    const I18N = {
+      my: {
+        home: "ပင်မ", explore: "ရှာဖွေ", chats: "စာတို", profile: "Profile",
+        messages: "မက်ဆေ့ချ် Box", yourNote: "Your note", shareNote: "Share a note...",
+        like: "Like", comment: "မန့်", share: "Share", menu: "Menu",
+        langTitle: "🌐 ဘာသာစကား (Language)", postPlaceholder: "အရောင်းပို့စ် / Reel တင်ရန်..."
+      },
+      en: {
+        home: "Home", explore: "Explore", chats: "Chats", profile: "Profile",
+        messages: "Messages", yourNote: "Your note", shareNote: "Share a note...",
+        like: "Like", comment: "Comment", share: "Share", menu: "Menu",
+        langTitle: "🌐 Language", postPlaceholder: "Sell Page / Account or post Reel..."
+      },
+      th: {
+        home: "หน้าหลัก", explore: "ค้นหา", chats: "แชท", profile: "โปรไฟล์",
+        messages: "ข้อความ", yourNote: "โน้ตของคุณ", shareNote: "แชร์โน้ต...",
+        like: "ถูกใจ", comment: "คอมเมนต์", share: "แชร์", menu: "เมนู",
+        langTitle: "🌐 ภาษา (Language)", postPlaceholder: "โพสต์ขายเพจ / บัญชี หรือ Reel..."
+      }
+    };
+
+    function t(key) {
+      return (I18N[st.lang] && I18N[st.lang][key]) || I18N.my[key] || key;
+    }
+
+    function setAppLang(lang) {
+      st.lang = I18N[lang] ? lang : "my";
+      localStorage.setItem("ppw_lang", st.lang);
+      applyDockLang();
+      closeSideMenu();
+      st.lastRenderSig = "";
+      safeRender(true);
+      toast(lang === "th" ? "เปลี่ยนเป็นภาษาไทยแล้ว ✓" : lang === "en" ? "Switched to English ✓" : "မြန်မာဘာသာ ပြောင်းပြီးပါပြီ ✓");
+    }
+
+    function applyDockLang() {
+      const map = { "nav-home": "home", "nav-explore": "explore", "nav-chats": "chats", "nav-profile": "profile" };
+      Object.entries(map).forEach(([id, key]) => {
+        const el = document.querySelector(`#${id} > span:last-child`);
+        if (el) el.textContent = t(key);
+      });
+    }
+    applyDockLang();
+
+    // Crisp Modern UI/UX SVG Icons
+    function svgLikeIcon(rxKey) {
+      if (rxKey === "love") {
+        return `<svg class="w-[18px] h-[18px] text-rose-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`;
+      }
+      if (rxKey === "haha") {
+        return `<svg class="w-[18px] h-[18px] text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm-3.5 7.5a1.25 1.25 0 111.25-1.25A1.25 1.25 0 018.5 9.5zm7 0a1.25 1.25 0 111.25-1.25 1.25 1.25 0 01-1.25 1.25zM12 18a5.5 5.5 0 01-5.2-3.75h10.4A5.5 5.5 0 0112 18z"/></svg>`;
+      }
+      if (rxKey === "angry") {
+        return `<svg class="w-[18px] h-[18px] text-orange-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm-3.5 9a1.25 1.25 0 111.25-1.25A1.25 1.25 0 018.5 11zm7 0a1.25 1.25 0 111.25-1.25A1.25 1.25 0 0115.5 11zm-6.5 5.5a4.5 4.5 0 016 0 .75.75 0 11-1 1.12 3 3 0 00-4 0 .75.75 0 11-1-1.12z"/></svg>`;
+      }
+      if (rxKey === "like") {
+        return `<svg class="w-[18px] h-[18px] text-sky-400" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21h4V9H2v12zm20-11a2 2 0 00-2-2h-6.31l.95-4.57.03-.32a1.5 1.5 0 00-.44-1.06L13.17 1 6.59 7.59A2 2 0 006 9v10a2 2 0 002 2h9a2 2 0 001.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>`;
+      }
+      return `<svg class="w-[18px] h-[18px] text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/></svg>`;
+    }
+
+    const SVG_CMT = `<svg class="w-[18px] h-[18px] text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>`;
+    const SVG_SHARE = `<svg class="w-[18px] h-[18px] text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>`;
+
+    // Update Like Button Live with Crisp SVG
+    updateLiveLikeCounters = function() {
+      st.posts.forEach(p => {
+        if (!p) return;
+        const totRx = totalReactions(p), rxIcons = topReactionIcons(p), myRx = userReaction(p), myRxObj = REACTIONS.find(r => r.key === myRx);
+        const topEl = document.getElementById("rx-top-" + p.id);
+        if (topEl) topEl.innerHTML = `${rxIcons ? `<span class="text-sm">${rxIcons}</span>` : ""}<span class="font-semibold">${totRx > 0 ? totRx : ""}</span>`;
+        const btnEl = document.getElementById("rx-btn-" + p.id);
+        if (btnEl) {
+          btnEl.className = `w-full h-10 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold select-none transition active:scale-95 ${myRxObj ? myRxObj.textClass : "text-slate-200"}`;
+          btnEl.innerHTML = `${svgLikeIcon(myRx)}<span>${totRx > 0 ? totRx : t("like")}</span>`;
+        }
+      });
+    };
+
+    // Upgrade Post Card Buttons to Crisp SVG UI/UX
+    const _origPostCardUX = postCard;
+    postCard = function(p) {
+      let html = _origPostCardUX(p);
+      const myRx = userReaction(p), totRx = totalReactions(p);
+      const cmtsLen = p.comments ? Object.values(p.comments).filter(c => c && !isBlockedPair(c.authorId)).length : 0;
+      const shareCnt = Number(p.shares || 0);
+      const myRxObj = REACTIONS.find(r => r.key === myRx);
+
+      html = html.replace(
+        /<button id="rx-btn-[^"]+"[\s\S]*?<\/button>/,
+        `<button id="rx-btn-${p.id}" type="button" ontouchstart="onLikeTouchStart(event,'${p.id}')" ontouchmove="onLikeTouchMove(event)" ontouchend="onLikeTouchEnd(event,'${p.id}')" onmousedown="onLikeMouseDown(event,'${p.id}')" onmouseup="onLikeMouseUp(event,'${p.id}')" oncontextmenu="return false" class="w-full h-10 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 flex items-center justify-center gap-2 text-xs sm:text-sm font-semibold select-none transition active:scale-95 ${myRxObj ? myRxObj.textClass : "text-slate-200"}">${svgLikeIcon(myRx)}<span>${totRx > 0 ? totRx : t("like")}</span></button>`
+      );
+      html = html.replace(
+        /<span class="text-lg">💬<\/span>\s*<span>[^<]*<\/span>/,
+        `${SVG_CMT}<span>${cmtsLen > 0 ? cmtsLen : t("comment")}</span>`
+      );
+      html = html.replace(
+        /<span class="text-lg">↪️<\/span>\s*<span>[^<]*<\/span>/,
+        `${SVG_SHARE}<span>${shareCnt > 0 ? shareCnt : t("share")}</span>`
+      );
+      return html;
+    };
+
+    // Messenger-style Notes + Active Profile Horizontal Strip in Chats Tab
+    function renderMessengerNotesStrip() {
+      if (!st.me) return "";
+      const now = Date.now();
+      const myNote = st.me.note && (now - (st.me.noteAt || 0) < 24 * 3600000) ? st.me.note : "";
+      const others = Object.values(st.users || {})
+        .filter(u => u && u.id !== st.me.id && !isBlockedPair(u.id))
+        .sort((a, b) => {
+          const aNote = a.note && (now - (a.noteAt || 0) < 24 * 3600000) ? 1 : 0;
+          const bNote = b.note && (now - (b.noteAt || 0) < 24 * 3600000) ? 1 : 0;
+          if (bNote !== aNote) return bNote - aNote;
+          return (isOnline(b.id) ? 1 : 0) - (isOnline(a.id) ? 1 : 0);
+        })
+        .slice(0, 20);
+
+      return `
+        <div class="pt-5 pb-3 border-b border-slate-800/80">
+          <div class="flex items-start gap-3.5 overflow-x-auto no-scrollbar px-1">
+            <!-- My Note -->
+            <button onclick="openNoteModal()" class="flex flex-col items-center w-[74px] shrink-0 relative group">
+              <div class="relative mb-1.5">
+                <div class="absolute -top-5 left-1/2 -translate-x-1/2 z-10 w-[76px] px-2 py-1 rounded-2xl bg-[#1e293b] border border-slate-600/80 text-[10px] leading-tight text-slate-200 shadow-lg text-center line-clamp-2">
+                  ${myNote ? esc(myNote) : t("shareNote")}
+                </div>
+                <div class="mt-2">${avatar(st.me, "w-14 h-14 text-lg", true, false)}</div>
+              </div>
+              <span class="text-xs font-medium text-slate-300 truncate w-full text-center">${t("yourNote")}</span>
+            </button>
+
+            <!-- Friends Notes & Active Profiles -->
+            ${others.map(u => {
+              const uNote = u.note && (now - (u.noteAt || 0) < 24 * 3600000) ? u.note : "";
+              return `
+                <button onclick="openChat('${u.id}')" class="flex flex-col items-center w-[74px] shrink-0 relative">
+                  <div class="relative mb-1.5">
+                    ${uNote ? `<div class="absolute -top-5 left-1/2 -translate-x-1/2 z-10 w-[76px] px-2 py-1 rounded-2xl bg-[#1e293b] border border-slate-600/80 text-[10px] leading-tight text-white font-medium shadow-lg text-center line-clamp-2">${esc(uNote)}</div>` : ""}
+                    <div class="mt-2">${avatar(u, "w-14 h-14 text-lg", true, true)}</div>
+                  </div>
+                  <span class="text-xs font-medium text-slate-200 truncate w-full text-center">${esc(u.name)}</span>
+                </button>`;
+            }).join("")}
+          </div>
+        </div>`;
+    }
+
+    const _origRenderUX = render;
+    render = function() {
+      _origRenderUX();
+      applyDockLang();
+      if (st.tab === "chats") {
+        const box = document.querySelector("#mainContent > div");
+        if (box && !document.getElementById("messengerNotesStrip")) {
+          const wrap = document.createElement("div");
+          wrap.id = "messengerNotesStrip";
+          wrap.innerHTML = renderMessengerNotesStrip();
+          box.insertBefore(wrap, box.firstChild);
+        }
+        const h2 = document.querySelector("#mainContent h2");
+        if (h2) h2.textContent = t("messages");
+      } else if (st.tab === "home") {
+        const postBtn = document.querySelector('#mainContent button[onclick*="openComposerModal(null,\'post\')"]');
+        if (postBtn) postBtn.textContent = t("postPlaceholder");
+      }
+    };
+
+    // Add 3-Language Switcher to Side Menu
+    const _origOpenSideMenuUX = openSideMenu;
+    openSideMenu = function() {
+      _origOpenSideMenuUX();
+      const container = document.querySelector("#drawerRoot aside .flex-1");
+      if (container && !document.getElementById("langSwitcherBox")) {
+        const box = document.createElement("div");
+        box.id = "langSwitcherBox";
+        box.className = "bg-[#1e293b]/70 border border-slate-700/70 rounded-2xl p-3 space-y-2";
+        box.innerHTML = `
+          <div class="text-xs font-bold text-slate-300">${t("langTitle")}</div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button onclick="setAppLang('my')" class="py-2 rounded-xl text-xs font-bold transition ${st.lang === "my" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">🇲🇲 မြန်မာ</button>
+            <button onclick="setAppLang('en')" class="py-2 rounded-xl text-xs font-bold transition ${st.lang === "en" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">🇬🇧 EN</button>
+            <button onclick="setAppLang('th')" class="py-2 rounded-xl text-xs font-bold transition ${st.lang === "th" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">🇹🇭 ไทย</button>
+          </div>`;
+        container.insertBefore(box, container.children[1] || null);
+      }
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
