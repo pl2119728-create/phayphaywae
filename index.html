@@ -1370,6 +1370,49 @@
         toast("မှတ်ချက်ပို့ရာတွင် လိုင်းနှေးနေပါသည် — ပြန်စမ်းပေးပါ");
       }
     };
+    // Fix: Step-by-step Back Navigation (Never jump straight to Home when closing a modal/drawer/profile)
+    window.addEventListener("popstate", () => {
+      if (!st.me) return;
+      const mr = document.getElementById("modalRoot");
+      const dr = document.getElementById("drawerRoot");
+      const sb = document.getElementById("topSearchBar");
+
+      if (mr && mr.innerHTML.trim() !== "") {
+        closeModal();
+        ensureBackGuard();
+        return;
+      }
+      if (dr && dr.innerHTML.trim() !== "") {
+        closeSideMenu();
+        ensureBackGuard();
+        return;
+      }
+      if (sb && !sb.classList.contains("hidden")) {
+        toggleTopSearch(false);
+        ensureBackGuard();
+        return;
+      }
+      if (st.tab === "userProfile") {
+        const backTo = st.prevTab && st.prevTab !== "userProfile" ? st.prevTab : "home";
+        st.prevTab = "home";
+        switchTab(backTo);
+        ensureBackGuard();
+        return;
+      }
+      if (st.tab !== "home") {
+        switchTab("home");
+        ensureBackGuard();
+        return;
+      }
+      const now = Date.now();
+      if (now - (window._lastBackAt || 0) < 2000) {
+        history.back();
+      } else {
+        window._lastBackAt = now;
+        toast("ထွက်ရန် Back ခလုတ်ကို ထပ်နှိပ်ပါ");
+        ensureBackGuard();
+      }
+    }, true);
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
