@@ -3209,6 +3209,121 @@
       return out;
     };
     setTimeout(cleanHeaderAndStories, 150);
+    // =========================================================================
+    // PATCH: Fix Instant Chat Delivery (2.5s Native Sync) + Header Right Align
+    // =========================================================================
+
+    // 1. Stop old broken message poller
+    if (window._ppwChatTimer) {
+      clearInterval(window._ppwChatTimer);
+      window._ppwChatTimer = null;
+    }
+
+    // 2. Fix Header: Left (Menu + Title) | Right Edge (Search + Noti)
+    const _hdrRightFixCss = document.createElement("style");
+    _hdrRightFixCss.textContent = `
+      #ppwCustomLogo, #ppwInlineLogo, #ppwRightLogo { display: none !important; }
+      header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+      }
+      header > div {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      #ppwRightTools {
+        margin-left: auto !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-shrink: 0 !important;
+      }
+    `;
+    document.head.appendChild(_hdrRightFixCss);
+
+    function fixHeaderSearchAndNoti() {
+      const header = document.querySelector("header");
+      if (!header) return;
+
+      // Logo အပိုများ ဖျက်ခြင်း
+      header.querySelectorAll("#ppwCustomLogo, #ppwInlineLogo, #ppwRightLogo").forEach(el => el.remove());
+
+      // Search box မဖွင့်ထားဘဲ ပေါ်နေတဲ့ "ပိတ်" ခလုတ်ကို ဖျောက်ခြင်း
+      header.querySelectorAll("button").forEach(btn => {
+        if ((btn.textContent || "").trim() === "ပိတ်") {
+          const searchInp = header.querySelector("input");
+          if (!searchInp || searchInp.offsetParent === null) {
+            btn.style.display = "none";
+          }
+        }
+      });
+
+      // Search နဲ့ Noti ခလုတ်ကို ညာဘက်အစွန် ကပ်ပေးခြင်း
+      const btns = Array.from(header.querySelectorAll("button")).filter(b => b.style.display !== "none");
+      if (btns.length >= 2 && !document.getElementById("ppwRightTools")) {
+        const rightBtns = btns.slice(1).filter(b => (b.textContent || "").trim() !== "ပိတ်");
+        if (rightBtns.length >= 1) {
+          const wrap = document.createElement("div");
+          wrap.id = "ppwRightTools";
+          const parent = rightBtns[0].parentElement;
+          if (parent) {
+            parent.appendChild(wrap);
+            rightBtns.forEach(b => wrap.appendChild(b));
+          }
+        }
+      }
+    }
+    setTimeout(fixHeaderSearchAndNoti, 200);
+
+    // 3. Real-Time Fast Chat Delivery using App's Native Sync (Every 2.5s)
+    window._ppwFastChatLoop = setInterval(async () => {
+      if (!st.me || document.hidden) return;
+      const inChatModal = !!document.querySelector("#modalRoot .flex.flex-col");
+      const inChatsTab = (st.tab === "chats" || st.tab === "chat");
+
+      // Chat ထဲမှာ ရှိနေရင် 2.5 စက္ကန့်တိုင်း Native Sync အစစ်နဲ့ ချက်ချင်းပြန်ဆွဲမယ်
+      if (inChatModal || inChatsTab) {
+        try {
+          const beforeCount = Array.isArray(st.messages) ? st.messages.length : 0;
+          await sync(true);
+          const afterCount = Array.isArray(st.messages) ? st.messages.length : 0;
+
+          if (afterCount !== beforeCount) {
+            if (inChatsTab) {
+              st.lastRenderSig = "";
+              render();
+            }
+            if (inChatModal && st.activeChatUid && typeof openChat === "function") {
+              const box = document.querySelector("#modalRoot .flex.flex-col");
+              const inp = box ? box.querySelector('input[type="text"]') : null;
+              const draft = inp ? inp.value : "";
+              openChat(st.activeChatUid);
+              setTimeout(() => {
+                const newBox = document.querySelector("#modalRoot .flex.flex-col");
+                if (!newBox) return;
+                const newInp = newBox.querySelector('input[type="text"]');
+                if (newInp && draft) newInp.value = draft;
+                const scroller = newBox.querySelector(".overflow-y-auto");
+                if (scroller) scroller.scrollTop = scroller.scrollHeight;
+              }, 30);
+            }
+          }
+        } catch (e) {}
+      }
+    }, 2500);
+
+    // Render တိုင်းမှာ Header ညာဘက်ကပ်အောင် ထိန်းပေးခြင်း
+    const _origRenderHdrChatFix = render;
+    render = function() {
+      const out = _origRenderHdrChatFix();
+      fixHeaderSearchAndNoti();
+      return out;
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
