@@ -2472,6 +2472,64 @@
         openPostByIdModal(pid);
       }
     });
+    // =========================================================================
+    // PATCH: Fix Profile 3-Stats Position + Premium Profile UI Polish
+    // =========================================================================
+    const _premiumProfileCss = document.createElement("style");
+    _premiumProfileCss.textContent = `
+      /* Profile Avatar ဘေးမှာ Premium Gradient Ring ထည့်ခြင်း */
+      #mainContent .rounded-full.overflow-hidden,
+      #mainContent img.rounded-full {
+        box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.75), 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+      /* Glassmorphism ခလုတ်များ */
+      #mainContent button[class*="bg-black"], #mainContent button[class*="bg-slate-900"] {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+      }
+    `;
+    document.head.appendChild(_premiumProfileCss);
+
+    const _origRenderProfileFix = render;
+    render = function() {
+      const out = _origRenderProfileFix();
+      try {
+        if (st.tab === "profile" && st.me) {
+          // 1. အပေါ်ဆုံးမှာ မှားပေါ်နေတဲ့ ဘားအဟောင်းကို ဖျောက်ခြင်း
+          const wrongTopBar = document.getElementById("ppwProfile3Stats");
+          if (wrongTopBar) wrongTopBar.remove();
+
+          // 2. Active Now အောက်က ဘားနေရာကို ရှာပြီး Fri | Following | Post အစားထိုးခြင်း
+          const myPosts = (st.posts || []).filter(p => p && (p.uid === st.me.id || p.authorId === st.me.id || p.userId === st.me.id));
+          const friCount = Array.isArray(st.me.friends) ? st.me.friends.length : Object.keys(st.me.friends || {}).length;
+          const folCount = Array.isArray(st.me.following) ? st.me.following.length : Object.keys(st.me.following || {}).length;
+
+          const allDivs = document.querySelectorAll("#mainContent div");
+          for (const el of allDivs) {
+            const txt = (el.textContent || "").trim();
+            if (txt.includes("Page Followers") && txt.includes("Following") && el.children.length <= 5) {
+              el.className = "grid grid-cols-3 items-center max-w-sm mx-auto mt-3 py-2.5 px-3 rounded-2xl bg-slate-900/70 backdrop-blur-md border border-white/10 shadow-lg text-center";
+              el.innerHTML = `
+                <div class="flex flex-col items-center">
+                  <span class="text-base font-extrabold text-white leading-tight">${friCount}</span>
+                  <span class="text-[11px] font-medium text-slate-400">Fri</span>
+                </div>
+                <div class="flex flex-col items-center border-x border-white/10">
+                  <span class="text-base font-extrabold text-white leading-tight">${folCount}</span>
+                  <span class="text-[11px] font-medium text-slate-400">Following</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="text-base font-extrabold text-emerald-400 leading-tight">${myPosts.length}</span>
+                  <span class="text-[11px] font-medium text-slate-400">Post</span>
+                </div>`;
+              break;
+            }
+          }
+        }
+      } catch (e) {}
+      return out;
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
