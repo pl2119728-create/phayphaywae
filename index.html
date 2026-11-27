@@ -2542,6 +2542,61 @@
       } catch (e) {}
       return out;
     };
+    // =========================================================================
+    // PATCH: Global Unified Emerald + Glass Border Theme (Fast for APK)
+    // =========================================================================
+    const _unifiedGlassCss = document.createElement("style");
+    _unifiedGlassCss.textContent = `
+      /* 1. ကတ်များနှင့် Box များအားလုံး မှန်ကြည်ဘောင်ပါးပါး ညှိခြင်း */
+      #mainContent .rounded-2xl,
+      #mainContent .rounded-3xl,
+      #mainContent .rounded-xl {
+        border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      }
+
+      /* 2. Friends ကတ်ထဲက ပုံဘောင်လေးများ သပ်ရပ်အောင် ညှိခြင်း */
+      #mainContent .grid img {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      /* 3. အပေါ်ဘားနှင့် အောက်ခြေ Nav ကို မှန်ကြည် (Glass) ပုံစံပြောင်းခြင်း */
+      header, nav, .fixed.bottom-0 {
+        background: rgba(15, 23, 42, 0.82) !important;
+        backdrop-filter: blur(14px) !important;
+        -webkit-backdrop-filter: blur(14px) !important;
+        border-color: rgba(255, 255, 255, 0.10) !important;
+      }
+
+      /* 4. အရောင်စုံနေတဲ့ အဓိကခလုတ်များကို Emerald Green တစ်ရောင်တည်း ညှိခြင်း */
+      #mainContent button[class*="bg-sky-"],
+      #mainContent button[class*="bg-blue-"],
+      #mainContent a[class*="bg-sky-"],
+      #mainContent a[class*="bg-blue-"] {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28) !important;
+      }
+
+      /* 5. ဒုတိယခလုတ်များ (Bio & Telegram စသည်) ကို မှန်ကြည်အရောင် ညှိခြင်း */
+      #mainContent button[class*="bg-slate-800"],
+      #mainContent button[class*="bg-[#1e293b]"] {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      }
+
+      /* Light Mode ပြောင်းထားရင် ဘောင်အရောင် အလိုအလျောက် ညှိပေးခြင်း */
+      html.ppw-light #mainContent .rounded-2xl,
+      html.ppw-light #mainContent .rounded-3xl,
+      html.ppw-light #mainContent .rounded-xl {
+        border: 1px solid rgba(15, 23, 42, 0.09) !important;
+      }
+      html.ppw-light header, html.ppw-light nav, html.ppw-light .fixed.bottom-0 {
+        background: rgba(255, 255, 255, 0.88) !important;
+        border-color: rgba(15, 23, 42, 0.08) !important;
+      }
+    `;
+    document.head.appendChild(_unifiedGlassCss);
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
