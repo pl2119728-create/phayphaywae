@@ -3461,36 +3461,6 @@
           }
           if (inChatModal && st.activeChatUid && typeof openChat === "function") {
             const box = document.querySelector("#modalRoot .flex.flex-col");
-            const inp = box ? box.querySelector('input[type="text"], textarea') : null;
-            const draft = inp ? inp.value : "";
-            openChat(st.activeChatUid);
-            setTimeout(() => {
-              const newBox = document.querySelector("#modalRoot .flex.flex-col");
-              if (!newBox) return;
-              const newInp = newBox.querySelector('input[type="text"], textarea');
-              if (newInp && draft) newInp.value = draft;
-              const scroller = newBox.querySelector(".overflow-y-auto");
-              if (scroller) scroller.scrollTop = scroller.scrollHeight;
-            }, 30);
-          }
-        }
-      } catch (e) {}
-    }, 2500);
-
-    // စာပို့ခလုတ်နှိပ်ပြီး 0.7 စက္ကန့်အကြာမှာ Firebase နဲ့ ချက်ချင်း Sync အတည်ပြုပေးခြင်း
-    document.addEventListener("click", (e) => {
-      const modal = e.target.closest("#modalRoot .flex.flex-col");
-      if (modal && e.target.closest("button")) {
-        setTimeout(() => { if (st.me) _origSyncMaster(true).catch(() => {}); }, 700);
-      }
-    });
-
-    const _origRenderMaster = render;
-    render = function() {
-      const out = _origRenderMaster();
-      applyCleanFbHeader();
-      return out;
-    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
