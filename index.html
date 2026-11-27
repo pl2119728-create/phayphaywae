@@ -2320,6 +2320,158 @@
       }, 60);
       return res;
     };
+    // =========================================================================
+    // PATCH: APK Banner + Chat Stability + Noti Fix + Profile 3-Stats + Chat UI
+    // =========================================================================
+    const APP_APK_URL = "https://github.com/pl211972/phayphaywae/releases/latest"; // APK Link အစစ်ရရင် ဒီမှာ ပြောင်းထည့်ပါ
+
+    // 1. UI Fixes: Note bubble visibility & hide green index numbers (1, 2, 3, 4) in Chats
+    const _ppwFixCss = document.createElement("style");
+    _ppwFixCss.textContent = `
+      /* Note bubble အပေါ်မပြတ်အောင် Padding ချဲ့ပေးခြင်း */
+      #mainContent .overflow-x-auto { padding-top: 16px !important; overflow-y: visible !important; }
+      #mainContent [class*="note"], #mainContent .note-bubble { z-index: 20 !important; top: -10px !important; }
+      /* Chat Messages ဘေးက နံပါတ်စဉ်အဝိုင်းများ ဖျောက်ခြင်း */
+      .ppw-hide-idx { display: none !important; }
+    `;
+    document.head.appendChild(_ppwFixCss);
+
+    // 2. Shared Post + APK Download Banner
+    function showApkDownloadBanner() {
+      if (document.getElementById("apkDownloadBanner")) return;
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+      if (isStandalone) return;
+      const bar = document.createElement("div");
+      bar.id = "apkDownloadBanner";
+      bar.className = "fixed bottom-20 left-3 right-3 z-50 max-w-lg mx-auto bg-gradient-to-r from-emerald-900 to-slate-900 border border-emerald-500/50 rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-2";
+      bar.innerHTML = `
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white font-black flex items-center justify-center shrink-0">APK</div>
+          <div class="min-w-0">
+            <div class="text-xs font-bold text-white truncate">ဖြေးဖြေး ဝယ် APK ဒေါင်းမလား?</div>
+            <div class="text-[11px] text-emerald-300 truncate">App နဲ့သုံးရင် ပိုမြန်ပြီး ပိုစိတ်ချရပါသည်</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <a href="${APP_APK_URL}" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold">ဒေါင်းမည်</a>
+          <button type="button" onclick="this.closest('#apkDownloadBanner').remove()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button>
+        </div>`;
+      document.body.appendChild(bar);
+    }
+
+    window.openPostByIdModal = function(pid) {
+      const p = (st.posts || []).find(x => x && x.id === pid);
+      if (!p) return toast("သက်ဆိုင်ရာ ပို့စ်ကို ရှာမတွေ့ပါ");
+      const mr = document.getElementById("modalRoot");
+      if (!mr) return;
+      mr.innerHTML = `
+        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3">
+          <div onclick="event.stopPropagation()" class="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl bg-[#0f172a] border border-slate-700 p-3 space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-bold text-emerald-400">📌 သက်ဆိုင်ရာ ပို့စ်</span>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button>
+            </div>
+            ${postCard(p)}
+          </div>
+        </div>`;
+    };
+
+    const _origCheckShared = typeof checkSharedPostParam === "function" ? checkSharedPostParam : null;
+    checkSharedPostParam = function() {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get("post");
+      if (pid) showApkDownloadBanner();
+      if (_origCheckShared) _origCheckShared();
+    };
+    setTimeout(() => {
+      if (new URLSearchParams(window.location.search).get("post")) showApkDownloadBanner();
+    }, 1200);
+
+    // 3. Chat Anti-Flicker & Message Deduplication
+    window._confirmedMsgs = window._confirmedMsgs || {};
+    function mergeCleanMessages(list) {
+      if (!Array.isArray(list)) return [];
+      const map = new Map();
+      for (const m of list) {
+        if (!m) continue;
+        const key = m.id || `${m.from || m.senderId || ""}_${m.to || ""}_${m.text || ""}_${Math.floor((m.createdAt || 0) / 3000)}`;
+        if (!map.has(key)) map.set(key, m);
+      }
+      return Array.from(map.values()).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    }
+
+    const _origSyncClean = sync;
+    sync = async function(force = false) {
+      const prevMsgs = Array.isArray(st.messages) ? [...st.messages] : [];
+      const res = await _origSyncClean(force);
+      if (Array.isArray(st.messages)) {
+        // ပို့ပြီးသားစာ မပျောက်အောင် ယာယီပေါင်းပြီး Duplicate ရှင်းခြင်း
+        const recentLocal = prevMsgs.filter(m => m && (Date.now() - (m.createdAt || 0) < 15000));
+        st.messages = mergeCleanMessages([...st.messages, ...recentLocal]);
+      }
+      // 4. Filter out self-triggered notifications (ကိုယ်ပေးတဲ့ Like/Comment ကိုယ့်ဆီ Noti မတက်စေရန်)
+      if (st.me) {
+        if (Array.isArray(st.notis)) {
+          st.notis = st.notis.filter(n => n && n.fromId !== st.me.id && n.actorId !== st.me.id && n.senderId !== st.me.id);
+        }
+        if (Array.isArray(st.notifications)) {
+          st.notifications = st.notifications.filter(n => n && n.fromId !== st.me.id && n.actorId !== st.me.id && n.senderId !== st.me.id);
+        }
+      }
+      return res;
+    };
+
+    // 5. Post-Render DOM Polish (Hide Chat # badges + Profile 3-Stats + Noti click-to-post)
+    const _origRenderPolish = render;
+    render = function() {
+      const out = _origRenderPolish();
+      try {
+        // (A) Chats Tab: ဘေးက 1, 2, 3, 4 နံပါတ်စဉ် အဝိုင်းများ ဖျောက်ခြင်း
+        if (st.tab === "chats" || st.tab === "chat") {
+          document.querySelectorAll("#mainContent button, #mainContent .rounded-2xl, #mainContent .rounded-3xl").forEach(row => {
+            const first = row.firstElementChild;
+            if (first && /^\d+$/.test((first.textContent || "").trim()) && first.className.includes("rounded-full")) {
+              first.classList.add("ppw-hide-idx");
+            }
+          });
+        }
+
+        // (B) Profile Tab: Fri / Following / Post ၃ ခုတန်း နှင့် ကိုယ့်ပို့စ်များ ချက်ချင်းပြခြင်း
+        if (st.tab === "profile" && st.me) {
+          const myPosts = (st.posts || []).filter(p => p && (p.uid === st.me.id || p.authorId === st.me.id || p.userId === st.me.id));
+          const friCount = Array.isArray(st.me.friends) ? st.me.friends.length : Object.keys(st.me.friends || {}).length;
+          const folCount = Array.isArray(st.me.following) ? st.me.following.length : Object.keys(st.me.following || {}).length;
+          const main = document.getElementById("mainContent");
+          if (main && !document.getElementById("ppwProfile3Stats")) {
+            const statsBar = document.createElement("div");
+            statsBar.id = "ppwProfile3Stats";
+            statsBar.className = "grid grid-cols-3 gap-2 my-3 p-3 rounded-2xl bg-[#162033] border border-slate-800 text-center";
+            statsBar.innerHTML = `
+              <div><div class="text-base font-black text-white">${friCount}</div><div class="text-[11px] text-slate-400 font-bold">Fri</div></div>
+              <div class="border-x border-slate-700/70"><div class="text-base font-black text-white">${folCount}</div><div class="text-[11px] text-slate-400 font-bold">Following</div></div>
+              <div><div class="text-base font-black text-emerald-400">${myPosts.length}</div><div class="text-[11px] text-slate-400 font-bold">Post</div></div>`;
+            const headerCard = main.firstElementChild;
+            if (headerCard && headerCard.nextSibling) {
+              main.insertBefore(statsBar, headerCard.nextSibling);
+            } else {
+              main.prepend(statsBar);
+            }
+          }
+        }
+      } catch (e) {}
+      return out;
+    };
+
+    // Noti modal ထဲက ပို့စ်ပါတဲ့ Noti နှိပ်ရင် သက်ဆိုင်တဲ့ ပို့စ်ဆီ တန်းသွားစေရန်
+    document.addEventListener("click", (e) => {
+      const item = e.target.closest("[data-noti-post], [data-post-id]");
+      if (!item) return;
+      const pid = item.getAttribute("data-noti-post") || item.getAttribute("data-post-id");
+      if (pid && item.closest("#modalRoot")) {
+        e.preventDefault();
+        openPostByIdModal(pid);
+      }
+    });
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
