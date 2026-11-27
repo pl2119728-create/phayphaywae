@@ -3059,6 +3059,156 @@
       }
     };
     setTimeout(applyPpwBrandLogo, 100);
+    // =========================================================================
+    // PATCH: Clean Original Header + Instant Chat Sync + Round Feed Avatar + FB Stories
+    // =========================================================================
+
+    // 1. Remove ALL injected logos & restore clean single-row Header
+    if (typeof _headerAlignCss !== "undefined" && _headerAlignCss.remove) _headerAlignCss.remove();
+    if (typeof _forceHeaderCss !== "undefined" && _forceHeaderCss.remove) _forceHeaderCss.remove();
+    applyPpwBrandLogo = function() {};
+    forceAlignPpwHeader = function() {};
+
+    const _cleanCoreCss = document.createElement("style");
+    _cleanCoreCss.textContent = `
+      /* Logo အပိုများအားလုံး အပြီးဖျောက်ခြင်း */
+      #ppwCustomLogo, #ppwInlineLogo, #ppwRightLogo { display: none !important; }
+
+      /* Header စာသား ၂ ကြောင်းမပြတ်ဘဲ တစ်တန်းတည်း ရှင်းနေစေရန် */
+      header h1, header .font-extrabold, header .font-bold {
+        white-space: nowrap !important;
+      }
+
+      /* Newsfeed ပို့စ်များထဲက Profile ပုံကို အဝိုင်းစစ်စစ် ဖြစ်အောင် ညှိခြင်း */
+      #mainContent article img.rounded-full,
+      #mainContent .rounded-3xl > div:first-child img.rounded-full,
+      #mainContent .rounded-2xl > div:first-child img.rounded-full {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        max-height: 44px !important;
+        aspect-ratio: 1 / 1 !important;
+        border-radius: 9999px !important;
+        object-fit: cover !important;
+        flex-shrink: 0 !important;
+      }
+
+      /* Newsfeed ပို့စ် Header မှာ Profile ပုံနှင့် နာမည် တစ်တန်းတည်း ညှိခြင်း */
+      #mainContent article > div:first-child,
+      #mainContent .rounded-3xl > div:first-child {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+      }
+
+      /* Facebook-style Vertical Story (MyDay) Cards */
+      .ppw-fb-story-card {
+        width: 96px !important;
+        min-width: 96px !important;
+        height: 152px !important;
+        border-radius: 16px !important;
+        position: relative !important;
+        overflow: hidden !important;
+        background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        padding: 8px !important;
+        flex-shrink: 0 !important;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+      }
+      .ppw-fb-story-card img {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        border-radius: 9999px !important;
+        object-fit: cover !important;
+        border: 2.5px solid #10b981 !important;
+      }
+    `;
+    document.head.appendChild(_cleanCoreCss);
+
+    function cleanHeaderAndStories() {
+      // Logo အပိုများ ဖျက်ခြင်း
+      document.querySelectorAll("#ppwCustomLogo, #ppwInlineLogo, #ppwRightLogo").forEach(el => el.remove());
+
+      // Home Feed Story (MyDay) ကို Facebook ကတ်ပုံစံ ပြောင်းခြင်း
+      if (st.tab === "home") {
+        const storyRow = document.querySelector("#mainContent .overflow-x-auto");
+        if (storyRow && (storyRow.textContent || "").includes("MyDay")) {
+          storyRow.style.gap = "10px";
+          storyRow.style.paddingBottom = "6px";
+          Array.from(storyRow.children).forEach(item => {
+            if (!item.classList.contains("ppw-fb-story-card")) {
+              item.classList.add("ppw-fb-story-card");
+            }
+          });
+        }
+      }
+    }
+
+    // 2. Fix Chat Delivery: Force instant message sync & auto-update open chat/inbox
+    window._ppwLastMsgSig = "";
+    async function instantChatSync() {
+      if (!st.me || document.hidden) return;
+      try {
+        const raw = await fbGet("messages");
+        if (!raw || typeof raw !== "object") return;
+
+        // Object keys များမှ ID ပါတစ်ခါတည်း ထည့်ပြီး စီခြင်း
+        const list = Object.entries(raw)
+          .filter(([, v]) => v && typeof v === "object")
+          .map(([k, v]) => ({ id: v.id || k, ...v }))
+          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+        const last = list[list.length - 1];
+        const sig = `${list.length}_${last ? (last.id + "_" + (last.createdAt || 0)) : "0"}`;
+
+        if (sig !== window._ppwLastMsgSig) {
+          window._ppwLastMsgSig = sig;
+          st.messages = list;
+          if (typeof saveFastCache === "function") saveFastCache();
+
+          // Chats စာမျက်နှာ ဖွင့်ထားရင် ချက်ချင်း Update လုပ်ခြင်း
+          if (st.tab === "chats" || st.tab === "chat") {
+            st.lastRenderSig = "";
+            render();
+          }
+
+          // Chat စကားပြောခန်း ဖွင့်ထားရင် စာအသစ် ချက်ချင်းပြပြီး အောက်ဆုံးဆွဲချခြင်း
+          const chatBox = document.querySelector("#modalRoot .flex.flex-col");
+          if (chatBox && st.activeChatUid && typeof openChat === "function") {
+            const inp = chatBox.querySelector('input[type="text"]');
+            const draft = inp ? inp.value : "";
+            openChat(st.activeChatUid);
+            setTimeout(() => {
+              const newBox = document.querySelector("#modalRoot .flex.flex-col");
+              if (!newBox) return;
+              const newInp = newBox.querySelector('input[type="text"]');
+              if (newInp && draft) newInp.value = draft;
+              const scroller = newBox.querySelector(".overflow-y-auto");
+              if (scroller) scroller.scrollTop = scroller.scrollHeight;
+            }, 40);
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (window._ppwChatTimer) clearInterval(window._ppwChatTimer);
+    window._ppwChatTimer = setInterval(instantChatSync, 3000);
+
+    // Render တိုင်းမှာ Header ရှင်းပြီး Story ကတ်ညှိပေးခြင်း
+    const _origRenderFinalCore = render;
+    render = function() {
+      const out = _origRenderFinalCore();
+      cleanHeaderAndStories();
+      return out;
+    };
+    setTimeout(cleanHeaderAndStories, 150);
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
