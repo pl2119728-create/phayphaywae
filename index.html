@@ -2154,6 +2154,172 @@
         }
       } catch (e) {}
     };
+    // =========================================================================
+    // PATCH: Light/Dark Mode + Pull-to-Refresh + Shareable Post Link + Escrow
+    // =========================================================================
+    st.theme = localStorage.getItem("ppw_theme") || "dark";
+
+    const _themeStyle = document.createElement("style");
+    _themeStyle.textContent = `
+      html.ppw-light, html.ppw-light body { background-color: #f1f5f9 !important; color: #0f172a !important; }
+      html.ppw-light .bg-\\[\\#0f172a\\], html.ppw-light .bg-slate-950, html.ppw-light .bg-slate-900 { background-color: #ffffff !important; color: #0f172a !important; }
+      html.ppw-light .bg-\\[\\#162033\\], html.ppw-light .bg-\\[\\#1e293b\\], html.ppw-light .bg-slate-800, html.ppw-light .bg-slate-800\\/70 { background-color: #f8fafc !important; color: #0f172a !important; }
+      html.ppw-light .border-slate-800, html.ppw-light .border-slate-700, html.ppw-light .border-slate-700\\/60, html.ppw-light .border-slate-800\\/80 { border-color: #e2e8f0 !important; }
+      html.ppw-light .text-white, html.ppw-light .text-slate-100, html.ppw-light .text-slate-200 { color: #0f172a !important; }
+      html.ppw-light .text-slate-300, html.ppw-light .text-slate-400 { color: #475569 !important; }
+      html.ppw-light input, html.ppw-light textarea { background-color: #f1f5f9 !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
+      html.ppw-light .bg-emerald-600, html.ppw-light .bg-emerald-500 { color: #ffffff !important; }
+    `;
+    document.head.appendChild(_themeStyle);
+
+    function applyAppTheme(theme) {
+      st.theme = theme === "light" ? "light" : "dark";
+      localStorage.setItem("ppw_theme", st.theme);
+      document.documentElement.classList.toggle("ppw-light", st.theme === "light");
+    }
+    applyAppTheme(st.theme);
+
+    function setAppTheme(theme) {
+      applyAppTheme(theme);
+      closeSideMenu();
+      toast(theme === "light" ? "☀️ Light Mode ပြောင်းပြီးပါပြီ" : "🌙 Dark Mode ပြောင်းပြီးပါပြီ");
+    }
+
+    // 1. Add Light/Dark Mode Switcher to Side Menu
+    const _origOpenSideMenuTheme = openSideMenu;
+    openSideMenu = function() {
+      _origOpenSideMenuTheme();
+      const container = document.querySelector("#drawerRoot aside .flex-1");
+      if (container && !document.getElementById("themeSwitcherBox")) {
+        const box = document.createElement("div");
+        box.id = "themeSwitcherBox";
+        box.className = "bg-[#1e293b]/70 border border-slate-700/70 rounded-2xl p-3 space-y-2";
+        box.innerHTML = `
+          <div class="text-xs font-bold text-slate-300">🎨 အရောင် (Theme)</div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button onclick="setAppTheme('light')" class="py-2 rounded-xl text-xs font-bold transition ${st.theme === "light" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">☀️ Light (အဖြူ)</button>
+            <button onclick="setAppTheme('dark')" class="py-2 rounded-xl text-xs font-bold transition ${st.theme === "dark" ? "bg-emerald-600 text-white" : "bg-slate-800 text-slate-300"}">🌙 Dark (အနက်)</button>
+          </div>`;
+        container.insertBefore(box, container.children[1] || null);
+      }
+    };
+
+    // 2. Pull-to-Refresh on Home Feed
+    (function initPullToRefresh() {
+      let startY = 0, pulling = false;
+      const pill = document.createElement("div");
+      pill.id = "ptrPill";
+      pill.className = "fixed top-16 left-1/2 -translate-x-1/2 z-40 px-4 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-lg transition-all duration-200 opacity-0 pointer-events-none";
+      pill.textContent = "↓ ဆွဲချပြီး Refresh လုပ်ရန်";
+      document.body.appendChild(pill);
+
+      window.addEventListener("touchstart", e => {
+        if (!st.me || st.tab !== "home" || window.scrollY > 5) return;
+        const mr = document.getElementById("modalRoot");
+        if (mr && mr.innerHTML.trim() !== "") return;
+        startY = e.touches[0].clientY;
+        pulling = true;
+      }, { passive: true });
+
+      window.addEventListener("touchmove", e => {
+        if (!pulling) return;
+        const diff = e.touches[0].clientY - startY;
+        if (diff > 55) {
+          pill.style.opacity = "1";
+          pill.textContent = diff > 95 ? "⟳ လွှတ်လိုက်ပါ — Refresh လုပ်မည်" : "↓ ဆွဲချပြီး Refresh လုပ်ရန်";
+        } else {
+          pill.style.opacity = "0";
+        }
+      }, { passive: true });
+
+      window.addEventListener("touchend", async e => {
+        if (!pulling) return;
+        pulling = false;
+        const diff = (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0) - startY;
+        if (diff > 95) {
+          pill.style.opacity = "1";
+          pill.textContent = "⟳ အသစ်ပြန်ဆွဲနေသည်...";
+          try { await sync(true); } catch (err) {}
+          toast("✓ ပို့စ်အသစ်များ ပြန်ဆွဲပြီးပါပြီ");
+        }
+        setTimeout(() => { pill.style.opacity = "0"; }, 400);
+      }, { passive: true });
+    })();
+
+    // 3. Shareable Post Link (?post=PID)
+    function copyPostShareLink(pid) {
+      const shareUrl = `${window.location.origin}${window.location.pathname}?post=${encodeURIComponent(pid)}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(() => toast("✓ ပို့စ် Link ကူးပြီးပါပြီ — FB/Telegram မှာ မျှဝေနိုင်ပါပြီ"));
+      } else {
+        prompt("ပို့စ် Link ကို Copy ကူးပါ:", shareUrl);
+      }
+      const p = st.posts.find(x => x && x.id === pid);
+      if (p) {
+        p.shares = Number(p.shares || 0) + 1;
+        fbPut(`posts/${pid}/shares`, p.shares).catch(() => {});
+      }
+    }
+
+    const _origPostCardShare = postCard;
+    postCard = function(p) {
+      let html = _origPostCardShare(p);
+      html = html.replace(
+        new RegExp(`sharePost\\('${p.id}'\\)`, "g"),
+        `copyPostShareLink('${p.id}')`
+      );
+      return html;
+    };
+
+    function checkSharedPostParam() {
+      const params = new URLSearchParams(window.location.search);
+      const pid = params.get("post");
+      if (!pid || !st.me) return;
+      const p = st.posts.find(x => x && x.id === pid);
+      if (!p) return;
+      window.history.replaceState({}, "", window.location.pathname);
+      document.getElementById("modalRoot").innerHTML = `
+        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3">
+          <div onclick="event.stopPropagation()" class="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl bg-[#0f172a] border border-slate-700 p-3 space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-xs font-bold text-emerald-400">🔗 မျှဝေထားသော ပို့စ်</span>
+              <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-200 text-xs font-bold">✕</button>
+            </div>
+            ${postCard(p)}
+          </div>
+        </div>`;
+    }
+    setTimeout(checkSharedPostParam, 1800);
+
+    // 4. Admin Escrow Button in Chat View
+    function requestAdminEscrow(partnerId) {
+      const partner = uInfo(partnerId);
+      const msg = `🛡️ [Admin ကြားခံတောင်းဆိုမှု]\nကျွန်တော်/ကျွန်မ (${st.me.name}) နှင့် ${partner.name} တို့ အရောင်းအဝယ်ပြုလုပ်ရန် Admin ကြားခံ (Escrow) ဝန်ဆောင်မှု တောင်းဆိုအပ်ပါသည်။`;
+      const inp = document.querySelector('#modalRoot input[type="text"], #mainContent input[type="text"]');
+      if (inp) {
+        inp.value = msg;
+        inp.focus();
+      }
+      toast("🛡️ Admin ကြားခံစာသား ထည့်ပေးပြီးပါပြီ — ပို့ခလုတ်နှိပ်ပါ");
+    }
+
+    const _origOpenChatEscrow = openChat;
+    openChat = function(uid) {
+      const res = _origOpenChatEscrow(uid);
+      setTimeout(() => {
+        const modal = document.querySelector("#modalRoot .flex.flex-col");
+        if (modal && !document.getElementById("escrowBarBtn")) {
+          const bar = document.createElement("div");
+          bar.id = "escrowBarBtn";
+          bar.className = "px-3 py-1.5 bg-emerald-950/60 border-b border-emerald-500/30 flex items-center justify-between gap-2";
+          bar.innerHTML = `
+            <span class="text-[11px] text-emerald-300 font-medium">စိတ်ချရသော အရောင်းအဝယ်အတွက်</span>
+            <button type="button" onclick="requestAdminEscrow('${uid}')" class="px-2.5 py-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shrink-0">🛡️ Admin ကြားခံခေါ်မည်</button>`;
+          if (modal.children[1]) modal.insertBefore(bar, modal.children[1]);
+        }
+      }, 60);
+      return res;
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
