@@ -1682,6 +1682,67 @@
         ensureBackGuard();
       }
     }, true);
+    // =========================================================================
+    // PATCH: Lock Feed Scroll in Comments + Instant Like Tap Fix + Faster Sync
+    // =========================================================================
+    const _lockStyle = document.createElement("style");
+    _lockStyle.textContent = `
+      html.ppw-lock, body.ppw-lock { overflow: hidden !important; height: 100% !important; touch-action: none !important; }
+      #sheetCmtList { overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-y !important; }
+    `;
+    document.head.appendChild(_lockStyle);
+
+    function setBgScrollLock(lock) {
+      document.documentElement.classList.toggle("ppw-lock", !!lock);
+      document.body.classList.toggle("ppw-lock", !!lock);
+      const mc = document.getElementById("mainContent");
+      if (mc) mc.style.overflowY = lock ? "hidden" : "";
+    }
+
+    const _origOpenCmtSheetLock = openCommentsSheet;
+    openCommentsSheet = function(pid) {
+      setBgScrollLock(true);
+      return _origOpenCmtSheetLock(pid);
+    };
+
+    const _origCloseModalLock = closeModal;
+    closeModal = function() {
+      setBgScrollLock(false);
+      return _origCloseModalLock();
+    };
+
+    // Fix Mobile Double-Fire Like Bug (touchend + synthetic mouseup)
+    window._lastTouchRxAt = 0;
+    const _origTouchStartRx = onLikeTouchStart;
+    onLikeTouchStart = function(e, pid) {
+      window._lastTouchRxAt = Date.now();
+      return _origTouchStartRx(e, pid);
+    };
+    const _origTouchEndRx = onLikeTouchEnd;
+    onLikeTouchEnd = function(e, pid) {
+      window._lastTouchRxAt = Date.now();
+      if (e && e.cancelable) e.preventDefault();
+      return _origTouchEndRx(e, pid);
+    };
+    const _origMouseDownRx = onLikeMouseDown;
+    onLikeMouseDown = function(e, pid) {
+      if (Date.now() - (window._lastTouchRxAt || 0) < 700) return;
+      return _origMouseDownRx(e, pid);
+    };
+    const _origMouseUpRx = onLikeMouseUp;
+    onLikeMouseUp = function(e, pid) {
+      if (Date.now() - (window._lastTouchRxAt || 0) < 700) return;
+      return _origMouseUpRx(e, pid);
+    };
+
+    // Faster Sync: Load latest 20 posts instead of 50 heavy posts
+    const _origFbGetFast = fbGet;
+    fbGet = function(path, query = "") {
+      if (path === "posts" && query.includes("limitToLast=50")) {
+        query = query.replace("limitToLast=50", "limitToLast=20");
+      }
+      return _origFbGetFast(path, query);
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
