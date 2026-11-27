@@ -2472,57 +2472,69 @@
         openPostByIdModal(pid);
       }
     });
+    
+    
+        // =========================================================================
+    // PATCH: Facebook-Style Clean Premium Profile (Safe Inner Target)
     // =========================================================================
-    // PATCH: Fix Profile 3-Stats Position + Premium Profile UI Polish
-    // =========================================================================
-    const _premiumProfileCss = document.createElement("style");
-    _premiumProfileCss.textContent = `
-      /* Profile Avatar ဘေးမှာ Premium Gradient Ring ထည့်ခြင်း */
-      #mainContent .rounded-full.overflow-hidden,
-      #mainContent img.rounded-full {
-        box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.75), 0 8px 24px rgba(0, 0, 0, 0.45);
+    const _fbProfileCss = document.createElement("style");
+    _fbProfileCss.textContent = `
+      /* အပေါ်က မလိုအပ်တဲ့ ဘားတန်းကို အပြီးဖျောက်ခြင်း */
+      #ppwProfile3Stats { display: none !important; }
+
+      /* Cover ပုံအောက်ခြေကို Facebook လို ညင်ညင်သာသာ ဖျော့ချခြင်း */
+      #mainContent .h-36, #mainContent .h-40, #mainContent .h-44, #mainContent .h-48 {
+        position: relative;
       }
-      /* Glassmorphism ခလုတ်များ */
+      #mainContent .h-36::after, #mainContent .h-40::after, #mainContent .h-44::after, #mainContent .h-48::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(15,23,42,0.06) 45%, rgba(15,23,42,0.92) 100%);
+        pointer-events: none;
+      }
+
+      /* Profile ပုံဘောင်ကို သပ်ရပ်အောင် ညှိခြင်း */
+      #mainContent img.rounded-full {
+        box-shadow: 0 0 0 3px #0f172a, 0 0 0 5px rgba(16, 185, 129, 0.85), 0 10px 25px rgba(0, 0, 0, 0.45);
+      }
+      html.ppw-light #mainContent img.rounded-full {
+        box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px rgba(16, 185, 129, 0.85), 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      /* Cover ပြောင်း / Settings ခလုတ်များကို မှန်ကြည် (Glass) ပုံစံပြောင်းခြင်း */
       #mainContent button[class*="bg-black"], #mainContent button[class*="bg-slate-900"] {
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.14);
       }
     `;
-    document.head.appendChild(_premiumProfileCss);
+    document.head.appendChild(_fbProfileCss);
 
-    const _origRenderProfileFix = render;
+    const _origRenderFbProfile = render;
     render = function() {
-      const out = _origRenderProfileFix();
+      const out = _origRenderFbProfile();
       try {
         if (st.tab === "profile" && st.me) {
-          // 1. အပေါ်ဆုံးမှာ မှားပေါ်နေတဲ့ ဘားအဟောင်းကို ဖျောက်ခြင်း
           const wrongTopBar = document.getElementById("ppwProfile3Stats");
           if (wrongTopBar) wrongTopBar.remove();
 
-          // 2. Active Now အောက်က ဘားနေရာကို ရှာပြီး Fri | Following | Post အစားထိုးခြင်း
           const myPosts = (st.posts || []).filter(p => p && (p.uid === st.me.id || p.authorId === st.me.id || p.userId === st.me.id));
           const friCount = Array.isArray(st.me.friends) ? st.me.friends.length : Object.keys(st.me.friends || {}).length;
           const folCount = Array.isArray(st.me.following) ? st.me.following.length : Object.keys(st.me.following || {}).length;
 
-          const allDivs = document.querySelectorAll("#mainContent div");
-          for (const el of allDivs) {
+          // အတွင်းဆုံး စာသားအကွက်လေးကိုပဲ တိတိကျကျ ရှာခြင်း (Profile တစ်ခုလုံး မပျောက်စေရန်)
+          const nodes = Array.from(document.querySelectorAll("#mainContent div, #mainContent p")).reverse();
+          for (const el of nodes) {
             const txt = (el.textContent || "").trim();
-            if (txt.includes("Page Followers") && txt.includes("Following") && el.children.length <= 5) {
-              el.className = "grid grid-cols-3 items-center max-w-sm mx-auto mt-3 py-2.5 px-3 rounded-2xl bg-slate-900/70 backdrop-blur-md border border-white/10 shadow-lg text-center";
+            if (txt.length < 75 && txt.includes("Page Followers") && txt.includes("Following")) {
+              el.className = "flex items-center justify-center gap-3 mt-2 text-xs text-slate-400";
               el.innerHTML = `
-                <div class="flex flex-col items-center">
-                  <span class="text-base font-extrabold text-white leading-tight">${friCount}</span>
-                  <span class="text-[11px] font-medium text-slate-400">Fri</span>
-                </div>
-                <div class="flex flex-col items-center border-x border-white/10">
-                  <span class="text-base font-extrabold text-white leading-tight">${folCount}</span>
-                  <span class="text-[11px] font-medium text-slate-400">Following</span>
-                </div>
-                <div class="flex flex-col items-center">
-                  <span class="text-base font-extrabold text-emerald-400 leading-tight">${myPosts.length}</span>
-                  <span class="text-[11px] font-medium text-slate-400">Post</span>
-                </div>`;
+                <span><strong class="text-white font-extrabold text-sm">${friCount}</strong> Fri</span>
+                <span class="opacity-40">•</span>
+                <span><strong class="text-white font-extrabold text-sm">${folCount}</strong> Following</span>
+                <span class="opacity-40">•</span>
+                <span><strong class="text-emerald-400 font-extrabold text-sm">${myPosts.length}</strong> Posts</span>`;
               break;
             }
           }
