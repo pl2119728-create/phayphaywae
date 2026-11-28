@@ -2298,6 +2298,144 @@
         return _origCloseV6();
       };
     })();
+    // =========================================================================
+    // UPGRADE V7: Threaded Post Comment Replies (Facebook-Style)
+    // =========================================================================
+    (function () {
+      if (window.__PPW_UPGRADE_V7__) return;
+      window.__PPW_UPGRADE_V7__ = true;
+
+      st.cmtReply = {};
+
+      window.startCmtReply = function (pid, parentId, uid, name) {
+        st.cmtReply[pid] = { parentId, replyToUid: uid, replyToName: name };
+        playSong("like");
+        safeRender(true);
+        setTimeout(() => {
+          const inp = document.getElementById("ci-" + pid);
+          if (inp) inp.focus();
+        }, 40);
+      };
+
+      window.cancelCmtReply = function (pid) {
+        delete st.cmtReply[pid];
+        safeRender(true);
+      };
+
+      // Override addCmt to support threaded replies
+      addCmt = async function (id) {
+        const inp = document.getElementById("ci-" + id);
+        if (!inp) return;
+        const text = inp.value.trim();
+        if (!text) return;
+        const p = st.posts.find(x => x.id === id);
+        if (!p) return;
+        if (!p.comments) p.comments = {};
+
+        const rep = st.cmtReply[id] || null;
+        const cid = "C-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        const c = {
+          id: cid,
+          authorId: st.me.id,
+          text,
+          parentId: rep ? rep.parentId : "",
+          replyToUid: rep ? rep.replyToUid : "",
+          replyToName: rep ? rep.replyToName : "",
+          createdAt: Date.now()
+        };
+
+        p.comments[cid] = c;
+        inp.value = "";
+        delete st.cmtReply[id];
+        playSong("notif");
+        saveFastCache();
+        safeRender(true);
+
+        if (rep && rep.replyToUid && rep.replyToUid !== st.me.id) {
+          notify(rep.replyToUid, "က သင့်မှတ်ချက်ကို Reply ပြန်လိုက်သည်: " + text.slice(0, 20));
+        }
+        if (p.authorId !== st.me.id && (!rep || rep.replyToUid !== p.authorId)) {
+          notify(p.authorId, "က မှတ်ချက်ရေးခဲ့သည်: " + text.slice(0, 20));
+        }
+        await fbPut(`posts/${id}/comments/${cid}`, c).catch(() => {});
+      };
+
+      function renderSingleCmt(p, c, rootParentId, isReply) {
+        const cu = uInfo(c.authorId);
+        const own = p.authorId === st.me.id;
+        const canEditC = c.authorId === st.me.id;
+        const canDelC = canEditC || own;
+        const safeName = esc(cu.name).replace(/'/g, "\\'");
+        const tagTo = (isReply && c.replyToName)
+          ? `<span onclick="openUserProfile('${c.replyToUid}')" class="text-sky-400 font-bold cursor-pointer mr-1">@${esc(c.replyToName)}</span>`
+          : "";
+
+        return `
+          <div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-sm flex items-start gap-2.5">
+            <div onclick="openUserProfile('${cu.id}')" class="cursor-pointer shrink-0">${avatar(cu, isReply ? "w-7 h-7 text-[11px]" : "w-8 h-8 text-xs", true, true)}</div>
+            <div class="text-sm text-slate-100 min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <span onclick="openUserProfile('${cu.id}')" class="font-bold text-white cursor-pointer inline-flex items-center gap-1 truncate">${esc(cu.name)} ${blueBadge(cu)}</span>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button type="button" onclick="startCmtReply('${p.id}','${rootParentId}','${cu.id}','${safeName}')" class="text-[11px] font-bold text-emerald-400">Reply</button>
+                  ${canEditC ? `<button type="button" onclick="openEditCmtModal('${p.id}','${c.id}')" class="text-[11px] font-bold text-sky-400">ပြင်</button>` : ""}
+                  ${canDelC ? `<button type="button" onclick="delCmt('${p.id}','${c.id}')" class="text-[11px] font-bold text-rose-400">ဖျက်</button>` : ""}
+                </div>
+              </div>
+              <div class="mt-0.5 whitespace-pre-line">${tagTo}${esc(c.text)} ${c.editedAt ? `<span class="text-[10px] text-slate-500">(ပြင်ပြီး)</span>` : ""}</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">${ago(c.createdAt)}</div>
+            </div>
+          </div>`;
+      }
+
+      // Enhance postCard comment section with threaded replies
+      const _basePostCardV7 = postCard;
+      postCard = function (p) {
+        let html = _basePostCardV7(p);
+        if (!p || !st.openCmt[p.id]) return html;
+
+        const marker = `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 rounded-b-2xl space-y-2.5">`;
+        const idx = html.lastIndexOf(marker);
+        if (idx === -1) return html;
+
+        const allCmts = p.comments ? Object.values(p.comments).filter(c => c && !isBlockedPair(c.authorId)).sort((a, b) => a.createdAt - b.createdAt) : [];
+        const topCmts = allCmts.filter(c => !c.parentId || !p.comments[c.parentId]);
+        const repliesByParent = {};
+        allCmts.forEach(c => {
+          if (c.parentId && p.comments[c.parentId]) {
+            if (!repliesByParent[c.parentId]) repliesByParent[c.parentId] = [];
+            repliesByParent[c.parentId].push(c);
+          }
+        });
+
+        const rep = st.cmtReply[p.id];
+        const repBanner = rep
+          ? `<div class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-300">
+               <span class="truncate font-bold">↩️ ${esc(rep.replyToName)} ကို Reply ပြန်နေသည်</span>
+               <button type="button" onclick="cancelCmtReply('${p.id}')" class="text-slate-300 font-bold px-1">✕</button>
+             </div>`
+          : "";
+
+        const threadedHtml = `
+          ${marker}
+            ${topCmts.map(c => {
+              const reps = repliesByParent[c.id] || [];
+              return `<div class="space-y-1.5">
+                ${renderSingleCmt(p, c, c.id, false)}
+                ${reps.length ? `<div class="ml-7 pl-2.5 border-l-2 border-slate-700/80 space-y-1.5">${reps.map(r => renderSingleCmt(p, r, c.id, true)).join("")}</div>` : ""}
+              </div>`;
+            }).join("")}
+            ${repBanner}
+            <div class="flex items-center gap-2">
+              <input id="ci-${p.id}" type="text" placeholder="${rep ? `${esc(rep.replyToName)} ကို Reply ပြန်ရန်...` : "မှတ်ချက်ရေးရန်..."}" onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 min-w-0 bg-slate-800 text-white border border-slate-700 rounded-full px-4 py-2.5 text-sm"/>
+              <button onclick="addCmt('${p.id}')" class="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-bold shrink-0">ပို့</button>
+            </div>
+          </div>
+        </article>`;
+
+        return html.slice(0, idx) + threadedHtml;
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
