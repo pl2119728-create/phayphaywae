@@ -2757,872 +2757,718 @@
       };
     })();
     // =========================================================================
-    // PPW PRO UI BUNDLE: Facebook Pro Post Card + Chat Topic Tabs (Fri / Group)
+    // FIX V10: Restore Morning Chats & Force-Show All Conversations in Chat Tab
     // =========================================================================
     (function () {
-      if (window.__PPW_PRO_UI_BUNDLE__) return;
-      window.__PPW_PRO_UI_BUNDLE__ = true;
+      if (window.__PPW_FIX_V10__) return;
+      window.__PPW_FIX_V10__ = true;
 
-      // -----------------------------------------------------------------------
-      // 1. FACEBOOK PRO POST CARD UI (Clean Header, Add friend, ⋯ Menu, Full Media)
-      // -----------------------------------------------------------------------
-      window.quickAddFriendFromPost = async function (uid, btnEl) {
-        if (!st.me || !uid || uid === st.me.id) return;
-        if (typeof sendFriendReq === "function") { sendFriendReq(uid); return; }
-        if (typeof addFriend === "function") { addFriend(uid); return; }
-        if (!Array.isArray(st.me.friends)) st.me.friends = [];
-        if (!st.me.friends.includes(uid)) {
-          st.me.friends.push(uid);
-          if (typeof saveMe === "function") saveMe();
-          await fbPut(`users/${st.me.id}/friends`, st.me.friends).catch(() => {});
-          if (typeof notify === "function") notify(uid, "က သင့်ကို Friend ထည့်လိုက်ပါသည်");
-        }
-        if (btnEl) btnEl.remove();
-        if (typeof toast === "function") toast("✓ Friend ထည့်ပြီးပါပြီ");
+      function normalizeChatsFromServer(rawChats) {
+        if (!st.me || !rawChats || typeof rawChats !== "object") return;
+        if (!st.chats) st.chats = {};
+
+        Object.entries(rawChats).forEach(([rk, msgs]) => {
+          if (!msgs || typeof msgs !== "object") return;
+          const parts = rk.split("_");
+          // Match 1-to-1 rooms (A_B) involving me, or group rooms
+          const involvesMe = rk.includes(st.me.id) || parts.includes(st.me.id);
+          if (!involvesMe && !rk.startsWith("GRP_") && !rk.startsWith("ESCROW_")) return;
+
+          if (!st.chats[rk]) st.chats[rk] = {};
+          Object.entries(msgs).forEach(([mid, m]) => {
+            if (!m || typeof m !== "object") return;
+            const cleanM = {
+              id: m.id || mid,
+              senderId: m.senderId || "",
+              text: m.text || "",
+              image: m.image || "",
+              audio: m.audio || "",
+              audioDur: Number(m.audioDur || 0),
+              replyTo: m.replyTo || null,
+              reactions: m.reactions || null,
+              forwarded: !!m.forwarded,
+              seenAt: m.seenAt || 0,
+              deletedFor: m.deletedFor || {},
+              deletedForAll: !!m.deletedForAll,
+              createdAt: Number(m.createdAt || Date.now()),
+              _status: "sent"
+            };
+            st.chats[rk][cleanM.id] = { ...(st.chats[rk][cleanM.id] || {}), ...cleanM };
+          });
+        });
+      }
+
+      window.restoreAllMyChats = async function () {
+        if (!st.me || !navigator.onLine) return;
+        try {
+          const [ch, us] = await Promise.all([
+            fbGet("chats").catch(() => null),
+            fbGet("users").catch(() => null)
+          ]);
+          if (us && typeof us === "object") {
+            st.users = { ...(st.users || {}), ...us };
+            st.users[st.me.id] = { ...(st.users[st.me.id] || {}), ...st.me };
+          }
+          if (ch && typeof ch === "object") {
+            normalizeChatsFromServer(ch);
+          }
+          if (st.chatUid && typeof renderMsgs === "function") {
+            st.lastMsgHtmlSig = "";
+            renderMsgs();
+          } else if (st.tab === "chat" && typeof render === "function") {
+            st.lastRenderSig = "";
+            render();
+          }
+        } catch (e) {}
       };
 
-      window.openPostDotsMenu = function (pid) {
-        const p = (st.posts || []).find(x => x && x.id === pid);
-        if (!p || !st.me) return;
-        const own = p.authorId === st.me.id || st.me.isAdmin;
-        const old = document.getElementById("ppwDotsMenu");
-        if (old) old.remove();
+      // Run immediately on load & whenever switching to Chat tab
+      setTimeout(() => { window.restoreAllMyChats(); }, 300);
+      setInterval(() => {
+        if (st.me && !document.hidden && navigator.onLine) {
+          window.restoreAllMyChats();
+        }
+      }, 5000);
 
+      const _origRenderV10 = render;
+      render = function () {
+        _origRenderV10();
+        if (st.me && st.tab === "chat" && !window.__ppwChatFetchedOnce) {
+          window.__ppwChatFetchedOnce = true;
+          window.restoreAllMyChats();
+        }
+      };
+    })();
+    // =========================================================================
+    // FAST SEND FIX: Speed Up Outgoing Messages on Slower / Other Phones
+    // =========================================================================
+    (function () {
+      if (window.__PPW_FAST_SEND__) return;
+      window.__PPW_FAST_SEND__ = true;
+
+      const _origPushMsg = pushMessageToServer;
+      pushMessageToServer = async function (rid, mid) {
+        const m = (pendingChats[rid] && pendingChats[rid][mid]) || (st.chats[rid] && st.chats[rid][mid]);
+        if (!m || !navigator.onLine) {
+          if (_origPushMsg) return _origPushMsg(rid, mid);
+          return;
+        }
+        try {
+          const payload = { ...m };
+          delete payload._status;
+          const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 7000) : null;
+          const res = await fetch(`${DB}/chats/${rid}/${mid}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: ctrl ? ctrl.signal : undefined
+          });
+          if (timer) clearTimeout(timer);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          m._status = "sent";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "sent";
+          if (pendingChats[rid] && pendingChats[rid][mid]) {
+            delete pendingChats[rid][mid];
+            if (!Object.keys(pendingChats[rid]).length) delete pendingChats[rid];
+            savePending();
+          }
+          if (st.chatUid && typeof notify === "function") {
+            notify(st.chatUid, "က မက်ဆေ့ချ် ပို့လိုက်သည်", "", "message");
+          }
+        } catch (e) {
+          m._status = "failed";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "failed";
+          if (!pendingChats[rid]) pendingChats[rid] = {};
+          pendingChats[rid][mid] = m;
+          savePending();
+        } finally {
+          if (typeof st.lastMsgHtmlSig !== "undefined") st.lastMsgHtmlSig = "";
+          if (typeof renderMsgs === "function" && st.chatUid) renderMsgs();
+        }
+      };
+    })();
+    // =========================================================================
+    // MASTER ENGINE: Fast Chat/Voice Send + Data-Safe Sync + Social Features
+    // =========================================================================
+    (function () {
+      if (window.__PPW_MASTER_ENGINE__) return;
+      window.__PPW_MASTER_ENGINE__ = true;
+
+      const MSG_RX = ["❤️", "😂", "😮", "😢", "😡", "👍"];
+      const WAVE_H = [35, 65, 45, 90, 55, 100, 75, 40, 85, 95, 60, 45, 80, 100, 70, 50, 85, 60, 40, 75, 50, 35];
+
+      st.chatAudioDur = st.chatAudioDur || 0;
+      st.replyTarget = null;
+      st.postMentions = st.postMentions || {};
+      st.cmtReply = st.cmtReply || {};
+      window._ppwAudioObj = window._ppwAudioObj || null;
+      window._ppwAudioMid = window._ppwAudioMid || null;
+      window._ppwDurCache = window._ppwDurCache || {};
+
+      function fmtS(sec) {
+        const s = Math.max(0, Math.round(Number(sec) || 0));
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+      }
+
+      // 1. DISTINCT UI SOUNDS (Message Pop vs Notification Chime vs Reaction Pop)
+      playSong = function (kind) {
+        if (!st.soundOn) return;
+        const ctx = ensureAudio();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        try {
+          if (kind === "message") {
+            const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+            o1.type = "sine";
+            o1.frequency.setValueAtTime(520, now);
+            o1.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+            g1.gain.setValueAtTime(0.001, now);
+            g1.gain.exponentialRampToValueAtTime(0.2, now + 0.015);
+            g1.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+            o1.connect(g1); g1.connect(ctx.destination);
+            o1.start(now); o1.stop(now + 0.12);
+
+            const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+            o2.type = "sine";
+            o2.frequency.setValueAtTime(784, now + 0.08);
+            o2.frequency.exponentialRampToValueAtTime(1175, now + 0.14);
+            g2.gain.setValueAtTime(0.001, now + 0.08);
+            g2.gain.exponentialRampToValueAtTime(0.16, now + 0.095);
+            g2.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+            o2.connect(g2); g2.connect(ctx.destination);
+            o2.start(now + 0.08); o2.stop(now + 0.24);
+          } else if (kind === "notif") {
+            [1046.5, 1567.98].forEach((freq, idx) => {
+              const o = ctx.createOscillator(), g = ctx.createGain();
+              o.type = "triangle";
+              o.frequency.setValueAtTime(freq, now + idx * 0.05);
+              g.gain.setValueAtTime(0.001, now + idx * 0.05);
+              g.gain.exponentialRampToValueAtTime(idx === 0 ? 0.16 : 0.11, now + idx * 0.05 + 0.015);
+              g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.05 + 0.38);
+              o.connect(g); g.connect(ctx.destination);
+              o.start(now + idx * 0.05); o.stop(now + idx * 0.05 + 0.4);
+            });
+          } else if (kind === "like" || kind === "love" || kind === "haha" || kind === "wow" || kind === "sad" || kind === "angry") {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = "sine";
+            o.frequency.setValueAtTime(kind === "love" ? 420 : 340, now);
+            o.frequency.exponentialRampToValueAtTime(kind === "love" ? 920 : 680, now + 0.075);
+            g.gain.setValueAtTime(0.001, now);
+            g.gain.exponentialRampToValueAtTime(0.16, now + 0.015);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(now); o.stop(now + 0.1);
+          } else if (kind === "upload") {
+            [523.25, 659.25, 783.99].forEach((f, i) => {
+              const o = ctx.createOscillator(), g = ctx.createGain();
+              o.type = "sine";
+              o.frequency.setValueAtTime(f, now + i * 0.07);
+              g.gain.setValueAtTime(0.001, now + i * 0.07);
+              g.gain.exponentialRampToValueAtTime(0.15, now + i * 0.07 + 0.015);
+              g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.07 + 0.24);
+              o.connect(g); g.connect(ctx.destination);
+              o.start(now + i * 0.07); o.stop(now + i * 0.07 + 0.26);
+            });
+          } else {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = "sine";
+            o.frequency.setValueAtTime(190, now);
+            o.frequency.exponentialRampToValueAtTime(110, now + 0.12);
+            g.gain.setValueAtTime(0.001, now);
+            g.gain.exponentialRampToValueAtTime(0.14, now + 0.015);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+            o.connect(g); g.connect(ctx.destination);
+            o.start(now); o.stop(now + 0.15);
+          }
+        } catch (e) {}
+      };
+
+      // 2. FAST NON-BLOCKING MESSAGE & VOICE SEND (Never Deletes Existing Data)
+      pushMessageToServer = async function (rid, mid) {
+        const m = (pendingChats[rid] && pendingChats[rid][mid]) || (st.chats[rid] && st.chats[rid][mid]);
+        if (!m) return;
+        if (!navigator.onLine) {
+          m._status = "queued";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "queued";
+          savePending();
+          st.lastMsgHtmlSig = "";
+          if (st.chatUid) renderMsgs();
+          return;
+        }
+        try {
+          const payload = { ...m };
+          delete payload._status;
+          const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+          const res = await fetch(`${DB}/chats/${rid}/${mid}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: ctrl ? ctrl.signal : undefined
+          });
+          if (timer) clearTimeout(timer);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          m._status = "sent";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "sent";
+          if (pendingChats[rid] && pendingChats[rid][mid]) {
+            delete pendingChats[rid][mid];
+            if (!Object.keys(pendingChats[rid]).length) delete pendingChats[rid];
+            savePending();
+          }
+          if (st.chatUid && typeof notify === "function") {
+            notify(st.chatUid, "က မက်ဆေ့ချ် ပို့လိုက်သည်", "", "message");
+          }
+        } catch (e) {
+          m._status = "failed";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "failed";
+          if (!pendingChats[rid]) pendingChats[rid] = {};
+          pendingChats[rid][mid] = m;
+          savePending();
+        } finally {
+          st.lastMsgHtmlSig = "";
+          if (st.chatUid && typeof renderMsgs === "function") renderMsgs();
+        }
+      };
+
+      const _baseStartVoice = typeof startSafeVoiceRec === "function" ? startSafeVoiceRec : null;
+      if (_baseStartVoice) {
+        startSafeVoiceRec = async function (mode) {
+          if (st.recorder && st.recorder.state === "recording") {
+            st.chatAudioDur = Math.max(1, Math.round((Date.now() - (window._recAt || Date.now())) / 1000));
+          } else {
+            window._recAt = Date.now();
+            st.chatAudioDur = 0;
+          }
+          return _baseStartVoice(mode);
+        };
+      }
+
+      sendChatPayload = async function ({ text, image, audio }) {
+        if (!st.chatUid || !st.me) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const mid = `M-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const dur = audio ? (st.chatAudioDur || Math.max(1, Math.round((Date.now() - (window._recAt || Date.now())) / 1000))) : 0;
+        st.chatAudioDur = 0;
+        const replyData = st.replyTarget ? { ...st.replyTarget } : null;
+        st.replyTarget = null;
+        const rBar = document.getElementById("ppwReplyBar");
+        if (rBar) { rBar.classList.add("hidden"); rBar.innerHTML = ""; }
+
+        const m = {
+          id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "",
+          audioDur: dur, replyTo: replyData, seenAt: 0, deletedFor: {}, deletedForAll: false,
+          createdAt: Date.now(), _status: navigator.onLine ? "sending" : "queued"
+        };
+        if (!pendingChats[rid]) pendingChats[rid] = {};
+        pendingChats[rid][mid] = m;
+        savePending();
+        if (!st.chats[rid]) st.chats[rid] = {};
+        st.chats[rid][mid] = m;
+        clearChatAttach();
+        if (navigator.onLine) fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {});
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+        await pushMessageToServer(rid, mid);
+      };
+
+      // 3. WAVEFORM VOICE PLAYER (Exact Seconds Both Sides)
+      function paintWave(mid, pct) {
+        const wrap = document.getElementById("aud-wave-" + mid);
+        if (!wrap) return;
+        const bars = wrap.children;
+        const lit = Math.round((pct / 100) * bars.length);
+        for (let i = 0; i < bars.length; i++) bars[i].style.opacity = i < lit ? "1" : "0.4";
+      }
+
+      window.toggleVoicePlay = function (mid, rid) {
+        const m = st.chats[rid] && st.chats[rid][mid];
+        if (!m || !m.audio) return;
+        if (window._ppwAudioMid === mid && window._ppwAudioObj) {
+          const btn = document.getElementById("aud-btn-" + mid);
+          if (!window._ppwAudioObj.paused) {
+            window._ppwAudioObj.pause();
+            if (btn) btn.textContent = "▶";
+          } else {
+            window._ppwAudioObj.play().catch(() => {});
+            if (btn) btn.textContent = "⏸";
+          }
+          return;
+        }
+        if (window._ppwAudioObj) {
+          try { window._ppwAudioObj.pause(); } catch (e) {}
+          const oldBtn = document.getElementById("aud-btn-" + window._ppwAudioMid);
+          if (oldBtn) oldBtn.textContent = "▶";
+          paintWave(window._ppwAudioMid, 0);
+        }
+        const audio = new Audio(m.audio);
+        window._ppwAudioObj = audio;
+        window._ppwAudioMid = mid;
+        const btn = document.getElementById("aud-btn-" + mid);
+        const timeEl = document.getElementById("aud-time-" + mid);
+        if (btn) btn.textContent = "⏸";
+
+        audio.ontimeupdate = () => {
+          const cur = audio.currentTime || 0;
+          const total = Number(m.audioDur || window._ppwDurCache[mid] || (isFinite(audio.duration) && audio.duration < 600 ? audio.duration : 0));
+          if (total > 0) {
+            if (timeEl) timeEl.textContent = fmtS(Math.max(0, Math.ceil(total - cur)));
+            paintWave(mid, Math.min(100, (cur / total) * 100));
+          } else if (timeEl) {
+            timeEl.textContent = fmtS(cur);
+          }
+        };
+        audio.onended = () => {
+          const total = Number(m.audioDur || window._ppwDurCache[mid] || 0);
+          if (btn) btn.textContent = "▶";
+          paintWave(mid, 0);
+          if (timeEl && total > 0) timeEl.textContent = fmtS(total);
+          window._ppwAudioMid = null;
+        };
+        audio.play().catch(() => { if (btn) btn.textContent = "▶"; });
+      };
+
+      // 4. REACTIONS + FORWARD + SWIPE REPLY
+      window.reactToMsg = function (rid, mid, emoji) {
+        const m = st.chats[rid] && st.chats[rid][mid];
+        if (!m || !st.me) return;
+        if (!m.reactions || typeof m.reactions !== "object") m.reactions = {};
+        if (m.reactions[st.me.id] === emoji) {
+          delete m.reactions[st.me.id];
+          fbDel(`chats/${rid}/${mid}/reactions/${st.me.id}`).catch(() => {});
+        } else {
+          m.reactions[st.me.id] = emoji;
+          playSong(emoji === "❤️" ? "love" : "like");
+          fbPut(`chats/${rid}/${mid}/reactions/${st.me.id}`, emoji).catch(() => {});
+        }
+        const bar = document.getElementById("msgActionBar");
+        if (bar) bar.innerHTML = "";
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+      };
+
+      window.setReplyTarget = function (rid, mid) {
+        const m = st.chats[rid] && st.chats[rid][mid];
+        if (!m || m.deletedForAll) return;
+        st.replyTarget = {
+          id: m.id,
+          senderId: m.senderId,
+          senderName: m.senderId === st.me.id ? "yourself" : uInfo(m.senderId).name,
+          text: (m.text || "").slice(0, 100),
+          image: m.image ? "1" : "",
+          audio: m.audio ? "1" : ""
+        };
+        const bar = document.getElementById("msgActionBar");
+        if (bar) bar.innerHTML = "";
+        let rBar = document.getElementById("ppwReplyBar");
+        const anchor = document.getElementById("chatAttachPreview");
+        if (!rBar && anchor) {
+          rBar = document.createElement("div");
+          rBar.id = "ppwReplyBar";
+          rBar.className = "px-3.5 py-2 bg-[#0f172a] border-t border-slate-700/80 flex items-center justify-between gap-2";
+          anchor.insertAdjacentElement("beforebegin", rBar);
+        }
+        if (rBar) {
+          const prev = st.replyTarget.audio ? "🎙️ အသံမက်ဆေ့ချ်" : (st.replyTarget.image ? "🖼️ ဓာတ်ပုံ" : (st.replyTarget.text || ""));
+          rBar.classList.remove("hidden");
+          rBar.innerHTML = `<div class="min-w-0 flex-1 border-l-2 border-emerald-400 pl-2.5"><div class="text-xs font-bold text-emerald-300 truncate">Replying to ${esc(st.replyTarget.senderName)}</div><div class="text-xs text-slate-300 truncate">${esc(prev)}</div></div><button type="button" onclick="st.replyTarget=null;this.parentElement.remove()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 text-xs font-bold shrink-0">✕</button>`;
+        }
+        playSong("like");
+        const inp = document.getElementById("msgInp");
+        if (inp) inp.focus();
+      };
+
+      openDeleteMsgMenu = function (mid) {
+        if (!st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const m = (st.chats[rid] || {})[mid];
+        const bar = document.getElementById("msgActionBar");
+        if (!m || !bar || m.deletedForAll) return;
+        const myRx = (m.reactions && m.reactions[st.me.id]) || "";
+        bar.innerHTML = `<div class="px-3 py-2.5 bg-[#0f172a] border-t border-slate-700/90 space-y-2">
+          <div class="flex items-center justify-between gap-1 bg-slate-900 border border-slate-700/80 rounded-full px-2.5 py-1.5">
+            ${MSG_RX.map(ic => `<button type="button" onclick="reactToMsg('${rid}','${mid}','${ic}')" class="w-10 h-10 rounded-full flex items-center justify-center text-2xl ${myRx === ic ? "bg-emerald-600/40 ring-2 ring-emerald-400" : ""}">${ic}</button>`).join("")}
+          </div>
+          <div class="flex items-center justify-between gap-1.5 text-xs">
+            <button type="button" onclick="setReplyTarget('${rid}','${mid}')" class="px-3 py-2 rounded-xl bg-emerald-600/25 border border-emerald-500/40 text-emerald-300 font-bold">↩️ Reply</button>
+            <button type="button" onclick="openForwardModal('${rid}','${mid}')" class="flex-1 py-2 rounded-xl bg-sky-600/20 border border-sky-500/40 text-sky-300 font-bold">↪️ Forward</button>
+            <button type="button" onclick="deleteForMe('${mid}')" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-200 font-bold">ဖျက်</button>
+            ${m.senderId === st.me.id ? `<button type="button" onclick="deleteForEveryone('${mid}')" class="px-3 py-2 rounded-xl bg-rose-600/80 text-white font-bold">All</button>` : ""}
+            <button type="button" onclick="document.getElementById('msgActionBar').innerHTML=''" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 font-bold">✕</button>
+          </div>
+        </div>`;
+      };
+
+      window.openForwardModal = function (srcRid, mid) {
+        const m = st.chats[srcRid] && st.chats[srcRid][mid];
+        if (!m) return;
+        const bar = document.getElementById("msgActionBar");
+        if (bar) bar.innerHTML = "";
+        const targets = Object.values(st.users || {}).filter(u => u && u.id !== st.me.id && !isBlockedPair(u.id));
+        const old = document.getElementById("ppwForwardOverlay");
+        if (old) old.remove();
         const ov = document.createElement("div");
-        ov.id = "ppwDotsMenu";
-        ov.className = "fixed inset-0 z-[75] bg-black/75 flex items-end sm:items-center justify-center p-3";
+        ov.id = "ppwForwardOverlay";
+        ov.className = "fixed inset-0 z-[65] bg-black/85 flex items-end sm:items-center justify-center p-3";
         ov.onclick = () => ov.remove();
-        ov.innerHTML = `
-          <div onclick="event.stopPropagation()" class="w-full max-w-sm bg-[#0f172a] border border-slate-700 rounded-3xl p-3 space-y-1.5 shadow-2xl animate-pop">
-            <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-2"></div>
-            ${own ? `
-              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof openEditPostModal==='function')openEditPostModal('${pid}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-white flex items-center gap-3"><span>✏️</span><span>ပို့စ်ပြင်ဆင်မည်</span></button>
-              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof toggleSold==='function')toggleSold('${pid}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-amber-300 flex items-center gap-3"><span>🏷️</span><span>${p.sold ? "ပြန်ရောင်းမည် (Unsold)" : "ရောင်းပြီး (Sold) မှတ်မည်"}</span></button>
-              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof delPost==='function')delPost('${pid}')" class="w-full p-3 rounded-2xl hover:bg-rose-950/60 text-left text-sm font-bold text-rose-400 flex items-center gap-3"><span>🗑️</span><span>ပို့စ်ဖျက်မည်</span></button>
-            ` : `
-              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();openUserProfile('${p.authorId}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-white flex items-center gap-3"><span>👤</span><span>Profile ကြည့်မည်</span></button>
-              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof openChat==='function')openChat('${p.authorId}');else openUserProfile('${p.authorId}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-emerald-400 flex items-center gap-3"><span>💬</span><span>မက်ဆေ့ချ် ပို့မည်</span></button>
-            `}
-            <button type="button" onclick="document.getElementById('ppwDotsMenu').remove()" class="w-full p-2.5 rounded-2xl bg-slate-800/80 text-center text-xs font-bold text-slate-300 mt-1">ပိတ်မည်</button>
-          </div>`;
+        ov.innerHTML = `<div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-sky-500/40 w-full max-w-md rounded-3xl p-4 space-y-3 max-h-[80vh] flex flex-col">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800"><h3 class="text-base font-bold text-sky-300">↪️ Forward ပို့ရန်</h3><button onclick="document.getElementById('ppwForwardOverlay').remove()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button></div>
+          <div class="flex-1 overflow-y-auto space-y-2">${targets.map(u => `<div class="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-2.5"><div class="flex items-center gap-2.5 min-w-0">${avatar(u, "w-9 h-9 text-xs", true, false)}<span class="text-sm font-bold text-white truncate">${esc(u.name)}</span></div><button type="button" onclick="sendForwardTo('${srcRid}','${mid}','${u.id}',this)" class="px-3.5 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold">ပို့</button></div>`).join("")}</div>
+        </div>`;
         document.body.appendChild(ov);
       };
 
-      const _origPostCardFB = postCard;
+      window.sendForwardTo = async function (srcRid, mid, targetUid, btnEl) {
+        const src = st.chats[srcRid] && st.chats[srcRid][mid];
+        if (!src || !st.me) return;
+        if (btnEl) { btnEl.disabled = true; btnEl.textContent = "✓"; }
+        const tRid = roomId(st.me.id, targetUid);
+        const nMid = `M-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const fwd = { id: nMid, senderId: st.me.id, text: src.text || "", image: src.image || "", audio: src.audio || "", audioDur: Number(src.audioDur || 0), forwarded: true, seenAt: 0, deletedFor: {}, deletedForAll: false, createdAt: Date.now() };
+        if (!st.chats[tRid]) st.chats[tRid] = {};
+        st.chats[tRid][nMid] = { ...fwd, _status: "sent" };
+        await fbPut(`chats/${tRid}/${nMid}`, fwd).catch(() => {});
+        notify(targetUid, "က မက်ဆေ့ချ် Forward ပို့လိုက်သည် ↪️", "", "message");
+        toast("✓ Forward ပို့ပြီးပါပြီ");
+      };
+
+      function bindSwipeReply() {
+        const box = document.getElementById("msgBox");
+        if (!box || box.dataset.swipeBound) return;
+        box.dataset.swipeBound = "1";
+        let sx = 0, sy = 0, dx = 0, bub = null, mid = "";
+        box.addEventListener("touchstart", (e) => {
+          const t = e.touches && e.touches[0], b = e.target && e.target.closest("[data-mid]");
+          if (!t || !b) { bub = null; return; }
+          sx = t.clientX; sy = t.clientY; dx = 0; bub = b; mid = b.dataset.mid || "";
+          bub.style.transition = "none";
+        }, { passive: true });
+        box.addEventListener("touchmove", (e) => {
+          if (!bub || !e.touches || !e.touches[0]) return;
+          const t = e.touches[0], cx = t.clientX - sx, cy = t.clientY - sy;
+          if (cx > 10 && Math.abs(cx) > Math.abs(cy) * 1.3) {
+            dx = Math.min(58, cx);
+            bub.style.transform = `translateX(${dx}px)`;
+          }
+        }, { passive: true });
+        box.addEventListener("touchend", () => {
+          if (!bub) return;
+          bub.style.transition = "transform 0.15s ease-out";
+          bub.style.transform = "translateX(0px)";
+          if (dx >= 40 && mid && st.chatUid) setReplyTarget(roomId(st.me.id, st.chatUid), mid);
+          bub = null; mid = ""; dx = 0;
+        }, { passive: true });
+      }
+
+      renderMsgs = function () {
+        const box = document.getElementById("msgBox"); if (!box || !st.chatUid) return;
+        bindSwipeReply();
+        const rid = roomId(st.me.id, st.chatUid);
+        mergeRoomSafe(rid, null);
+        const ms = Object.values(st.chats[rid] || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const sig = ms.map(m => `${m.id}_${m._status || "sent"}_${m.seenAt ? 1 : 0}_${m.deletedForAll ? 1 : 0}_${m.reactions ? Object.values(m.reactions).sort().join("") : ""}`).join("|");
+        if (sig !== st.lastMsgHtmlSig) {
+          st.lastMsgHtmlSig = sig;
+          box.innerHTML = ms.length ? ms.map(m => {
+            const me = m.senderId === st.me.id;
+            const isSticker = !m.deletedForAll && !m.image && !m.audio && !m.replyTo && STICKER_ICONS.includes((m.text || "").trim());
+            let tick = "";
+            if (me) {
+              if (m._status === "sending") tick = `<span class="text-emerald-100/80 text-[10px]">⏳</span>`;
+              else if (m._status === "queued") tick = `<span class="text-amber-200 text-[10px]">🕒</span>`;
+              else if (m._status === "failed") tick = `<button type="button" onclick="event.stopPropagation();retryChatMsg('${rid}','${m.id}')" class="text-rose-200 underline text-[10px] font-bold">⚠️ ပြန်ပို့</button>`;
+              else if (m.seenAt) tick = `<span class="text-sky-200 font-bold">✓✓</span>`;
+              else tick = `<span class="text-emerald-200/90 font-bold">✓</span>`;
+            }
+            let audioHtml = "";
+            if (m.audio) {
+              const dur = Number(m.audioDur || window._ppwDurCache[m.id] || 0);
+              const barsHtml = WAVE_H.map(h => `<span class="w-[3px] rounded-full bg-white" style="height:${Math.round(h * 0.26)}px;opacity:0.4"></span>`).join("");
+              audioHtml = `<div onclick="event.stopPropagation();toggleVoicePlay('${m.id}','${rid}')" class="flex items-center gap-2.5 py-0.5 min-w-[215px]">
+                <button id="aud-btn-${m.id}" type="button" class="w-9 h-9 rounded-full bg-black/25 text-white flex items-center justify-center text-sm font-bold shrink-0 pl-0.5">▶</button>
+                <div id="aud-wave-${m.id}" class="flex-1 flex items-center justify-between gap-[2px] h-7 px-1">${barsHtml}</div>
+                <span id="aud-time-${m.id}" class="text-xs font-mono font-bold text-white/95 shrink-0 min-w-[34px] text-right">${dur > 0 ? fmtS(dur) : "0:01"}</span>
+              </div>`;
+            }
+            const replyHtml = (m.replyTo && !m.deletedForAll)
+              ? `<div class="mb-1 px-2.5 py-1 rounded-xl ${me ? "bg-black/20 border-l-2 border-emerald-200" : "bg-slate-800/90 border-l-2 border-sky-400"} text-xs"><div class="font-bold truncate">↩️ ${esc(m.replyTo.senderName || "")}</div><div class="opacity-80 truncate">${esc(m.replyTo.audio ? "🎙️ အသံ" : (m.replyTo.image ? "🖼️ ပုံ" : (m.replyTo.text || "")))}</div></div>`
+              : "";
+            const rxVals = m.reactions ? Object.values(m.reactions).filter(Boolean) : [];
+            const rxBadge = rxVals.length
+              ? `<div class="absolute -bottom-3 ${me ? "left-2" : "right-2"} px-1.5 py-0.5 rounded-full bg-[#1e293b] border border-slate-600 text-xs leading-none">${[...new Set(rxVals)].slice(0, 3).join("")}${rxVals.length > 1 ? `<span class="text-[10px] text-slate-300 ml-0.5">${rxVals.length}</span>` : ""}</div>`
+              : "";
+            return `<div class="flex items-end ${me ? "justify-end" : "justify-start"} ${rxVals.length ? "mb-3.5" : ""}"><div data-mid="${m.id}" onclick="openDeleteMsgMenu('${m.id}')" class="relative cursor-pointer ${isSticker ? "text-6xl py-1 px-2" : `max-w-[85%] px-3.5 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">${m.forwarded && !m.deletedForAll ? `<div class="text-[10px] opacity-80 font-bold">↪️ Forwarded</div>` : ""}${replyHtml}${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${audioHtml}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}${me ? `<div class="text-[11px] text-right leading-none pt-0.5">${tick}</div>` : ""}${rxBadge}</div></div>`;
+          }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+          box.scrollTop = box.scrollHeight;
+        }
+        renderTypingBanner();
+      };
+
+      // 5. FRIENDS-ONLY @MENTION + THREADED COMMENT REPLY + POST NOTI JUMP
+      window.pickPostMentionMaster = function (uid, name) {
+        const ta = document.getElementById("postTxt"), box = document.getElementById("ppwMentionBoxM");
+        if (!ta) return;
+        const pos = ta.selectionStart || ta.value.length;
+        ta.value = ta.value.slice(0, pos).replace(/@([^\s@]*)$/, `@${name} `) + ta.value.slice(pos);
+        st.postMentions[name] = uid;
+        if (box) box.classList.add("hidden");
+        playSong("like");
+        ta.focus();
+      };
+
+      const _baseOpenCompM = openComposerModal;
+      openComposerModal = function () {
+        const r = _baseOpenCompM.apply(this, arguments);
+        setTimeout(() => {
+          const ta = document.getElementById("postTxt");
+          if (!ta || ta.dataset.mReady) return;
+          ta.dataset.mReady = "1";
+          st.postMentions = {};
+          const box = document.createElement("div");
+          box.id = "ppwMentionBoxM";
+          box.className = "hidden bg-slate-900 border border-sky-500/40 rounded-2xl p-2 space-y-1 max-h-44 overflow-y-auto";
+          ta.insertAdjacentElement("afterend", box);
+          const check = () => {
+            const m = ta.value.slice(0, ta.selectionStart || 0).match(/@([^\s@]*)$/);
+            if (!m) { box.classList.add("hidden"); return; }
+            const kw = (m[1] || "").trim().toLowerCase();
+            const fIds = Array.isArray(st.me.friends) ? st.me.friends : [];
+            const list = fIds.filter(id => !isBlockedPair(id)).map(id => uInfo(id)).filter(u => !kw || (u.name || "").toLowerCase().includes(kw));
+            box.innerHTML = list.length ? list.slice(0, 8).map(u => `<button type="button" onclick="pickPostMentionMaster('${u.id}','${esc(u.name).replace(/'/g, "\\'")}')" class="w-full p-2 rounded-xl hover:bg-slate-800 flex items-center gap-2.5 text-left">${avatar(u, "w-8 h-8 text-xs", true, false)}<span class="text-sm font-bold text-white truncate">${esc(u.name)}</span></button>`).join("") : `<div class="text-xs text-slate-400 px-2 py-1.5">Friend ဖြစ်ပြီးသားသူများသာ Mention ခေါ်နိုင်သည်</div>`;
+            box.classList.remove("hidden");
+          };
+          ta.addEventListener("input", check);
+          ta.addEventListener("keyup", check);
+        }, 40);
+        return r;
+      };
+
+      window.startCmtReply = function (pid, parentId, uid, name) {
+        st.cmtReply[pid] = { parentId, replyToUid: uid, replyToName: name };
+        safeRender(true);
+        setTimeout(() => { const i = document.getElementById("ci-" + pid); if (i) i.focus(); }, 40);
+      };
+      window.cancelCmtReply = function (pid) { delete st.cmtReply[pid]; safeRender(true); };
+
+      addCmt = async function (id) {
+        const inp = document.getElementById("ci-" + id);
+        if (!inp) return;
+        const text = inp.value.trim();
+        if (!text) return;
+        const p = st.posts.find(x => x.id === id);
+        if (!p) return;
+        if (!p.comments) p.comments = {};
+        const rep = st.cmtReply[id] || null;
+        const cid = "C-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        const c = { id: cid, authorId: st.me.id, text, parentId: rep ? rep.parentId : "", replyToUid: rep ? rep.replyToUid : "", replyToName: rep ? rep.replyToName : "", createdAt: Date.now() };
+        p.comments[cid] = c;
+        inp.value = "";
+        delete st.cmtReply[id];
+        playSong("notif");
+        saveFastCache();
+        safeRender(true);
+        if (rep && rep.replyToUid && rep.replyToUid !== st.me.id) notify(rep.replyToUid, "က မှတ်ချက် Reply ပြန်သည်: " + text.slice(0, 20), id, "comment");
+        if (p.authorId !== st.me.id && (!rep || rep.replyToUid !== p.authorId)) notify(p.authorId, "က မှတ်ချက်ရေးခဲ့သည်: " + text.slice(0, 20), id, "comment");
+        await fbPut(`posts/${id}/comments/${cid}`, c).catch(() => {});
+      };
+
+      const _basePostCardM = postCard;
       postCard = function (p) {
-        if (!p || !st.me) return _origPostCardFB(p);
-        const u = uInfo(p.authorId);
-        const own = p.authorId === st.me.id;
-        const isFri = Array.isArray(st.me.friends) && st.me.friends.includes(p.authorId);
-
-        const addFriHtml = (!own && !isFri)
-          ? `<span class="text-slate-500 mx-1">•</span><button type="button" onclick="event.stopPropagation();quickAddFriendFromPost('${p.authorId}',this)" class="text-sky-400 hover:text-sky-300 text-sm font-bold shrink-0">Add friend</button>`
-          : "";
-
-        const soldPill = p.sold
-          ? `<span class="ml-1.5 px-1.5 py-0.5 rounded bg-rose-600/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold">Sold</span>`
-          : "";
-
-        let caption = esc(p.text || "");
+        let html = _basePostCardM(p);
+        if (!p || !p.id) return html;
+        html = html.replace("<article ", `<article id="post-card-${p.id}" `);
         if (p.mentions && typeof p.mentions === "object") {
           Object.entries(p.mentions).forEach(([name, uid]) => {
             const sn = esc(name);
-            caption = caption.split("@" + sn).join(`<span onclick="event.stopPropagation();openUserProfile('${uid}')" class="text-sky-400 font-bold cursor-pointer">@${sn}</span>`);
+            html = html.split("@" + sn).join(`<span onclick="event.stopPropagation();openUserProfile('${uid}')" class="text-sky-400 font-bold cursor-pointer">@${sn}</span>`);
           });
         }
+        if (!st.openCmt[p.id]) return html;
+        const marker = `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 rounded-b-2xl space-y-2.5">`;
+        const idx = html.lastIndexOf(marker);
+        if (idx === -1) return html;
 
-        const mediaHtml = p.video
-          ? `<video src="${p.video}" controls playsinline class="w-full max-h-[520px] bg-black object-contain"></video>`
-          : (p.image ? `<img onclick="if(typeof openImageViewer==='function')openImageViewer(this.src)" src="${p.image}" class="w-full max-h-[520px] object-cover bg-slate-950 cursor-zoom-in" />` : "");
+        const allC = p.comments ? Object.values(p.comments).filter(c => c && !isBlockedPair(c.authorId)).sort((a, b) => a.createdAt - b.createdAt) : [];
+        const tops = allC.filter(c => !c.parentId || !p.comments[c.parentId]);
+        const kids = {};
+        allC.forEach(c => { if (c.parentId && p.comments[c.parentId]) { (kids[c.parentId] = kids[c.parentId] || []).push(c); } });
 
-        const origHtml = _origPostCardFB(p);
-        const rxCount = (typeof getReactionList === "function") ? getReactionList(p).length : 0;
-        const cmtCount = p.comments ? Object.keys(p.comments).length : 0;
-        const myRx = (typeof userReaction === "function") ? userReaction(p) : "";
-
-        const footerHtml = `
-          <div class="px-3.5 py-2 flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/70">
-            <span>👍 ${rxCount} ဦး</span>
-            <span>👁️ ${p.views || 1}</span>
-          </div>
-          <div class="px-2 py-1.5 grid grid-cols-3 gap-1.5 text-sm font-bold text-slate-300">
-            <button type="button" onclick="setReaction('${p.id}','like')" class="py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-center gap-1.5 ${myRx ? "text-sky-400" : ""}"><span>👍</span><span>${rxCount || "Like"}</span></button>
-            <button type="button" onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];if(typeof safeRender==='function')safeRender(true);else render()" class="py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-center gap-1.5"><span>💬</span><span>မန့် ${cmtCount ? `(${cmtCount})` : ""}</span></button>
-            <button type="button" onclick="if(typeof sharePost==='function')sharePost('${p.id}');else toast('Link ကူးပြီးပါပြီ')" class="py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-center gap-1.5"><span>↪️</span><span>Share</span></button>
-          </div>`;
-
-        const cmtMarker = `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 rounded-b-2xl space-y-2.5">`;
-        const cmtIdx = origHtml.lastIndexOf(cmtMarker);
-        const cmtHtml = cmtIdx !== -1 ? origHtml.slice(cmtIdx).replace(/<\/article>\s*$/, "") : "";
-
-        return `
-          <article id="post-card-${p.id}" class="bg-[#0f172a] border-y sm:border border-slate-800/90 sm:rounded-2xl overflow-hidden">
-            <div class="px-3.5 pt-3 pb-2 flex items-start justify-between gap-2">
-              <div class="flex items-center gap-2.5 min-w-0">
-                <div onclick="openUserProfile('${u.id}')" class="cursor-pointer shrink-0">${avatar(u, "w-10 h-10 text-sm", true, true)}</div>
-                <div class="min-w-0">
-                  <div class="flex items-center flex-wrap leading-tight">
-                    <span onclick="openUserProfile('${u.id}')" class="text-[15px] font-bold text-white cursor-pointer truncate max-w-[170px]">${esc(u.name)}</span>
-                    <span class="ml-1">${blueBadge(u)}</span>
-                    ${addFriHtml}
-                  </div>
-                  <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                    <span>${ago(p.createdAt)}</span>
-                    <span>•</span>
-                    <span>🌐</span>
-                    ${soldPill}
-                  </div>
-                </div>
-              </div>
-              <button type="button" onclick="openPostDotsMenu('${p.id}')" class="w-9 h-9 -mr-1.5 rounded-full hover:bg-slate-800 text-slate-300 text-xl font-bold flex items-center justify-center shrink-0">⋯</button>
-            </div>
-            ${caption ? `<div class="px-3.5 pb-2.5 text-[15px] leading-relaxed text-slate-100 whitespace-pre-line">${caption}</div>` : ""}
-            ${mediaHtml}
-            ${footerHtml}
-            ${cmtHtml}
-          </article>`;
+        const drawC = (c, rootId, isR) => {
+          const cu = uInfo(c.authorId), sn = esc(cu.name).replace(/'/g, "\\'");
+          const tag = (isR && c.replyToName) ? `<span onclick="openUserProfile('${c.replyToUid}')" class="text-sky-400 font-bold cursor-pointer mr-1">@${esc(c.replyToName)}</span>` : "";
+          return `<div class="bg-[#0f172a] border border-slate-800 rounded-xl px-3 py-2 text-sm flex items-start gap-2"><div onclick="openUserProfile('${cu.id}')" class="cursor-pointer shrink-0">${avatar(cu, isR ? "w-7 h-7 text-[11px]" : "w-8 h-8 text-xs", true, true)}</div><div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><span onclick="openUserProfile('${cu.id}')" class="font-bold text-white cursor-pointer truncate">${esc(cu.name)}</span><button type="button" onclick="startCmtReply('${p.id}','${rootId}','${cu.id}','${sn}')" class="text-[11px] font-bold text-emerald-400 shrink-0">Reply</button></div><div class="mt-0.5 whitespace-pre-line">${tag}${esc(c.text)}</div><div class="text-[10px] text-slate-500">${ago(c.createdAt)}</div></div></div>`;
+        };
+        const rep = st.cmtReply[p.id];
+        return html.slice(0, idx) + `${marker}${tops.map(c => `<div class="space-y-1.5">${drawC(c, c.id, false)}${(kids[c.id] || []).length ? `<div class="ml-6 pl-2 border-l-2 border-slate-700 space-y-1.5">${kids[c.id].map(r => drawC(r, c.id, true)).join("")}</div>` : ""}</div>`).join("")}${rep ? `<div class="flex items-center justify-between px-3 py-1 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-300"><span>↩️ ${esc(rep.replyToName)} ကို Reply</span><button type="button" onclick="cancelCmtReply('${p.id}')" class="font-bold px-1">✕</button></div>` : ""}<div class="flex items-center gap-2"><input id="ci-${p.id}" type="text" placeholder="${rep ? `${esc(rep.replyToName)} ကို Reply...` : "မှတ်ချက်ရေးရန်..."}" onkeydown="if(event.key==='Enter')addCmt('${p.id}')" class="flex-1 min-w-0 bg-slate-800 text-white border border-slate-700 rounded-full px-4 py-2 text-sm"/><button onclick="addCmt('${p.id}')" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">ပို့</button></div></div></article>`;
       };
 
-      // -----------------------------------------------------------------------
-      // 2. CHAT TOPIC TABS (Separate Friends Direct Chat vs Escrow Groups)
-      // -----------------------------------------------------------------------
-      st.chatSubTab = st.chatSubTab || "direct";
-
-      window.setChatSubTab = function (tab) {
-        st.chatSubTab = tab;
-        applyChatTopicSplit();
+      notify = function (toId, text, postId = "", kind = "") {
+        if (!st.me || !toId || toId === st.me.id || isBlockedPair(toId)) return;
+        const id = "N-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        fbPut(`notifications/${toId}/${id}`, { id, fromId: st.me.id, fromName: st.me.name, text, postId: postId || "", kind: kind || "", read: false, createdAt: Date.now() }).catch(() => {});
       };
 
-      function applyChatTopicSplit() {
-        if (!st.me || st.tab !== "chat") return;
-        const root = document.getElementById("mainContent");
-        if (!root || !root.firstElementChild) return;
-
-        const wrap = root.firstElementChild;
-        const children = Array.from(wrap.children);
-        const groupNodes = [];
-        const directNodes = [];
-        let headerNode = null;
-
-        children.forEach((el, idx) => {
-          if (el.id === "ppwChatTopicBar" || el.id === "ppwEmptyGrpHint") return;
-          const txt = el.textContent || "";
-          if (idx === 0 && txt.includes("မက်ဆေ့ချ် Box")) {
-            headerNode = el;
-            return;
-          }
-          if (txt.includes("ကြားခံ Group")) groupNodes.push(el);
-          else directNodes.push(el);
-        });
-
-        const grpCount = groupNodes.filter(n => !n.textContent.includes("ကြားခံ Group များ")).length || groupNodes.length;
-
-        let bar = document.getElementById("ppwChatTopicBar");
-        if (!bar) {
-          bar = document.createElement("div");
-          bar.id = "ppwChatTopicBar";
-          bar.className = "grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 my-2";
-          if (headerNode) headerNode.insertAdjacentElement("afterend", bar);
-          else wrap.prepend(bar);
+      setReaction = function (pid, rKey) {
+        recordRealView(pid);
+        const p = st.posts.find(x => x.id === pid);
+        if (!p) return;
+        if (!p.reactions) p.reactions = {};
+        REACTIONS.forEach(r => { if (!p.reactions[r.key]) p.reactions[r.key] = {}; });
+        const prev = userReaction(p);
+        REACTIONS.forEach(r => { if (p.reactions[r.key][st.me.id]) { delete p.reactions[r.key][st.me.id]; fbDel(`posts/${pid}/reactions/${r.key}/${st.me.id}`).catch(() => {}); } });
+        if (p.likes && p.likes[st.me.id]) { delete p.likes[st.me.id]; fbDel(`posts/${pid}/likes/${st.me.id}`).catch(() => {}); }
+        if (prev !== rKey) {
+          p.reactions[rKey][st.me.id] = true;
+          playSong(rKey);
+          const rx = REACTIONS.find(r => r.key === rKey);
+          notify(p.authorId, `က သင့်ပို့စ်ကို ${rx ? rx.icon : "👍"} Reaction ပေးလိုက်သည်`, pid, "reaction");
+          fbPut(`posts/${pid}/reactions/${rKey}/${st.me.id}`, true).catch(() => {});
         }
+        updateLiveLikeCounters();
+        saveFastCache();
+      };
 
-        const isDirect = st.chatSubTab === "direct";
-        bar.innerHTML = `
-          <button type="button" onclick="setChatSubTab('direct')" class="py-2.5 px-3 rounded-xl text-xs font-bold transition ${isDirect ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"}">
-            💬 စာတိုများ (Fri)
-          </button>
-          <button type="button" onclick="setChatSubTab('groups')" class="py-2.5 px-3 rounded-xl text-xs font-bold transition ${!isDirect ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"}">
-            🛡️ ကြားခံ Group (${grpCount})
-          </button>
-        `;
-
-        groupNodes.forEach(el => el.classList.toggle("hidden", isDirect));
-        directNodes.forEach(el => el.classList.toggle("hidden", !isDirect));
-
-        let emptyGrp = document.getElementById("ppwEmptyGrpHint");
-        if (!isDirect && groupNodes.length === 0) {
-          if (!emptyGrp) {
-            emptyGrp = document.createElement("div");
-            emptyGrp.id = "ppwEmptyGrpHint";
-            emptyGrp.className = "text-center text-slate-400 text-xs py-8 bg-[#0f172a] rounded-2xl border border-slate-800";
-            emptyGrp.textContent = "🛡️ ကြားခံ Group မရှိသေးပါ";
-            bar.insertAdjacentElement("afterend", emptyGrp);
-          }
-        } else if (emptyGrp) {
-          emptyGrp.remove();
+      window.openNotifTarget = async function (notifIdx, fallbackFromId) {
+        const list = (st.notifs || []).filter(n => n && !isBlockedPair(n.fromId));
+        const n = list[notifIdx];
+        if (!n) { if (fallbackFromId) openUserProfile(fallbackFromId); return; }
+        const txt = n.text || "";
+        const isPost = !!(n.postId || txt.includes("ပို့စ်") || txt.includes("Reaction") || txt.includes("မှတ်ချက်") || txt.includes("Reply") || txt.includes("@Mention"));
+        let target = n.postId ? st.posts.find(x => x && x.id === n.postId) : null;
+        if (!target && n.postId && navigator.onLine) {
+          const f = await fbGet(`posts/${n.postId}`).catch(() => null);
+          if (f && isValidPostObj(f)) { mergeServerPosts({ [n.postId]: f }); target = st.posts.find(x => x && x.id === n.postId); }
         }
-      }
+        if (!isPost) { if (n.fromId) openUserProfile(n.fromId); return; }
+        if (!target) { toast("ဤပို့စ်ကို ဖျက်လိုက်ပါပြီ"); return; }
+        pauseAllVideos(null);
+        pushNavStep("notifications", null);
+        st.tab = "home"; st.viewProfileUid = null; st.cat = "အားလုံး";
+        if (txt.includes("မှတ်ချက်") || txt.includes("Reply")) st.openCmt[target.id] = true;
+        updateDockHighlight(); st.lastRenderSig = ""; render();
+        setTimeout(() => {
+          const el = document.getElementById("post-card-" + target.id);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("ring-2", "ring-emerald-400");
+            setTimeout(() => el.classList.remove("ring-2", "ring-emerald-400"), 2400);
+          }
+        }, 80);
+      };
 
-      const _origRenderBundle = render;
+      const _baseRenderM = render;
       render = function () {
-        _origRenderBundle();
-        if (st.me && st.tab === "chat") {
-          applyChatTopicSplit();
-        }
-      };
-    })();
-    // =========================================================================
-    // FRIEND REQUEST SYSTEM + BOTTOM BAR FRIENDS TAB (Requests & Real Suggestions)
-    // =========================================================================
-    (function () {
-      if (window.__PPW_FRIENDS_SYSTEM__) return;
-      window.__PPW_FRIENDS_SYSTEM__ = true;
-
-      st.inReqs = st.inReqs || {};     // Incoming requests to me: { fromUid: { fromId, createdAt } }
-      st.sentReqs = st.sentReqs || JSON.parse(localStorage.getItem("ppw_sent_reqs") || "{}");
-      const saveSentReqs = () => localStorage.setItem("ppw_sent_reqs", JSON.stringify(st.sentReqs));
-
-      // 1. SYNC INCOMING FRIEND REQUESTS FROM FIREBASE
-      async function syncFriendRequests() {
-        if (!st.me || !navigator.onLine) return;
-        try {
-          const reqs = await fbGet(`friendRequests/${st.me.id}`).catch(() => null);
-          st.inReqs = (reqs && typeof reqs === "object") ? reqs : {};
-          updateFriendsDockBadge();
-          if (st.tab === "friends") renderFriendsTab();
-        } catch (e) {}
-      }
-
-      // 2. SEND / CANCEL / ACCEPT / DECLINE FRIEND REQUEST
-      window.quickAddFriendFromPost = async function (uid, btnEl) {
-        if (!st.me || !uid || uid === st.me.id) return;
-        if (Array.isArray(st.me.friends) && st.me.friends.includes(uid)) return;
-
-        // If already requested -> Cancel request
-        if (st.sentReqs[uid]) {
-          delete st.sentReqs[uid];
-          saveSentReqs();
-          await fbDel(`friendRequests/${uid}/${st.me.id}`).catch(() => {});
-          if (btnEl) {
-            btnEl.textContent = "Add friend";
-            btnEl.className = btnEl.dataset.inCard ? "text-sky-400 hover:text-sky-300 text-sm font-bold shrink-0" : "px-3.5 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold";
-          }
-          if (typeof toast === "function") toast("ခွင့်တောင်းထားမှု ပယ်ဖျက်လိုက်ပါပြီ");
-          return;
-        }
-
-        // Send new Friend Request
-        st.sentReqs[uid] = Date.now();
-        saveSentReqs();
-        await fbPut(`friendRequests/${uid}/${st.me.id}`, {
-          fromId: st.me.id,
-          fromName: st.me.name || "",
-          createdAt: Date.now()
-        }).catch(() => {});
-
-        if (typeof notify === "function") {
-          notify(uid, "က သင့်ကို Friend ဖြစ်ရန် ခွင့်တောင်းထားပါသည် 👥", "", "friend_req");
-        }
-        if (typeof playSong === "function") playSong("like");
-
-        if (btnEl) {
-          btnEl.textContent = "Requested";
-          btnEl.className = btnEl.dataset.inCard ? "text-amber-400 text-sm font-bold shrink-0" : "px-3.5 py-1.5 rounded-xl bg-slate-800 border border-amber-500/40 text-amber-300 text-xs font-bold";
-        }
-        if (typeof toast === "function") toast("✓ Friend ခွင့်တောင်းပြီးပါပြီ");
-      };
-
-      window.acceptFriendRequest = async function (fromUid) {
-        if (!st.me || !fromUid) return;
-        // Add to my friends
-        if (!Array.isArray(st.me.friends)) st.me.friends = [];
-        if (!st.me.friends.includes(fromUid)) st.me.friends.push(fromUid);
-        if (typeof saveMe === "function") saveMe();
-        await fbPut(`users/${st.me.id}/friends`, st.me.friends).catch(() => {});
-
-        // Add me to sender's friends
-        const other = (await fbGet(`users/${fromUid}`).catch(() => null)) || st.users[fromUid] || {};
-        const otherFriends = Array.isArray(other.friends) ? [...other.friends] : [];
-        if (!otherFriends.includes(st.me.id)) otherFriends.push(st.me.id);
-        await fbPut(`users/${fromUid}/friends`, otherFriends).catch(() => {});
-        if (st.users[fromUid]) st.users[fromUid].friends = otherFriends;
-
-        // Remove request
-        delete st.inReqs[fromUid];
-        await fbDel(`friendRequests/${st.me.id}/${fromUid}`).catch(() => {});
-        if (typeof notify === "function") {
-          notify(fromUid, "က သင့် Friend Request ကို လက်ခံလိုက်ပါပြီ 🎉", "", "friend_accept");
-        }
-        if (typeof playSong === "function") playSong("notif");
-        if (typeof toast === "function") toast("✓ Friend ဖြစ်သွားပါပြီ");
-        updateFriendsDockBadge();
-        renderFriendsTab();
-      };
-
-      window.declineFriendRequest = async function (fromUid) {
-        if (!st.me || !fromUid) return;
-        delete st.inReqs[fromUid];
-        await fbDel(`friendRequests/${st.me.id}/${fromUid}`).catch(() => {});
-        if (typeof toast === "function") toast("ဖျက်လိုက်ပါပြီ");
-        updateFriendsDockBadge();
-        renderFriendsTab();
-      };
-
-      // 3. REPLACE BOTTOM BAR "ရှာဖွေ" WITH "သူငယ်ချင်း" + REQUEST BADGE
-      function patchBottomBarToFriends() {
-        const navBtns = document.querySelectorAll("nav button");
-        navBtns.forEach(btn => {
-          const txt = btn.textContent || "";
-          if (txt.includes("ရှာဖွေ") || btn.dataset.tab === "search") {
-            btn.dataset.tab = "friends";
-            btn.setAttribute("onclick", "openFriendsTab()");
-            btn.classList.add("relative");
-            btn.innerHTML = `
-              <span class="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-lg relative">
-                👥
-                <span id="ppwFriBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-[10px] font-bold text-white flex items-center justify-center">0</span>
-              </span>
-              <span class="text-[11px] font-bold mt-0.5">သူငယ်ချင်း</span>
-            `;
-          }
-        });
-        updateFriendsDockBadge();
-      }
-
-      function updateFriendsDockBadge() {
-        const cnt = Object.keys(st.inReqs || {}).length;
-        const b = document.getElementById("ppwFriBadge");
-        if (!b) return;
-        b.textContent = cnt > 9 ? "9+" : cnt;
-        b.classList.toggle("hidden", cnt === 0);
-      }
-
-      window.openFriendsTab = function () {
-        st.tab = "friends";
-        st.viewProfileUid = null;
-        if (typeof updateDockHighlight === "function") updateDockHighlight();
-        renderFriendsTab();
-        syncFriendRequests();
-      };
-
-      // 4. RENDER FRIENDS TAB (Incoming Requests + Suggested Real Users with Profile Photo)
-      window.renderFriendsTab = function () {
+        _baseRenderM();
+        if (!st.me || st.tab !== "notifications") return;
         const el = document.getElementById("mainContent");
-        if (!el || !st.me) return;
-
-        const myFriends = Array.isArray(st.me.friends) ? st.me.friends : [];
-        const incomingIds = Object.keys(st.inReqs || {}).filter(id => id && id !== st.me.id && !myFriends.includes(id));
-
-        // Suggested real users: not me, not already friend, not in incoming, MUST have real profile photo (avatar)
-        const allUsers = Object.values(st.users || {}).filter(u =>
-          u && u.id && u.id !== st.me.id &&
-          !myFriends.includes(u.id) &&
-          !incomingIds.includes(u.id) &&
-          (typeof isBlockedPair !== "function" || !isBlockedPair(u.id))
-        );
-
-        const withAvatar = allUsers.filter(u => u.avatar && String(u.avatar).trim().length > 10);
-        const withoutAvatar = allUsers.filter(u => !u.avatar || String(u.avatar).trim().length <= 10);
-        const suggested = [...withAvatar, ...withoutAvatar].slice(0, 30);
-
-        el.innerHTML = `
-          <div class="p-3.5 space-y-5">
-            <!-- SECTION 1: INCOMING FRIEND REQUESTS -->
-            <div class="space-y-2.5">
-              <div class="flex items-center justify-between">
-                <h2 class="text-base font-extrabold text-white">👥 သူငယ်ချင်း ခွင့်တောင်းထားသူများ</h2>
-                <span class="text-xs font-bold text-rose-400">${incomingIds.length} ဦး</span>
-              </div>
-              ${incomingIds.length ? incomingIds.map(uid => {
-                const u = uInfo(uid);
-                return `
-                  <div class="p-3 rounded-2xl bg-[#0f172a] border border-slate-800 flex items-center gap-3">
-                    <div onclick="openUserProfile('${u.id}')" class="cursor-pointer shrink-0">${avatar(u, "w-12 h-12 text-base", true, false)}</div>
-                    <div class="flex-1 min-w-0 space-y-2">
-                      <div onclick="openUserProfile('${u.id}')" class="text-sm font-bold text-white truncate cursor-pointer">${esc(u.name)} ${blueBadge(u)}</div>
-                      <div class="flex items-center gap-2">
-                        <button type="button" onclick="acceptFriendRequest('${u.id}')" class="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">လက်ခံမည်</button>
-                        <button type="button" onclick="declineFriendRequest('${u.id}')" class="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">ဖျက်မည်</button>
-                      </div>
-                    </div>
-                  </div>`;
-              }).join("") : `<div class="p-4 rounded-2xl bg-[#0f172a] border border-slate-800 text-center text-xs text-slate-400">ခွင့်တောင်းထားသူ မရှိသေးပါ</div>`}
-            </div>
-
-            <!-- SECTION 2: SUGGESTED REAL USERS (Profile Photo Prioritized) -->
-            <div class="space-y-2.5">
-              <div class="flex items-center justify-between">
-                <h2 class="text-base font-extrabold text-white">✨ သိနိုင်မည့်သူများ (Suggested)</h2>
-                <span class="text-xs text-slate-400">${withAvatar.length} ဦး (Profile ပါ)</span>
-              </div>
-              <div class="space-y-2">
-                ${suggested.length ? suggested.map(u => {
-                  const isReq = !!st.sentReqs[u.id];
-                  return `
-                    <div class="p-3 rounded-2xl bg-[#0f172a] border border-slate-800 flex items-center justify-between gap-3">
-                      <div onclick="openUserProfile('${u.id}')" class="flex items-center gap-3 min-w-0 cursor-pointer">
-                        ${avatar(u, "w-12 h-12 text-base", true, false)}
-                        <div class="min-w-0">
-                          <div class="text-sm font-bold text-white truncate">${esc(u.name)} ${blueBadge(u)}</div>
-                          <div class="text-[11px] text-slate-400 truncate">${u.avatar ? "Profile အစစ် • " : ""}${esc(u.id)}</div>
-                        </div>
-                      </div>
-                      <button type="button" onclick="quickAddFriendFromPost('${u.id}', this)" class="${isReq ? "px-3.5 py-1.5 rounded-xl bg-slate-800 border border-amber-500/40 text-amber-300 text-xs font-bold shrink-0" : "px-3.5 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold shrink-0"}">
-                        ${isReq ? "Requested" : "+ Add friend"}
-                      </button>
-                    </div>`;
-                }).join("") : `<div class="p-4 rounded-2xl bg-[#0f172a] border border-slate-800 text-center text-xs text-slate-400">အကြံပြုရန် အသုံးပြုသူ မရှိသေးပါ</div>`}
-              </div>
-            </div>
-          </div>`;
+        if (!el) return;
+        const vis = (st.notifs || []).filter(n => n && !isBlockedPair(n.fromId));
+        el.querySelectorAll(".p-3\\.5.space-y-3 > div.cursor-pointer").forEach((row, idx) => {
+          if (vis[idx]) row.setAttribute("onclick", `openNotifTarget(${idx}, '${vis[idx].fromId}')`);
+        });
       };
-
-      // 5. HOOK POST CARD SO "Add friend" SHOWS "Requested" IF PENDING
-      const _origPostCardReq = postCard;
-      postCard = function (p) {
-        let html = _origPostCardReq(p);
-        if (!p || !st.me || p.authorId === st.me.id) return html;
-        if (st.sentReqs[p.authorId]) {
-          html = html.replace(
-            `quickAddFriendFromPost('${p.authorId}',this)" class="text-sky-400 hover:text-sky-300 text-sm font-bold shrink-0">Add friend</button>`,
-            `quickAddFriendFromPost('${p.authorId}',this)" data-in-card="1" class="text-amber-400 text-sm font-bold shrink-0">Requested</button>`
-          );
-        } else {
-          html = html.replace(
-            `quickAddFriendFromPost('${p.authorId}',this)"`,
-            `quickAddFriendFromPost('${p.authorId}',this)" data-in-card="1"`
-          );
-        }
-        return html;
-      };
-
-      // 6. HOOK RENDER & AUTO-SYNC
-      const _origRenderFri = render;
-      render = function () {
-        if (st.me && st.tab === "friends") {
-          renderFriendsTab();
-          return;
-        }
-        _origRenderFri();
-      };
-
-      setTimeout(() => {
-        patchBottomBarToFriends();
-        syncFriendRequests();
-      }, 250);
-      setInterval(() => {
-        if (st.me && !document.hidden && navigator.onLine) syncFriendRequests();
-      }, 8000);
-    })();
-    // =========================================================================
-    // FB BIG PILL BUTTONS + SHARE TO PROFILE & EXTERNAL APPS (Telegram/FB/etc.)
-    // =========================================================================
-    (function () {
-      if (window.__PPW_FB_SHARE_PILLS__) return;
-      window.__PPW_FB_SHARE_PILLS__ = true;
-
-      // 1. OPEN FACEBOOK-STYLE SHARE BOTTOM SHEET
-      window.openFbShareSheet = function (pid) {
-        const p = (st.posts || []).find(x => x && x.id === pid);
-        if (!p || !st.me) return;
-        const orig = p.sharedPost || p;
-        const u = uInfo(orig.authorId);
-
-        const old = document.getElementById("ppwShareSheet");
-        if (old) old.remove();
-
-        const ov = document.createElement("div");
-        ov.id = "ppwShareSheet";
-        ov.className = "fixed inset-0 z-[80] bg-black/80 flex items-end sm:items-center justify-center p-3";
-        ov.onclick = () => ov.remove();
-        ov.innerHTML = `
-          <div onclick="event.stopPropagation()" class="w-full max-w-md bg-[#0f172a] border border-slate-700 rounded-3xl p-4 space-y-3.5 shadow-2xl animate-pop">
-            <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto"></div>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                ${avatar(st.me, "w-10 h-10 text-sm", true, false)}
-                <div>
-                  <div class="text-sm font-bold text-white">${esc(st.me.name)}</div>
-                  <div class="text-[11px] text-slate-400">🌐 Public • မိမိ Profile သို့ Share ရန်</div>
-                </div>
-              </div>
-              <button type="button" onclick="document.getElementById('ppwShareSheet').remove()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 text-xs font-bold">✕</button>
-            </div>
-
-            <textarea id="shareCaptionInp" rows="2" placeholder="ဒီပို့စ်အကြောင်း တစ်ခုခု ရေးမလား... (မရေးလည်းရသည်)" class="w-full bg-slate-900 border border-slate-700/80 rounded-2xl p-3 text-sm text-white placeholder-slate-400"></textarea>
-
-            <div class="p-2.5 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex items-center gap-2.5">
-              ${orig.image ? `<img src="${orig.image}" class="w-12 h-12 rounded-xl object-cover shrink-0"/>` : avatar(u, "w-10 h-10 text-xs", true, false)}
-              <div class="min-w-0 flex-1">
-                <div class="font-bold text-white truncate">${esc(u.name)} ၏ ပို့စ်</div>
-                <div class="text-slate-400 truncate">${esc((orig.text || "ဓာတ်ပုံ / ဗီဒီယို ပို့စ်").slice(0, 70))}</div>
-              </div>
-            </div>
-
-            <button type="button" onclick="sharePostToMyFeed('${pid}')" class="w-full py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm flex items-center justify-center gap-2">
-              <span>🔁</span><span>မိမိ Profile ထဲ Share မည်</span>
-            </button>
-
-            <div class="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2">
-              <button type="button" onclick="sharePostExternal('${pid}')" class="py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-1.5">
-                <span>📤</span><span>Telegram / FB / Apps</span>
-              </button>
-              <button type="button" onclick="copyPostShareLink('${pid}')" class="py-2.5 px-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5">
-                <span>🔗</span><span>Link ကူးမည်</span>
-              </button>
-            </div>
-          </div>`;
-        document.body.appendChild(ov);
-      };
-
-      // 2. SHARE DIRECTLY TO OWN PROFILE / FEED
-      window.sharePostToMyFeed = async function (pid) {
-        const p = (st.posts || []).find(x => x && x.id === pid);
-        if (!p || !st.me) return;
-        const orig = p.sharedPost || p;
-        const capEl = document.getElementById("shareCaptionInp");
-        const caption = capEl ? capEl.value.trim() : "";
-
-        const newPid = "P-" + Date.now() + "-" + Math.floor(Math.random() * 999);
-        const sharedObj = {
-          id: newPid,
-          authorId: st.me.id,
-          cat: orig.cat || "အားလုံး",
-          text: caption,
-          sharedPost: {
-            id: orig.id || pid,
-            authorId: orig.authorId || "",
-            text: orig.text || "",
-            image: orig.image || "",
-            video: orig.video || "",
-            createdAt: orig.createdAt || Date.now()
-          },
-          reactions: {},
-          comments: {},
-          shares: 0,
-          views: 1,
-          createdAt: Date.now()
-        };
-
-        // Increment original post share count
-        p.shares = Number(p.shares || 0) + 1;
-        st.posts.unshift(sharedObj);
-
-        const ov = document.getElementById("ppwShareSheet");
-        if (ov) ov.remove();
-
-        if (typeof playSong === "function") playSong("upload");
-        if (typeof saveFastCache === "function") saveFastCache();
-        if (typeof safeRender === "function") safeRender(true);
-        else render();
-
-        await Promise.all([
-          fbPut(`posts/${newPid}`, sharedObj).catch(() => {}),
-          fbPut(`posts/${pid}/shares`, p.shares).catch(() => {})
-        ]);
-
-        if (orig.authorId && orig.authorId !== st.me.id && typeof notify === "function") {
-          notify(orig.authorId, "က သင့်ပို့စ်ကို Profile ထဲ Share လိုက်ပါသည် 🔁", newPid, "share");
-        }
-        if (typeof toast === "function") toast("✓ မိမိ Profile ထဲ Share ပြီးပါပြီ");
-      };
-
-      // 3. SHARE TO EXTERNAL APPS (Android Share Sheet: Telegram, FB, Lite, etc.)
-      window.sharePostExternal = async function (pid) {
-        const p = (st.posts || []).find(x => x && x.id === pid);
-        const orig = (p && p.sharedPost) || p || {};
-        const url = `${location.origin}${location.pathname}?post=${pid}`;
-        const text = `${orig.text ? orig.text.slice(0, 120) + "\n" : ""}${url}`;
-
-        const ov = document.getElementById("ppwShareSheet");
-        if (ov) ov.remove();
-
-        if (navigator.share) {
-          try {
-            await navigator.share({ title: "ဖြေးဖြေး ဝယ်", text: orig.text || "ဖြေးဖြေး ဝယ် ပို့စ်", url });
-            if (p) {
-              p.shares = Number(p.shares || 0) + 1;
-              fbPut(`posts/${pid}/shares`, p.shares).catch(() => {});
-              if (typeof safeRender === "function") safeRender(true); else render();
-            }
-            return;
-          } catch (e) {}
-        }
-        copyPostShareLink(pid);
-      };
-
-      window.copyPostShareLink = function (pid) {
-        const url = `${location.origin}${location.pathname}?post=${pid}`;
-        if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
-        const ov = document.getElementById("ppwShareSheet");
-        if (ov) ov.remove();
-        if (typeof toast === "function") toast("🔗 Link ကူးပြီးပါပြီ");
-      };
-
-      // 4. UPGRADE POST CARD: RENDER EMBEDDED SHARED POST + BIG EQUAL FB PILL BUTTONS
-      const _origPostCardPills = postCard;
-      postCard = function (p) {
-        let html = _origPostCardPills(p);
-        if (!p || !st.me) return html;
-
-        // A. Render embedded original post if this is a shared post
-        if (p.sharedPost && !html.includes("ppw-shared-embed")) {
-          const sp = p.sharedPost;
-          const su = uInfo(sp.authorId);
-          const spMedia = sp.video
-            ? `<video src="${sp.video}" controls playsinline class="w-full max-h-96 bg-black object-contain"></video>`
-            : (sp.image ? `<img onclick="if(typeof openImageViewer==='function')openImageViewer(this.src)" src="${sp.image}" class="w-full max-h-96 object-cover cursor-zoom-in"/>` : "");
-          const embedHtml = `
-            <div class="ppw-shared-embed mx-3.5 mb-2.5 rounded-2xl border border-slate-700/80 bg-slate-900/70 overflow-hidden">
-              <div class="p-3 flex items-center gap-2">
-                <div onclick="openUserProfile('${su.id}')" class="cursor-pointer shrink-0">${avatar(su, "w-8 h-8 text-xs", true, false)}</div>
-                <div class="min-w-0">
-                  <div onclick="openUserProfile('${su.id}')" class="text-xs font-bold text-white cursor-pointer truncate">${esc(su.name)} ${blueBadge(su)}</div>
-                  <div class="text-[10px] text-slate-400">${ago(sp.createdAt)} • 🌐</div>
-                </div>
-              </div>
-              ${sp.text ? `<div class="px-3 pb-2.5 text-sm text-slate-200 whitespace-pre-line">${esc(sp.text)}</div>` : ""}
-              ${spMedia}
-            </div>`;
-          const statsPos = html.indexOf(`<div class="px-3.5 py-2 flex items-center justify-between text-xs text-slate-400`);
-          if (statsPos !== -1) {
-            html = html.slice(0, statsPos) + embedHtml + html.slice(statsPos);
-          }
-        }
-
-        // B. Replace 3-column action row with Big Equal-Width FB Pill Buttons
-        const rxCount = (typeof getReactionList === "function") ? getReactionList(p).length : 0;
-        const cmtCount = p.comments ? Object.keys(p.comments).length : 0;
-        const shCount = Number(p.shares || 0);
-        const myRx = (typeof userReaction === "function") ? userReaction(p) : "";
-
-        const bigPillsHtml = `
-          <div class="px-3 py-2.5 grid grid-cols-3 gap-2">
-            <button type="button" onclick="setReaction('${p.id}','like')" class="h-11 rounded-full bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/60 flex items-center justify-center gap-2 text-[15px] font-bold transition active:scale-95 ${myRx ? "text-sky-400 border-sky-500/40" : "text-slate-200"}">
-              <span class="text-xl leading-none">👍</span><span>${rxCount || "Like"}</span>
-            </button>
-            <button type="button" onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];if(typeof safeRender==='function')safeRender(true);else render()" class="h-11 rounded-full bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/60 flex items-center justify-center gap-2 text-[15px] font-bold text-slate-200 transition active:scale-95">
-              <span class="text-xl leading-none">💬</span><span>${cmtCount || "မန့်"}</span>
-            </button>
-            <button type="button" onclick="openFbShareSheet('${p.id}')" class="h-11 rounded-full bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700/60 flex items-center justify-center gap-2 text-[15px] font-bold text-slate-200 transition active:scale-95">
-              <span class="text-xl leading-none">↪️</span><span>${shCount || "Share"}</span>
-            </button>
-          </div>`;
-
-        html = html.replace(
-          /<div class="px-2 py-1\.5 grid grid-cols-3 gap-1\.5 text-sm font-bold text-slate-300">[\s\S]*?<\/div>/,
-          bigPillsHtml
-        );
-
-        return html;
-      };
-    })();
-    // =========================================================================
-    // PRODUCTION REAL-TIME CHAT ENGINE (SSE Stream + limitToLast=40 + userChats)
-    // =========================================================================
-    (function () {
-      if (window.__PPW_PROD_CHAT_ENGINE__) return;
-      window.__PPW_PROD_CHAT_ENGINE__ = true;
-      window.__PPW_2WAY_LIVE_FIX__ = true; // Prevent old polling block from running
-
-      let _roomES = null;
-      let _inboxES = null;
-      let _activeStreamRid = "";
-
-      function canonRid(a, b) {
-        if (!a || !b) return "";
-        if (String(a).startsWith("GRP_") || String(a).startsWith("ESCROW_")) return String(a);
-        return [String(a), String(b)].sort().join("_");
-      }
-
-      // 1. Force Canonical Room ID Everywhere
-      roomId = function (a, b) { return canonRid(a, b); };
-
-      // 2. Update userChats Index for Both Sender & Receiver (Lightweight Inbox)
-      function updateUserChatIndex(rid, peerId, msgObj) {
-        if (!st.me || !rid || !peerId || !msgObj) return;
-        const preview = msgObj.audio ? "🎙️ အသံမက်ဆေ့ချ်" : (msgObj.image ? "🖼️ ဓာတ်ပုံ" : String(msgObj.text || "").slice(0, 60));
-        const now = Number(msgObj.createdAt || Date.now());
-        const myEntry = { rid, peerId, lastText: preview, lastAt: now, senderId: st.me.id };
-        const peerEntry = { rid, peerId: st.me.id, lastText: preview, lastAt: now, senderId: st.me.id };
-
-        fbPut(`userChats/${st.me.id}/${rid}`, myEntry).catch(() => {});
-        if (!String(rid).startsWith("GRP_") && !String(rid).startsWith("ESCROW_")) {
-          fbPut(`userChats/${peerId}/${rid}`, peerEntry).catch(() => {});
-        }
-      }
-
-      // 3. Fast Non-Blocking Message Send + Index Update
-      if (typeof pushMessageToServer === "function") {
-        const _origPushProd = pushMessageToServer;
-        pushMessageToServer = async function (rid, mid) {
-          const isGrp = String(rid).startsWith("GRP_") || String(rid).startsWith("ESCROW_");
-          const targetRid = (!isGrp && st.me && st.chatUid) ? canonRid(st.me.id, st.chatUid) : rid;
-          const m = (pendingChats[rid] && pendingChats[rid][mid]) || (st.chats[rid] && st.chats[rid][mid]) || (st.chats[targetRid] && st.chats[targetRid][mid]);
-
-          if (targetRid !== rid && m) {
-            if (!st.chats[targetRid]) st.chats[targetRid] = {};
-            st.chats[targetRid][mid] = m;
-            if (!pendingChats[targetRid]) pendingChats[targetRid] = {};
-            pendingChats[targetRid][mid] = m;
-            if (pendingChats[rid]) delete pendingChats[rid][mid];
-          }
-
-          await _origPushProd(targetRid, mid);
-          if (m && !isGrp && st.chatUid) {
-            updateUserChatIndex(targetRid, st.chatUid, m);
-          }
-        };
-      }
-
-      // 4. Real-Time SSE Stream for Active Chat Room (Last 40 Messages Only)
-      function closeProdRoomStream() {
-        if (_roomES) {
-          try { _roomES.close(); } catch (e) {}
-          _roomES = null;
-        }
-        _activeStreamRid = "";
-      }
-
-      function applyStreamEvent(rid, isGroup, path, data) {
-        if (!st.chats) st.chats = {};
-        if (!st.chats[rid]) st.chats[rid] = {};
-        let hasNewIncoming = false;
-
-        if (path === "/") {
-          if (data && typeof data === "object") {
-            const prevKeys = Object.keys(st.chats[rid]).length;
-            Object.entries(data).forEach(([mid, m]) => {
-              if (!m || typeof m !== "object") return;
-              if (!st.chats[rid][mid] && prevKeys > 0 && m.senderId !== st.me.id) hasNewIncoming = true;
-              st.chats[rid][mid] = { ...(st.chats[rid][mid] || {}), ...m, id: m.id || mid, _status: "sent" };
-            });
-          }
-        } else {
-          const parts = path.split("/").filter(Boolean);
-          const mid = parts[0];
-          if (!mid) return;
-
-          if (parts.length === 1) {
-            if (data === null) {
-              delete st.chats[rid][mid];
-            } else if (typeof data === "object") {
-              if (!st.chats[rid][mid] && data.senderId !== st.me.id) hasNewIncoming = true;
-              st.chats[rid][mid] = { ...(st.chats[rid][mid] || {}), ...data, id: data.id || mid, _status: "sent" };
-            }
-          } else if (st.chats[rid][mid]) {
-            // Nested update (e.g., reactions, seenAt, deletedForAll)
-            let cur = st.chats[rid][mid];
-            for (let i = 1; i < parts.length - 1; i++) {
-              if (!cur[parts[i]] || typeof cur[parts[i]] !== "object") cur[parts[i]] = {};
-              cur = cur[parts[i]];
-            }
-            const leaf = parts[parts.length - 1];
-            if (data === null) delete cur[leaf];
-            else cur[leaf] = data;
-          }
-        }
-
-        if (hasNewIncoming && typeof playSong === "function") playSong("message");
-        st.lastMsgHtmlSig = "";
-        if (isGroup && typeof renderGroupMsgs === "function") renderGroupMsgs();
-        else if (!isGroup && typeof renderMsgs === "function") renderMsgs();
-      }
-
-      openRoomStream = function (rid, isGroup) {
-        const finalRid = (!isGroup && st.me && st.chatUid) ? canonRid(st.me.id, st.chatUid) : rid;
-        if (!finalRid || !navigator.onLine) return;
-        if (_activeStreamRid === finalRid && _roomES && _roomES.readyState !== 2) return;
-
-        closeProdRoomStream();
-        _activeStreamRid = finalRid;
-
-        // Firebase RTDB REST SSE with limitToLast=40 (Zero Polling, Low Bandwidth)
-        const streamUrl = `${DB}/chats/${finalRid}.json?orderBy=%22$key%22&limitToLast=40`;
-        try {
-          const es = new EventSource(streamUrl);
-          _roomES = es;
-
-          es.addEventListener("put", (ev) => {
-            try {
-              const msg = JSON.parse(ev.data);
-              applyStreamEvent(finalRid, isGroup, msg.path || "/", msg.data);
-            } catch (e) {}
-          });
-
-          es.addEventListener("patch", (ev) => {
-            try {
-              const msg = JSON.parse(ev.data);
-              if (msg.data && typeof msg.data === "object") {
-                Object.entries(msg.data).forEach(([k, v]) => {
-                  const p = msg.path === "/" ? `/${k}` : `${msg.path}/${k}`;
-                  applyStreamEvent(finalRid, isGroup, p, v);
-                });
-              }
-            } catch (e) {}
-          });
-
-          es.onerror = () => {
-            if (_roomES === es && es.readyState === 2) {
-              setTimeout(() => {
-                if (_activeStreamRid === finalRid && navigator.onLine) openRoomStream(finalRid, isGroup);
-              }, 3000);
-            }
-          };
-        } catch (e) {}
-      };
-
-      const _origCloseStreamProd = typeof closeRoomStream === "function" ? closeRoomStream : null;
-      closeRoomStream = function () {
-        closeProdRoomStream();
-        if (_origCloseStreamProd) _origCloseStreamProd();
-      };
-
-      // 5. Real-Time Inbox Stream (Reads ONLY userChats/{myId}, Never Full /chats)
-      function startInboxStream() {
-        if (!st.me || !navigator.onLine || _inboxES) return;
-        try {
-          const es = new EventSource(`${DB}/userChats/${st.me.id}.json`);
-          _inboxES = es;
-
-          const handleInbox = (data) => {
-            if (!data || typeof data !== "object") return;
-            if (!st.chats) st.chats = {};
-            Object.entries(data).forEach(([rk, info]) => {
-              if (!info || typeof info !== "object") return;
-              if (!st.chats[rk] || !Object.keys(st.chats[rk]).length) {
-                st.chats[rk] = {
-                  _preview: {
-                    id: "_preview",
-                    senderId: info.senderId || info.peerId || "",
-                    text: info.lastText || "",
-                    createdAt: Number(info.lastAt || Date.now()),
-                    _status: "sent"
-                  }
-                };
-              }
-            });
-            if (st.tab === "chat" && !st.chatUid && typeof render === "function") {
-              st.lastRenderSig = "";
-              render();
-            }
-          };
-
-          es.addEventListener("put", (ev) => {
-            try {
-              const msg = JSON.parse(ev.data);
-              if (msg.path === "/") handleInbox(msg.data);
-              else if (msg.data && typeof msg.data === "object") {
-                const rk = msg.path.replace(/^\//, "").split("/")[0];
-                handleInbox({ [rk]: msg.data });
-              }
-            } catch (e) {}
-          });
-
-          es.onerror = () => {
-            if (_inboxES === es && es.readyState === 2) {
-              _inboxES = null;
-              setTimeout(startInboxStream, 5000);
-            }
-          };
-        } catch (e) {}
-      }
-
-      setTimeout(startInboxStream, 400);
-      window.addEventListener("online", () => {
-        startInboxStream();
-        if (st.chatUid) openRoomStream(canonRid(st.me.id, st.chatUid), false);
-      });
     })();
 
     if (!st.me) {
@@ -3636,4 +3482,4 @@
     setInterval(() => { if (st.me && !document.hidden && navigator.onLine) sync(false); }, 12000);
   </script>
 </body>
-</html>
+  </html>
