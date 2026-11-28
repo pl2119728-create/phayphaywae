@@ -1346,6 +1346,175 @@
       if (now - (window._lastBackAt || 0) < 2000) history.back();
       else { window._lastBackAt = now; toast("ထွက်ရန် Back ခလုတ်ကို ထပ်နှိပ်ပါ"); ensureBackGuard(); }
     });
+    // =========================================================================
+    // CLEAN UPGRADE: Reel Trim/Crop + Smooth 6-Photo Upload + Swipe Gallery
+    // =========================================================================
+
+    // 1. Reel Video Trim (up to 30s) & Optional 9:16 Vertical Crop
+    window._ppwTrim = { file: null, url: null, dur: 0, start: 0, end: 30, crop916: false };
+
+    function updatePpwTrim(changed) {
+      const s = window._ppwTrim;
+      const stEl = document.getElementById("trimStart");
+      const enEl = document.getElementById("trimEnd");
+      const vid = document.getElementById("trimVid");
+      const lbl = document.getElementById("trimLbl");
+      if (!stEl || !enEl) return;
+
+      let a = parseFloat(stEl.value) || 0;
+      let b = parseFloat(enEl.value) || Math.min(30, s.dur);
+      if (changed === "start") {
+        if (b <= a + 1) b = Math.min(s.dur, a + 1);
+        if (b - a > 30) b = Math.min(s.dur, a + 30);
+      } else if (changed === "end") {
+        if (a >= b - 1) a = Math.max(0, b - 1);
+        if (b - a > 30) a = Math.max(0, b - 30);
+      }
+      s.start = Math.floor(a);
+      s.end = Math.ceil(b);
+      stEl.value = s.start;
+      enEl.value = s.end;
+      if (lbl) lbl.textContent = `✂️ ${s.start}s မှ ${s.end}s အထိ (${Math.max(1, s.end - s.start)} စက္ကန့်)`;
+      if (vid && changed) {
+        try { vid.currentTime = changed === "start" ? s.start : Math.max(s.start, s.end - 1); } catch (e) {}
+      }
+    }
+
+    async function uploadPpwTrimmedReel() {
+      const s = window._ppwTrim;
+      if (!s.file) return toast("ဗီဒီယို ပြန်ရွေးပေးပါ");
+      const cropCb = document.getElementById("trimCrop916");
+      s.crop916 = !!(cropCb && cropCb.checked);
+
+      const area = document.getElementById("reelVideoArea");
+      if (area) {
+        area.innerHTML = `<div class="p-6 rounded-2xl bg-slate-900 border border-rose-500/40 text-center space-y-2"><div class="text-2xl animate-bounce">☁️</div><div class="text-sm font-bold text-rose-300">ဗီဒီယိုဖြတ်ပြီး တင်နေပါသည်...</div><div class="text-xs text-slate-400">ခဏစောင့်ပေးပါ</div></div>`;
+      }
+      try {
+        const fd = new FormData();
+        fd.append("file", s.file);
+        fd.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok || !data.secure_url) throw new Error("Upload failed");
+
+        const parts = [];
+        if (s.start > 0 || s.end < Math.floor(s.dur) || s.dur > 30.8) {
+          parts.push(`so_${s.start}`, `eo_${Math.max(s.start + 1, s.end)}`);
+        }
+        if (s.crop916) parts.push("ar_9:16", "c_fill");
+        parts.push("q_auto", "f_auto");
+
+        st.reelVideo = data.secure_url.replace("/video/upload/", `/video/upload/${parts.join(",")}/`);
+        if (s.url) { URL.revokeObjectURL(s.url); s.url = null; }
+
+        if (area) {
+          area.innerHTML = `<div class="relative rounded-2xl overflow-hidden border border-emerald-500/50 bg-black"><video controls playsinline preload="metadata" src="${st.reelVideo}" class="w-full max-h-60 object-contain"></video><button type="button" onclick="st.reelVideo=null;openComposerModal(null,'reel')" class="absolute top-2 right-2 px-3 py-1 rounded-full bg-black/80 text-white text-xs font-bold">✕ ဖျက်</button></div>`;
+        }
+        toast(`✓ Reel ဗီဒီယို (${Math.max(1, s.end - s.start)}s) အသင့်ဖြစ်ပါပြီ — တင်မည် ကိုနှိပ်ပါ`);
+      } catch (err) {
+        toast("ဗီဒီယိုတင်မရပါ — လိုင်း/ဖိုင်ဆိုဒ် ပြန်စစ်ပေးပါ");
+        openComposerModal(null, "reel");
+      }
+    }
+
+    onPickReelVideo = function(e) {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 90 * 1024 * 1024) { e.target.value = ""; return toast("ဗီဒီယိုဖိုင်ဆိုဒ် 90MB အောက်သာ ရွေးနိုင်ပါသည်"); }
+      if (window._ppwTrim.url) URL.revokeObjectURL(window._ppwTrim.url);
+      const url = URL.createObjectURL(f), vid = document.createElement("video");
+      vid.preload = "metadata";
+      vid.onloadedmetadata = () => {
+        const dur = Math.max(1, vid.duration || 1);
+        const endInit = Math.min(30, Math.ceil(dur));
+        window._ppwTrim = { file: f, url, dur, start: 0, end: endInit, crop916: false };
+        const area = document.getElementById("reelVideoArea");
+        if (!area) return;
+        area.innerHTML = `
+          <div class="rounded-2xl overflow-hidden border border-emerald-500/40 bg-slate-950 p-3 space-y-3">
+            <video id="trimVid" controls playsinline src="${url}" class="w-full max-h-52 rounded-xl bg-black object-contain"></video>
+            <div id="trimLbl" class="text-xs font-bold text-emerald-400 text-center">✂️ 0s မှ ${endInit}s အထိ (${endInit} စက္ကန့်)</div>
+            <div class="space-y-2 text-xs text-slate-300">
+              <div><div class="mb-0.5">စမည့်နေရာ (Start)</div><input id="trimStart" type="range" min="0" max="${Math.max(1, Math.floor(dur - 1))}" step="1" value="0" oninput="updatePpwTrim('start')" class="w-full accent-emerald-500"/></div>
+              <div><div class="mb-0.5">ဆုံးမည့်နေရာ (End - အများဆုံး 30s)</div><input id="trimEnd" type="range" min="1" max="${Math.ceil(dur)}" step="1" value="${endInit}" oninput="updatePpwTrim('end')" class="w-full accent-rose-500"/></div>
+            </div>
+            <label class="flex items-center gap-2 text-xs text-slate-200 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 cursor-pointer">
+              <input id="trimCrop916" type="checkbox" class="accent-emerald-500 w-4 h-4"/>
+              <span>📱 9:16 ထောင်လိုက်အပြည့် (Reel Crop) ဖြတ်မည်</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="openComposerModal(null,'reel')" class="py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">ပြန်ရွေး</button>
+              <button type="button" onclick="uploadPpwTrimmedReel()" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">✂️ ဖြတ်ပြီး အသင့်ပြင်</button>
+            </div>
+          </div>`;
+      };
+      vid.src = url;
+    };
+
+    // 2. Reliable 6-Photo Upload (No dropped photos when picking 6 at once)
+    onPickMultiImgs = async function(e) {
+      const files = Array.from((e.target && e.target.files) || []);
+      if (!files.length) return;
+      const room = Math.max(0, 6 - st.imgs.length);
+      if (room === 0) return toast("အများဆုံး ဓာတ်ပုံ ၆ ပုံအထိသာ တင်နိုင်ပါသည်");
+      const picked = files.slice(0, room);
+      const compressOne = (f) => new Promise((resolve) => {
+        const r = new FileReader();
+        r.onload = ev => {
+          const im = new Image();
+          im.onload = () => {
+            const c = document.createElement("canvas"), mw = 720;
+            let w = im.width, h = im.height;
+            if (w > mw) { h = Math.round(h * mw / w); w = mw; }
+            c.width = w; c.height = h;
+            c.getContext("2d").drawImage(im, 0, 0, w, h);
+            resolve(c.toDataURL("image/jpeg", 0.72));
+          };
+          im.onerror = () => resolve(null);
+          im.src = ev.target.result;
+        };
+        r.onerror = () => resolve(null);
+        r.readAsDataURL(f);
+      });
+      const results = await Promise.all(picked.map(compressOne));
+      results.filter(Boolean).forEach(src => { if (st.imgs.length < 6) st.imgs.push(src); });
+      renderComposerPhotosPreview();
+      e.target.value = "";
+    };
+
+    // 3. Swipeable Full-Screen Image Gallery (No Arrow Buttons)
+    renderGalleryModal = function() {
+      const g = window._gal; if (!g) return;
+      document.getElementById("modalRoot").innerHTML = `
+        <div onclick="closeModal()" class="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-between p-4 select-none">
+          <div class="w-full max-w-lg flex items-center justify-between text-white">
+            <span class="text-sm font-bold bg-slate-800/90 px-3 py-1 rounded-full">${g.idx + 1} / ${g.imgs.length}</span>
+            <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-slate-800 text-white text-sm font-bold">✕</button>
+          </div>
+          <div id="ppwSwipeStage" onclick="event.stopPropagation()" class="w-full max-w-lg flex-1 flex items-center justify-center overflow-hidden touch-pan-y">
+            <img id="ppwSwipeImg" src="${g.imgs[g.idx]}" class="max-w-full max-h-[76vh] object-contain rounded-2xl transition-transform duration-150"/>
+          </div>
+          <div class="flex flex-col items-center gap-2 pb-2" onclick="event.stopPropagation()">
+            ${g.imgs.length > 1 ? `<div class="flex items-center gap-1.5">${g.imgs.map((_, i) => `<span class="h-1.5 rounded-full transition-all ${i === g.idx ? "w-5 bg-emerald-400" : "w-1.5 bg-slate-600"}"></span>`).join("")}</div><div class="text-[11px] text-slate-400">← လက်ဖြင့် ဘေးဆွဲပြီး ပုံပြောင်းကြည့်ပါ →</div>` : ""}
+          </div>
+        </div>`;
+
+      const stage = document.getElementById("ppwSwipeStage");
+      const imgEl = document.getElementById("ppwSwipeImg");
+      if (!stage || g.imgs.length <= 1) return;
+
+      let sx = 0, dx = 0;
+      stage.addEventListener("touchstart", (ev) => { sx = ev.touches[0].clientX; dx = 0; }, { passive: true });
+      stage.addEventListener("touchmove", (ev) => {
+        dx = ev.touches[0].clientX - sx;
+        if (imgEl) imgEl.style.transform = `translateX(${dx * 0.35}px)`;
+      }, { passive: true });
+      stage.addEventListener("touchend", () => {
+        if (imgEl) imgEl.style.transform = "";
+        if (dx < -45) { g.idx = (g.idx + 1) % g.imgs.length; renderGalleryModal(); }
+        else if (dx > 45) { g.idx = (g.idx - 1 + g.imgs.length) % g.imgs.length; renderGalleryModal(); }
+      }, { passive: true });
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
