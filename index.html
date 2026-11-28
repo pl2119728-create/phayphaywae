@@ -2403,6 +2403,364 @@
         box.scrollTop = box.scrollHeight;
       };
     })();
+    // =========================================================================
+    // CORE STABILITY UPGRADE V5:
+    // Optimistic Chat + Offline Queue + Quota-Safe Feed Cache + Pagination
+    // =========================================================================
+    (function () {
+      if (window.__PPW_STABILITY_V5__) return;
+      window.__PPW_STABILITY_V5__ = true;
+
+      const QUEUE_KEY = "ppw_chat_offline_queue_v1";
+      const FEED_PAGE_SIZE = 15;
+      st.feedLoading = false;
+      st.feedHasMore = true;
+      st.feedOldestKey = null;
+
+      // -----------------------------------------------------------------------
+      // A. QUOTA-SAFE LOCAL FEED CACHE (Prevents silent localStorage failures)
+      // -----------------------------------------------------------------------
+      saveFastCache = function () {
+        try {
+          // Strip heavy inline base64 strings > 60KB so cache NEVER exceeds 5MB quota
+          const compactPosts = (st.posts || []).slice(0, 25).map(p => {
+            if (!p) return p;
+            const copy = { ...p, video: (p.video && p.video.startsWith("http")) ? p.video : "" };
+            if (copy.image && copy.image.startsWith("data:") && copy.image.length > 60000) copy.image = "";
+            if (Array.isArray(copy.images)) {
+              copy.images = copy.images.filter(img => img && (!img.startsWith("data:") || img.length <= 60000));
+            }
+            return copy;
+          });
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            posts: compactPosts,
+            myday: (st.myday || []).slice(0, 12),
+            users: st.users || {},
+            savedAt: Date.now()
+          }));
+        } catch (e) {
+          // Fallback: save text-only posts so cold start is still instant
+          try {
+            const textOnly = (st.posts || []).slice(0, 20).map(p => ({ ...p, image: "", images: [], video: "" }));
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ posts: textOnly, myday: [], users: st.users || {}, savedAt: Date.now() }));
+          } catch (err) {}
+        }
+      };
+
+      // Deduplicate & merge posts safely without UI flicker
+      mergeServerPosts = function (poObj, appendOlder = false) {
+        if (!poObj || typeof poObj !== "object") return;
+        const map = new Map();
+        // 1. Keep existing posts (including local uploading posts)
+        (st.posts || []).forEach(p => { if (p && p.id && !st.deletedIds[p.id]) map.set(p.id, p); });
+        // 2. Merge server posts
+        const incoming = Object.values(poObj).filter(isValidPostObj);
+        incoming.forEach(p => {
+          const existing = map.get(p.id);
+          if (!existing || !existing._uploading) map.set(p.id, p);
+        });
+        const sorted = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        st.posts = sorted;
+        if (sorted.length) st.feedOldestKey = sorted[sorted.length - 1].id;
+        if (appendOlder && incoming.length < FEED_PAGE_SIZE) st.feedHasMore = false;
+        saveFastCache();
+      };
+
+      // Pagination: Load older posts on demand
+      window.loadMorePosts = async function () {
+        if (st.feedLoading || !st.feedHasMore || !st.feedOldestKey) return;
+        if (!navigator.onLine) return toast("အင်တာနက် မရှိသေးပါ (Offline)");
+        st.feedLoading = true;
+        const btn = document.getElementById("loadMorePostsBtn");
+        if (btn) { btn.disabled = true; btn.textContent = "⏳ ပို့စ်အဟောင်းများ ဆွဲနေသည်..."; }
+        try {
+          const q = `?orderBy="$key"&endAt="${encodeURIComponent(st.feedOldestKey)}"&limitToLast=${FEED_PAGE_SIZE + 1}`;
+          const older = await fbGet("posts", q);
+          if (older && typeof older === "object") {
+            delete older[st.feedOldestKey]; // Avoid duplicating boundary post
+            const count = Object.keys(older).length;
+            if (count === 0) st.feedHasMore = false;
+            else mergeServerPosts(older, true);
+          } else {
+            st.feedHasMore = false;
+          }
+        } catch (e) {
+          toast("ပို့စ်အဟောင်းများ ဆွဲမရပါ — ပြန်စမ်းပါ");
+        } finally {
+          st.feedLoading = false;
+          st.lastRenderSig = "";
+          safeRender(true);
+        }
+      };
+
+      // -----------------------------------------------------------------------
+      // B. CHAT SINGLE SOURCE OF TRUTH + IDEMPOTENT OFFLINE QUEUE
+      // -----------------------------------------------------------------------
+      function loadQueue() {
+        try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || {}; } catch (e) { return {}; }
+      }
+      function saveQueue(q) {
+        try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch (e) {}
+      }
+
+      // Merge server chat state without EVER overwriting pending/failed local messages
+      function mergeChatsSafely(serverChats) {
+        const next = (st.chats && typeof st.chats === "object") ? { ...st.chats } : {};
+        if (serverChats && typeof serverChats === "object") {
+          Object.entries(serverChats).forEach(([rid, serverRoom]) => {
+            if (!serverRoom || typeof serverRoom !== "object") return;
+            const localRoom = next[rid] ? { ...next[rid] } : {};
+            Object.entries(serverRoom).forEach(([mid, sMsg]) => {
+              if (!sMsg) return;
+              // Server confirmed message replaces optimistic state cleanly
+              localRoom[mid] = { ...sMsg, _status: "sent" };
+            });
+            next[rid] = localRoom;
+          });
+        }
+        // Re-apply queued/pending local messages so stale responses never hide them
+        const queue = loadQueue();
+        Object.entries(queue).forEach(([rid, roomQ]) => {
+          if (!next[rid]) next[rid] = {};
+          Object.entries(roomQ || {}).forEach(([mid, qMsg]) => {
+            if (next[rid][mid] && next[rid][mid]._status === "sent") {
+              // Confirmed by server -> remove from offline queue
+              delete queue[rid][mid];
+            } else {
+              next[rid][mid] = qMsg;
+            }
+          });
+          if (queue[rid] && Object.keys(queue[rid]).length === 0) delete queue[rid];
+        });
+        saveQueue(queue);
+        st.chats = next;
+      }
+
+      async function transmitQueuedMessage(rid, mid) {
+        const queue = loadQueue();
+        const m = (queue[rid] && queue[rid][mid]) || (st.chats[rid] && st.chats[rid][mid]);
+        if (!m) return;
+
+        m._status = "sending";
+        if (!st.chats[rid]) st.chats[rid] = {};
+        st.chats[rid][mid] = m;
+        if (queue[rid]) { queue[rid][mid] = m; saveQueue(queue); }
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+
+        if (!navigator.onLine) {
+          m._status = "queued";
+          if (queue[rid]) { queue[rid][mid] = m; saveQueue(queue); }
+          st.lastMsgHtmlSig = "";
+          renderMsgs();
+          return;
+        }
+
+        try {
+          const payload = { ...m };
+          delete payload._status;
+          delete payload._sending;
+          delete payload._failed;
+          // PUT to deterministic client-generated ID ensures idempotency on retry (zero duplicates)
+          const res = await fbPut(`chats/${rid}/${mid}`, payload);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          m._status = "sent";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "sent";
+          const latestQ = loadQueue();
+          if (latestQ[rid] && latestQ[rid][mid]) {
+            delete latestQ[rid][mid];
+            if (Object.keys(latestQ[rid]).length === 0) delete latestQ[rid];
+            saveQueue(latestQ);
+          }
+          if (st.chatUid) notify(st.chatUid, "က စာပို့လိုက်သည်");
+        } catch (err) {
+          m._status = "failed";
+          const latestQ = loadQueue();
+          if (!latestQ[rid]) latestQ[rid] = {};
+          latestQ[rid][mid] = m;
+          saveQueue(latestQ);
+        } finally {
+          st.lastMsgHtmlSig = "";
+          renderMsgs();
+        }
+      }
+
+      window.retryChatMsg = function (rid, mid) {
+        transmitQueuedMessage(rid, mid);
+      };
+
+      async function flushOfflineChatQueue() {
+        if (!st.me || !navigator.onLine) return;
+        const queue = loadQueue();
+        for (const [rid, roomQ] of Object.entries(queue)) {
+          for (const mid of Object.keys(roomQ || {})) {
+            await transmitQueuedMessage(rid, mid);
+          }
+        }
+      }
+
+      window.addEventListener("online", () => {
+        toast("🟢 အင်တာနက် ပြန်ချိတ်ဆက်ပြီးပါပြီ");
+        flushOfflineChatQueue();
+        if (st.me) sync(false);
+      });
+      window.addEventListener("offline", () => {
+        toast("🟠 Offline ဖြစ်နေပါသည် — Cache မှ ပြပေးနေပါသည်");
+      });
+
+      // Deterministic client ID + Optimistic UI + Offline Queue
+      sendChatPayload = async function ({ text, image, audio }) {
+        if (!st.chatUid || !st.me) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const mid = `M-${Date.now()}-${st.me.id.slice(-4)}-${Math.random().toString(36).slice(2, 6)}`;
+        const m = {
+          id: mid,
+          clientId: mid,
+          senderId: st.me.id,
+          text: text || "",
+          image: image || "",
+          audio: audio || "",
+          seenAt: 0,
+          deletedFor: {},
+          deletedForAll: false,
+          createdAt: Date.now(),
+          _status: navigator.onLine ? "sending" : "queued"
+        };
+
+        const queue = loadQueue();
+        if (!queue[rid]) queue[rid] = {};
+        queue[rid][mid] = m;
+        saveQueue(queue);
+
+        if (!st.chats[rid]) st.chats[rid] = {};
+        st.chats[rid][mid] = m;
+
+        clearChatAttach();
+        if (navigator.onLine) fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {});
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+
+        await transmitQueuedMessage(rid, mid);
+      };
+
+      // Clean renderMsgs with Sending / Queued / Failed (Retry) / Sent (✓) / Seen (✓✓)
+      renderMsgs = function () {
+        const box = document.getElementById("msgBox");
+        if (!box || !st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const ms = Object.values(st.chats[rid] || {})
+          .filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id]))
+          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+        const sig = ms.map(m => `${m.id}_${m._status || "s"}_${m.seenAt ? 1 : 0}_${m.deletedForAll ? 1 : 0}`).join("|");
+        if (sig !== st.lastMsgHtmlSig) {
+          st.lastMsgHtmlSig = sig;
+          box.innerHTML = ms.length
+            ? ms.map(m => {
+                const me = m.senderId === st.me.id;
+                const isPureSticker = !m.deletedForAll && !m.image && !m.audio && STICKER_ICONS.includes((m.text || "").trim());
+                let statusHtml = "";
+                if (me) {
+                  if (m._status === "sending") statusHtml = `<span class="text-emerald-100/80 text-[10px]">⏳ ပို့နေဆဲ...</span>`;
+                  else if (m._status === "queued") statusHtml = `<span class="text-amber-200 text-[10px]">🕒 Offline (လိုင်းရရင်ပို့မည်)</span>`;
+                  else if (m._status === "failed") statusHtml = `<button type="button" onclick="event.stopPropagation();retryChatMsg('${rid}','${m.id}')" class="text-rose-200 underline text-[10px] font-bold">⚠️ မအောင်မြင် • ပြန်ပို့ရန်</button>`;
+                  else if (m.seenAt) statusHtml = `<span class="text-sky-200 font-bold">✓✓</span>`;
+                  else statusHtml = `<span class="text-emerald-200/90 font-bold">✓</span>`;
+                }
+                return `<div class="flex items-end ${me ? "justify-end" : "justify-start"}">
+                  <div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-6xl py-1 px-2" : `max-w-[82%] px-4 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">
+                    ${m.deletedForAll
+                      ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>`
+                      : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${m.audio ? `<audio controls preload="metadata" src="${m.audio}" class="w-52 h-9"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}
+                    ${me ? `<div class="text-[11px] text-right leading-none pt-0.5">${statusHtml}</div>` : ""}
+                  </div>
+                </div>`;
+              }).join("")
+            : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+          box.scrollTop = box.scrollHeight;
+        }
+        renderTypingBanner();
+      };
+
+      // Override fastSyncChats so it NEVER overwrites st.chats with stale data
+      let v5ChatSyncBusy = false;
+      fastSyncChats = async function () {
+        if (!st.me || document.hidden || !navigator.onLine || v5ChatSyncBusy) return;
+        v5ChatSyncBusy = true;
+        try {
+          const [ch, ty] = await Promise.all([
+            fbGet("chats").catch(() => null),
+            fbGet("typing").catch(() => null)
+          ]);
+          if (ch) {
+            let ring = false;
+            Object.entries(ch).forEach(([rk, mObj]) => {
+              if (!rk.includes(st.me.id)) return;
+              Object.values(mObj || {}).forEach(m => {
+                if (m && !st.seenMsgIds[m.id]) {
+                  st.seenMsgIds[m.id] = true;
+                  if (!st.firstSync && m.senderId !== st.me.id) ring = true;
+                }
+              });
+            });
+            mergeChatsSafely(ch);
+            if (ring) playSong("message");
+          }
+          if (ty) st.typing = ty;
+
+          const uC = countUnreadChats(), cb = document.getElementById("chatBadge");
+          if (cb) { if (uC > 0) { cb.textContent = uC > 99 ? "99+" : uC; cb.classList.remove("hidden"); } else cb.classList.add("hidden"); }
+
+          if (st.chatUid) {
+            markRoomSeen(st.chatUid);
+            renderMsgs();
+          } else if (st.activeGroupId && typeof renderGroupMsgs === "function") {
+            renderGroupMsgs();
+          } else if (st.tab === "chats") {
+            safeRender(false);
+          }
+        } catch (e) {}
+        finally { v5ChatSyncBusy = false; }
+      };
+
+      // -----------------------------------------------------------------------
+      // C. FEED EMPTY/LOADING SKELETON + PAGINATION BUTTON IN RENDER
+      // -----------------------------------------------------------------------
+      const _origRenderV5 = render;
+      render = function () {
+        _origRenderV5();
+        if (st.tab === "home") {
+          const feedWrap = document.querySelector("#mainContent .p-3.space-y-4");
+          if (!feedWrap) return;
+
+          // Only show skeleton loading when cache is genuinely empty & syncing
+          if (!st.posts.length && st.firstSync && navigator.onLine) {
+            feedWrap.innerHTML = [1, 2].map(() => `
+              <div class="bg-[#0f172a] rounded-2xl border border-slate-800 p-4 space-y-3 animate-pulse">
+                <div class="flex items-center gap-3"><div class="w-11 h-11 rounded-full bg-slate-800"></div><div class="space-y-1.5 flex-1"><div class="h-3.5 w-32 bg-slate-800 rounded"></div><div class="h-2.5 w-20 bg-slate-800 rounded"></div></div></div>
+                <div class="h-4 w-3/4 bg-slate-800 rounded"></div>
+                <div class="h-48 w-full bg-slate-800 rounded-xl"></div>
+              </div>`).join("");
+            return;
+          }
+
+          // Append Pagination button at the bottom of feed
+          if (st.posts.length >= 10 && st.feedHasMore && !document.getElementById("loadMorePostsBtn")) {
+            const btn = document.createElement("button");
+            btn.id = "loadMorePostsBtn";
+            btn.type = "button";
+            btn.onclick = window.loadMorePosts;
+            btn.className = "w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-sm font-bold text-emerald-300";
+            btn.textContent = "↓ နောက်ထပ် ပို့စ်အဟောင်းများ ကြည့်ရန်";
+            feedWrap.appendChild(btn);
+          }
+        }
+      };
+
+      // Flush any offline queued messages on startup
+      setTimeout(flushOfflineChatQueue, 1500);
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
