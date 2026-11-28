@@ -2961,6 +2961,249 @@
         }
       };
     })();
+    // =========================================================================
+    // FRIEND REQUEST SYSTEM + BOTTOM BAR FRIENDS TAB (Requests & Real Suggestions)
+    // =========================================================================
+    (function () {
+      if (window.__PPW_FRIENDS_SYSTEM__) return;
+      window.__PPW_FRIENDS_SYSTEM__ = true;
+
+      st.inReqs = st.inReqs || {};     // Incoming requests to me: { fromUid: { fromId, createdAt } }
+      st.sentReqs = st.sentReqs || JSON.parse(localStorage.getItem("ppw_sent_reqs") || "{}");
+      const saveSentReqs = () => localStorage.setItem("ppw_sent_reqs", JSON.stringify(st.sentReqs));
+
+      // 1. SYNC INCOMING FRIEND REQUESTS FROM FIREBASE
+      async function syncFriendRequests() {
+        if (!st.me || !navigator.onLine) return;
+        try {
+          const reqs = await fbGet(`friendRequests/${st.me.id}`).catch(() => null);
+          st.inReqs = (reqs && typeof reqs === "object") ? reqs : {};
+          updateFriendsDockBadge();
+          if (st.tab === "friends") renderFriendsTab();
+        } catch (e) {}
+      }
+
+      // 2. SEND / CANCEL / ACCEPT / DECLINE FRIEND REQUEST
+      window.quickAddFriendFromPost = async function (uid, btnEl) {
+        if (!st.me || !uid || uid === st.me.id) return;
+        if (Array.isArray(st.me.friends) && st.me.friends.includes(uid)) return;
+
+        // If already requested -> Cancel request
+        if (st.sentReqs[uid]) {
+          delete st.sentReqs[uid];
+          saveSentReqs();
+          await fbDel(`friendRequests/${uid}/${st.me.id}`).catch(() => {});
+          if (btnEl) {
+            btnEl.textContent = "Add friend";
+            btnEl.className = btnEl.dataset.inCard ? "text-sky-400 hover:text-sky-300 text-sm font-bold shrink-0" : "px-3.5 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold";
+          }
+          if (typeof toast === "function") toast("ခွင့်တောင်းထားမှု ပယ်ဖျက်လိုက်ပါပြီ");
+          return;
+        }
+
+        // Send new Friend Request
+        st.sentReqs[uid] = Date.now();
+        saveSentReqs();
+        await fbPut(`friendRequests/${uid}/${st.me.id}`, {
+          fromId: st.me.id,
+          fromName: st.me.name || "",
+          createdAt: Date.now()
+        }).catch(() => {});
+
+        if (typeof notify === "function") {
+          notify(uid, "က သင့်ကို Friend ဖြစ်ရန် ခွင့်တောင်းထားပါသည် 👥", "", "friend_req");
+        }
+        if (typeof playSong === "function") playSong("like");
+
+        if (btnEl) {
+          btnEl.textContent = "Requested";
+          btnEl.className = btnEl.dataset.inCard ? "text-amber-400 text-sm font-bold shrink-0" : "px-3.5 py-1.5 rounded-xl bg-slate-800 border border-amber-500/40 text-amber-300 text-xs font-bold";
+        }
+        if (typeof toast === "function") toast("✓ Friend ခွင့်တောင်းပြီးပါပြီ");
+      };
+
+      window.acceptFriendRequest = async function (fromUid) {
+        if (!st.me || !fromUid) return;
+        // Add to my friends
+        if (!Array.isArray(st.me.friends)) st.me.friends = [];
+        if (!st.me.friends.includes(fromUid)) st.me.friends.push(fromUid);
+        if (typeof saveMe === "function") saveMe();
+        await fbPut(`users/${st.me.id}/friends`, st.me.friends).catch(() => {});
+
+        // Add me to sender's friends
+        const other = (await fbGet(`users/${fromUid}`).catch(() => null)) || st.users[fromUid] || {};
+        const otherFriends = Array.isArray(other.friends) ? [...other.friends] : [];
+        if (!otherFriends.includes(st.me.id)) otherFriends.push(st.me.id);
+        await fbPut(`users/${fromUid}/friends`, otherFriends).catch(() => {});
+        if (st.users[fromUid]) st.users[fromUid].friends = otherFriends;
+
+        // Remove request
+        delete st.inReqs[fromUid];
+        await fbDel(`friendRequests/${st.me.id}/${fromUid}`).catch(() => {});
+        if (typeof notify === "function") {
+          notify(fromUid, "က သင့် Friend Request ကို လက်ခံလိုက်ပါပြီ 🎉", "", "friend_accept");
+        }
+        if (typeof playSong === "function") playSong("notif");
+        if (typeof toast === "function") toast("✓ Friend ဖြစ်သွားပါပြီ");
+        updateFriendsDockBadge();
+        renderFriendsTab();
+      };
+
+      window.declineFriendRequest = async function (fromUid) {
+        if (!st.me || !fromUid) return;
+        delete st.inReqs[fromUid];
+        await fbDel(`friendRequests/${st.me.id}/${fromUid}`).catch(() => {});
+        if (typeof toast === "function") toast("ဖျက်လိုက်ပါပြီ");
+        updateFriendsDockBadge();
+        renderFriendsTab();
+      };
+
+      // 3. REPLACE BOTTOM BAR "ရှာဖွေ" WITH "သူငယ်ချင်း" + REQUEST BADGE
+      function patchBottomBarToFriends() {
+        const navBtns = document.querySelectorAll("nav button");
+        navBtns.forEach(btn => {
+          const txt = btn.textContent || "";
+          if (txt.includes("ရှာဖွေ") || btn.dataset.tab === "search") {
+            btn.dataset.tab = "friends";
+            btn.setAttribute("onclick", "openFriendsTab()");
+            btn.classList.add("relative");
+            btn.innerHTML = `
+              <span class="w-10 h-10 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-lg relative">
+                👥
+                <span id="ppwFriBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-[10px] font-bold text-white flex items-center justify-center">0</span>
+              </span>
+              <span class="text-[11px] font-bold mt-0.5">သူငယ်ချင်း</span>
+            `;
+          }
+        });
+        updateFriendsDockBadge();
+      }
+
+      function updateFriendsDockBadge() {
+        const cnt = Object.keys(st.inReqs || {}).length;
+        const b = document.getElementById("ppwFriBadge");
+        if (!b) return;
+        b.textContent = cnt > 9 ? "9+" : cnt;
+        b.classList.toggle("hidden", cnt === 0);
+      }
+
+      window.openFriendsTab = function () {
+        st.tab = "friends";
+        st.viewProfileUid = null;
+        if (typeof updateDockHighlight === "function") updateDockHighlight();
+        renderFriendsTab();
+        syncFriendRequests();
+      };
+
+      // 4. RENDER FRIENDS TAB (Incoming Requests + Suggested Real Users with Profile Photo)
+      window.renderFriendsTab = function () {
+        const el = document.getElementById("mainContent");
+        if (!el || !st.me) return;
+
+        const myFriends = Array.isArray(st.me.friends) ? st.me.friends : [];
+        const incomingIds = Object.keys(st.inReqs || {}).filter(id => id && id !== st.me.id && !myFriends.includes(id));
+
+        // Suggested real users: not me, not already friend, not in incoming, MUST have real profile photo (avatar)
+        const allUsers = Object.values(st.users || {}).filter(u =>
+          u && u.id && u.id !== st.me.id &&
+          !myFriends.includes(u.id) &&
+          !incomingIds.includes(u.id) &&
+          (typeof isBlockedPair !== "function" || !isBlockedPair(u.id))
+        );
+
+        const withAvatar = allUsers.filter(u => u.avatar && String(u.avatar).trim().length > 10);
+        const withoutAvatar = allUsers.filter(u => !u.avatar || String(u.avatar).trim().length <= 10);
+        const suggested = [...withAvatar, ...withoutAvatar].slice(0, 30);
+
+        el.innerHTML = `
+          <div class="p-3.5 space-y-5">
+            <!-- SECTION 1: INCOMING FRIEND REQUESTS -->
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between">
+                <h2 class="text-base font-extrabold text-white">👥 သူငယ်ချင်း ခွင့်တောင်းထားသူများ</h2>
+                <span class="text-xs font-bold text-rose-400">${incomingIds.length} ဦး</span>
+              </div>
+              ${incomingIds.length ? incomingIds.map(uid => {
+                const u = uInfo(uid);
+                return `
+                  <div class="p-3 rounded-2xl bg-[#0f172a] border border-slate-800 flex items-center gap-3">
+                    <div onclick="openUserProfile('${u.id}')" class="cursor-pointer shrink-0">${avatar(u, "w-12 h-12 text-base", true, false)}</div>
+                    <div class="flex-1 min-w-0 space-y-2">
+                      <div onclick="openUserProfile('${u.id}')" class="text-sm font-bold text-white truncate cursor-pointer">${esc(u.name)} ${blueBadge(u)}</div>
+                      <div class="flex items-center gap-2">
+                        <button type="button" onclick="acceptFriendRequest('${u.id}')" class="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">လက်ခံမည်</button>
+                        <button type="button" onclick="declineFriendRequest('${u.id}')" class="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">ဖျက်မည်</button>
+                      </div>
+                    </div>
+                  </div>`;
+              }).join("") : `<div class="p-4 rounded-2xl bg-[#0f172a] border border-slate-800 text-center text-xs text-slate-400">ခွင့်တောင်းထားသူ မရှိသေးပါ</div>`}
+            </div>
+
+            <!-- SECTION 2: SUGGESTED REAL USERS (Profile Photo Prioritized) -->
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between">
+                <h2 class="text-base font-extrabold text-white">✨ သိနိုင်မည့်သူများ (Suggested)</h2>
+                <span class="text-xs text-slate-400">${withAvatar.length} ဦး (Profile ပါ)</span>
+              </div>
+              <div class="space-y-2">
+                ${suggested.length ? suggested.map(u => {
+                  const isReq = !!st.sentReqs[u.id];
+                  return `
+                    <div class="p-3 rounded-2xl bg-[#0f172a] border border-slate-800 flex items-center justify-between gap-3">
+                      <div onclick="openUserProfile('${u.id}')" class="flex items-center gap-3 min-w-0 cursor-pointer">
+                        ${avatar(u, "w-12 h-12 text-base", true, false)}
+                        <div class="min-w-0">
+                          <div class="text-sm font-bold text-white truncate">${esc(u.name)} ${blueBadge(u)}</div>
+                          <div class="text-[11px] text-slate-400 truncate">${u.avatar ? "Profile အစစ် • " : ""}${esc(u.id)}</div>
+                        </div>
+                      </div>
+                      <button type="button" onclick="quickAddFriendFromPost('${u.id}', this)" class="${isReq ? "px-3.5 py-1.5 rounded-xl bg-slate-800 border border-amber-500/40 text-amber-300 text-xs font-bold shrink-0" : "px-3.5 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold shrink-0"}">
+                        ${isReq ? "Requested" : "+ Add friend"}
+                      </button>
+                    </div>`;
+                }).join("") : `<div class="p-4 rounded-2xl bg-[#0f172a] border border-slate-800 text-center text-xs text-slate-400">အကြံပြုရန် အသုံးပြုသူ မရှိသေးပါ</div>`}
+              </div>
+            </div>
+          </div>`;
+      };
+
+      // 5. HOOK POST CARD SO "Add friend" SHOWS "Requested" IF PENDING
+      const _origPostCardReq = postCard;
+      postCard = function (p) {
+        let html = _origPostCardReq(p);
+        if (!p || !st.me || p.authorId === st.me.id) return html;
+        if (st.sentReqs[p.authorId]) {
+          html = html.replace(
+            `quickAddFriendFromPost('${p.authorId}',this)" class="text-sky-400 hover:text-sky-300 text-sm font-bold shrink-0">Add friend</button>`,
+            `quickAddFriendFromPost('${p.authorId}',this)" data-in-card="1" class="text-amber-400 text-sm font-bold shrink-0">Requested</button>`
+          );
+        } else {
+          html = html.replace(
+            `quickAddFriendFromPost('${p.authorId}',this)"`,
+            `quickAddFriendFromPost('${p.authorId}',this)" data-in-card="1"`
+          );
+        }
+        return html;
+      };
+
+      // 6. HOOK RENDER & AUTO-SYNC
+      const _origRenderFri = render;
+      render = function () {
+        if (st.me && st.tab === "friends") {
+          renderFriendsTab();
+          return;
+        }
+        _origRenderFri();
+      };
+
+      setTimeout(() => {
+        patchBottomBarToFriends();
+        syncFriendRequests();
+      }, 250);
+      setInterval(() => {
+        if (st.me && !document.hidden && navigator.onLine) syncFriendRequests();
+      }, 8000);
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
