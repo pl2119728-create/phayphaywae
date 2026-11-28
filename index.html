@@ -1813,6 +1813,30 @@
         }
       }
     };
+    // =========================================================================
+    // FIX: Prevent Chat Input Bar from overlapping Android 3-Button Nav Bar
+    // =========================================================================
+    const _safeBottomCss = document.createElement("style");
+    _safeBottomCss.textContent = `
+      /* Chat Modal ကို ဖုန်း Screen အစစ် (dvh) နဲ့ ချိန်ညှိခြင်း */
+      #modalRoot .flex.flex-col.h-\\[92vh\\] {
+        height: 92dvh !important;
+        max-height: calc(100dvh - 12px) !important;
+      }
+
+      /* Chat စာရိုက်တဲ့အောက်ခြေဘားကို Android ခလုတ် ၃ ခုအပေါ် တွန်းတင်ပေးခြင်း */
+      #modalRoot .flex.flex-col > div:last-child {
+        padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+
+      /* Keyboard ပွင့်လာချိန်မှာ Input Box မပျောက်စေရန် */
+      @supports (height: 100dvh) {
+        #modalRoot .flex.flex-col.h-\\[92vh\\] {
+          height: min(92dvh, 100%) !important;
+        }
+      }
+    `;
+    document.head.appendChild(_safeBottomCss);
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
