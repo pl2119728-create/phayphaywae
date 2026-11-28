@@ -1648,6 +1648,191 @@
       render();
       sync(true);
     }
+    // =========================================================================
+    // FIX: Exact Voice Message Duration (Custom Messenger-Style Audio Player)
+    // =========================================================================
+    (function () {
+      if (window.__PPW_VOICE_FIX__) return;
+      window.__PPW_VOICE_FIX__ = true;
+
+      st.chatAudioDur = 0;
+      window._ppwPlayingAudio = null;
+      window._ppwPlayingMid = null;
+      window._ppwDecodedDurs = {};
+
+      function fmtSec(sec) {
+        const s = Math.max(0, Math.round(Number(sec) || 0));
+        const m = Math.floor(s / 60);
+        const r = s % 60;
+        return `${m}:${String(r).padStart(2, "0")}`;
+      }
+
+      // Decode exact duration for old WebM voice messages that have no duration header
+      async function resolveExactAudioDur(mid, dataUrl) {
+        if (window._ppwDecodedDurs[mid]) return window._ppwDecodedDurs[mid];
+        try {
+          const res = await fetch(dataUrl);
+          const buf = await res.arrayBuffer();
+          const ctx = ensureAudio();
+          if (!ctx) return 0;
+          const decoded = await ctx.decodeAudioData(buf.slice(0));
+          const dur = Math.max(1, Math.round(decoded.duration || 0));
+          window._ppwDecodedDurs[mid] = dur;
+          const lbl = document.getElementById("aud-dur-" + mid);
+          if (lbl) lbl.textContent = fmtSec(dur);
+          return dur;
+        } catch (e) { return 0; }
+      }
+
+      window.toggleVoicePlay = function (mid, rid) {
+        const m = st.chats[rid] && st.chats[rid][mid];
+        if (!m || !m.audio) return;
+
+        // If clicking the currently playing audio -> pause it
+        if (window._ppwPlayingMid === mid && window._ppwPlayingAudio) {
+          if (!window._ppwPlayingAudio.paused) {
+            window._ppwPlayingAudio.pause();
+            const btn = document.getElementById("aud-btn-" + mid);
+            if (btn) btn.textContent = "▶";
+            return;
+          } else {
+            window._ppwPlayingAudio.play().catch(() => {});
+            const btn = document.getElementById("aud-btn-" + mid);
+            if (btn) btn.textContent = "⏸";
+            return;
+          }
+        }
+
+        // Stop any other playing audio first
+        if (window._ppwPlayingAudio) {
+          try { window._ppwPlayingAudio.pause(); } catch (e) {}
+          const prevBtn = document.getElementById("aud-btn-" + window._ppwPlayingMid);
+          if (prevBtn) prevBtn.textContent = "▶";
+        }
+
+        const audio = new Audio(m.audio);
+        window._ppwPlayingAudio = audio;
+        window._ppwPlayingMid = mid;
+
+        const btn = document.getElementById("aud-btn-" + mid);
+        const bar = document.getElementById("aud-bar-" + mid);
+        const curLbl = document.getElementById("aud-cur-" + mid);
+        const durLbl = document.getElementById("aud-dur-" + mid);
+        let totalDur = Number(m.audioDur || window._ppwDecodedDurs[mid] || 0);
+
+        if (!totalDur) {
+          resolveExactAudioDur(mid, m.audio).then(d => { if (d) totalDur = d; });
+        }
+
+        if (btn) btn.textContent = "⏸";
+        audio.ontimeupdate = () => {
+          const cur = audio.currentTime || 0;
+          const d = totalDur || (isFinite(audio.duration) && audio.duration < 600 ? audio.duration : 0);
+          if (curLbl) curLbl.textContent = fmtSec(cur);
+          if (d > 0 && durLbl) durLbl.textContent = fmtSec(d);
+          if (bar && d > 0) bar.style.width = `${Math.min(100, (cur / d) * 100)}%`;
+        };
+        audio.onended = () => {
+          if (btn) btn.textContent = "▶";
+          if (bar) bar.style.width = "0%";
+          if (curLbl) curLbl.textContent = "0:00";
+          window._ppwPlayingMid = null;
+        };
+        audio.play().catch(() => {
+          if (btn) btn.textContent = "▶";
+          toast("အသံဖွင့်မရပါ");
+        });
+      };
+
+      // Track exact recording duration in seconds
+      const _origStartVoice = startSafeVoiceRec;
+      startSafeVoiceRec = async function (mode) {
+        const isPreview = mode === "preview", btn = document.getElementById("voiceBtn");
+        if (st.recorder && st.recorder.state === "recording") {
+          st.chatAudioDur = Math.max(1, Math.round((Date.now() - (window._recStartAt || Date.now())) / 1000));
+          st.recorder.stop();
+          if (btn) { btn.className = "w-11 h-11 rounded-full bg-slate-800 text-sky-400 text-xl flex items-center justify-center shrink-0"; btn.textContent = "🎙️"; }
+          updateChatRightBtn();
+          return;
+        }
+        window._recStartAt = Date.now();
+        st.chatAudioDur = 0;
+        return _origStartVoice(mode);
+      };
+
+      // Include audioDur when sending voice message
+      const _origSendPayload = sendChatPayload;
+      sendChatPayload = async function ({ text, image, audio }) {
+        if (!st.chatUid || !st.me) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const mid = `M-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const dur = audio ? (st.chatAudioDur || Math.max(1, Math.round((Date.now() - (window._recStartAt || Date.now())) / 1000))) : 0;
+        st.chatAudioDur = 0;
+
+        const m = {
+          id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "",
+          audioDur: dur, seenAt: 0, deletedFor: {}, deletedForAll: false,
+          createdAt: Date.now(), _status: navigator.onLine ? "sending" : "queued"
+        };
+        if (!pendingChats[rid]) pendingChats[rid] = {};
+        pendingChats[rid][mid] = m; savePending();
+        if (!st.chats[rid]) st.chats[rid] = {};
+        st.chats[rid][mid] = m;
+        clearChatAttach();
+        if (navigator.onLine) fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {});
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+        await pushMessageToServer(rid, mid);
+      };
+
+      // Replace native <audio controls> inside chat bubbles with exact custom player
+      const _origRenderMsgsVoice = renderMsgs;
+      renderMsgs = function () {
+        _origRenderMsgsVoice();
+        if (!st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const box = document.getElementById("msgBox");
+        if (!box) return;
+
+        const audios = box.querySelectorAll("audio");
+        audios.forEach(a => {
+          const bubble = a.closest("[onclick*='openDeleteMsgMenu']");
+          if (!bubble) return;
+          const match = (bubble.getAttribute("onclick") || "").match(/'([^']+)'/);
+          const mid = match ? match[1] : "";
+          const m = st.chats[rid] && st.chats[rid][mid];
+          if (!m || !m.audio) return;
+
+          const dur = Number(m.audioDur || window._ppwDecodedDurs[mid] || 0);
+          const wrap = document.createElement("div");
+          wrap.className = "flex items-center gap-2.5 w-52 py-1";
+          wrap.onclick = (ev) => { ev.stopPropagation(); window.toggleVoicePlay(mid, rid); };
+          wrap.innerHTML = `
+            <button id="aud-btn-${mid}" type="button" class="w-9 h-9 rounded-full bg-white/20 text-white flex items-center justify-center text-sm font-bold shrink-0">▶</button>
+            <div class="flex-1 min-w-0 space-y-1">
+              <div class="w-full h-1.5 bg-white/25 rounded-full overflow-hidden">
+                <div id="aud-bar-${mid}" class="h-full bg-white rounded-full transition-all" style="width:0%"></div>
+              </div>
+              <div class="flex justify-between text-[11px] font-mono opacity-90">
+                <span id="aud-cur-${mid}">0:00</span>
+                <span id="aud-dur-${mid}">${dur > 0 ? fmtSec(dur) : "..."}</span>
+              </div>
+            </div>`;
+          a.replaceWith(wrap);
+          if (!dur) resolveExactAudioDur(mid, m.audio);
+        });
+      };
+
+      const _origCloseModalVoice = closeModal;
+      closeModal = function () {
+        if (window._ppwPlayingAudio) {
+          try { window._ppwPlayingAudio.pause(); } catch (e) {}
+          window._ppwPlayingAudio = null;
+          window._ppwPlayingMid = null;
+        }
+        return _origCloseModalVoice();
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
