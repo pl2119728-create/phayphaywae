@@ -2146,6 +2146,263 @@
         }
       }, true);
     })();
+    // =========================================================================
+    // CLEAN UPGRADE V4: Post -> Instant Profile + Ultra-Fast Live Chat + Group Avatars
+    // =========================================================================
+    (function () {
+      if (window.__PPW_UPGRADE_V4__) return;
+      window.__PPW_UPGRADE_V4__ = true;
+
+      // 1. Post/Reel တင်လိုက်တာနဲ့ မိမိ Profile ထဲ ချက်ချင်းရောက်စေခြင်း
+      submitPost = async function () {
+        const isReel = st.composerMode === "reel";
+        const text = (document.getElementById("postTxt").value || "").trim();
+        const privacy = document.getElementById("postPriv") ? document.getElementById("postPriv").value : "everyone";
+        if (hasBlockedClothing(text)) return toast("အဝတ်အစားစသည့် ရုပ်ပစ္စည်းများ ခွင့်မပြုပါ");
+
+        const id = "P-" + Date.now() + "-" + String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+        let p;
+        if (isReel) {
+          if (!st.reelVideo) return toast("Reel ဗီဒီယို ရွေးပေးပါ");
+          p = {
+            id, authorId: st.me.id, text, isReel: true, video: st.reelVideo,
+            image: "", images: [], price: "", condition: "", category: "Reel Video",
+            privacy, taggedUserId: "", tagStatus: "none", sold: false, boostedUntil: 0,
+            viewers: {}, shares: 0, likes: {}, reactions: {}, comments: {},
+            createdAt: Date.now(), _uploading: true
+          };
+        } else {
+          const price = (document.getElementById("postPrice").value || "").trim();
+          const condition = document.getElementById("postCond").value;
+          const category = document.getElementById("postCat").value;
+          const taggedUserId = document.getElementById("postTagUid") ? document.getElementById("postTagUid").value : "";
+          if (!category) return toast("Account အမျိုးအစား ရွေးပေးပါ");
+          if (!text && !st.imgs.length) return toast("Account အကြောင်း သို့မဟုတ် ပုံ ထည့်ပေးပါ");
+          p = {
+            id, authorId: st.me.id, text, isReel: false, video: "",
+            image: st.imgs[0] || "", images: [...st.imgs], price, condition, category,
+            privacy, taggedUserId: taggedUserId || "", tagStatus: taggedUserId ? "pending" : "none",
+            sold: false, boostedUntil: 0, viewers: {}, shares: 0, likes: {}, reactions: {},
+            comments: {}, createdAt: Date.now(), _uploading: true
+          };
+        }
+
+        // ချက်ချင်း Profile ထဲ ရောက်ပြီး ပို့စ်တန်းပေါ်စေခြင်း
+        st.posts.unshift(p);
+        saveFastCache();
+        closeModal();
+        st.tab = "profile";
+        st.viewProfileUid = null;
+        st.profileSubTab = isReel ? "reels" : "posts";
+        updateDockHighlight();
+        st.lastRenderSig = "";
+        render();
+        window.scrollTo(0, 0);
+
+        setUploadStatus(true, isReel ? "⏳ Reel ဗီဒီယို တင်နေသည်..." : "⏳ ပို့စ်တင်နေသည်...");
+        try {
+          await fbPut(`users/${st.me.id}`, st.me).catch(() => {});
+          const cleanPost = { ...p };
+          delete cleanPost._uploading;
+          const res = await fbPut(`posts/${id}`, cleanPost);
+          if (!res.ok) throw new Error("Upload failed");
+          delete p._uploading;
+          saveFastCache();
+          setUploadStatus(false);
+          playSong("upload");
+          toast(isReel ? "✓ Reel ဗီဒီယို Profile ထဲ တင်ပြီးပါပြီ 🎬" : "✓ ပို့စ် Profile ထဲ တင်ပြီးပါပြီ");
+          safeRender(true);
+        } catch (err) {
+          setUploadStatus(false);
+          toast("တင်ရာတွင် လိုင်းနှေးနေပါသည် — ပြန်စမ်းပါ");
+        }
+      };
+
+      // 2. Ultra-Fast Real-Time Chat Stream (EventSource SSE for active room)
+      window._ppwChatStream = null;
+
+      function stopActiveChatStream() {
+        if (window._ppwChatStream) {
+          try { window._ppwChatStream.close(); } catch (e) {}
+          window._ppwChatStream = null;
+        }
+      }
+
+      function applyChatStreamData(rid, path, data, isGroup) {
+        if (!st.chats[rid]) st.chats[rid] = {};
+        let gotNewFromOther = false;
+
+        if (!path || path === "/") {
+          if (data && typeof data === "object") {
+            Object.entries(data).forEach(([k, v]) => {
+              if (v && typeof v === "object") {
+                if (!st.chats[rid][k] && v.senderId && v.senderId !== st.me.id && v.senderId !== "SYSTEM") {
+                  gotNewFromOther = true;
+                }
+                st.chats[rid][k] = v;
+              }
+            });
+          }
+        } else {
+          const parts = path.replace(/^\/+/, "").split("/").filter(Boolean);
+          const mid = parts[0];
+          if (mid) {
+            if (parts.length === 1) {
+              if (data === null) {
+                delete st.chats[rid][mid];
+              } else if (data && typeof data === "object") {
+                if (!st.chats[rid][mid] && data.senderId && data.senderId !== st.me.id && data.senderId !== "SYSTEM") {
+                  gotNewFromOther = true;
+                }
+                st.chats[rid][mid] = data;
+              }
+            } else if (st.chats[rid][mid]) {
+              let cur = st.chats[rid][mid];
+              for (let i = 1; i < parts.length - 1; i++) {
+                if (!cur[parts[i]] || typeof cur[parts[i]] !== "object") cur[parts[i]] = {};
+                cur = cur[parts[i]];
+              }
+              if (data === null) delete cur[parts[parts.length - 1]];
+              else cur[parts[parts.length - 1]] = data;
+            }
+          }
+        }
+
+        if (gotNewFromOther) playSong("message");
+        if (isGroup) {
+          if (st.activeGroupId === rid) {
+            st.lastMsgHtmlSig = "";
+            renderGroupMsgs();
+          }
+        } else {
+          if (st.chatUid && roomId(st.me.id, st.chatUid) === rid) {
+            markRoomSeen(st.chatUid);
+            st.lastMsgHtmlSig = "";
+            renderMsgs();
+          }
+        }
+      }
+
+      function startActiveChatStream(rid, isGroup) {
+        stopActiveChatStream();
+        if (!window.EventSource || !st.me || !rid) return;
+        try {
+          const es = new EventSource(`${DB}/chats/${rid}.json`);
+          window._ppwChatStream = es;
+          es.addEventListener("put", (e) => {
+            try {
+              const pl = JSON.parse(e.data);
+              if (pl) applyChatStreamData(rid, pl.path, pl.data, isGroup);
+            } catch (err) {}
+          });
+          es.addEventListener("patch", (e) => {
+            try {
+              const pl = JSON.parse(e.data);
+              if (pl && pl.data && typeof pl.data === "object") {
+                const base = (!pl.path || pl.path === "/") ? "" : pl.path.replace(/\/+$/, "");
+                Object.entries(pl.data).forEach(([k, v]) => applyChatStreamData(rid, `${base}/${k}`, v, isGroup));
+              }
+            } catch (err) {}
+          });
+        } catch (e) {}
+      }
+
+      const _origOpenChatStream = openChat;
+      openChat = function (oid) {
+        const res = _origOpenChatStream(oid);
+        if (st.me && oid) startActiveChatStream(roomId(st.me.id, oid), false);
+        return res;
+      };
+
+      const _origCloseModalStream = closeModal;
+      closeModal = function () {
+        stopActiveChatStream();
+        return _origCloseModalStream();
+      };
+
+      // 3. Group Chat Header + Messages with Profile Photo & Name
+      openEscrowGroup = function (rid) {
+        ensureBackGuard();
+        st.chatUid = null;
+        st.activeGroupId = rid;
+        st.chatImg = null;
+        st.chatAudioPreview = null;
+        st.showStickers = false;
+        st.lastMsgHtmlSig = "";
+
+        const info = parseEscrowRoom(rid);
+        const isEscrowAdmin = st.me.id === info.adminId || st.me.isAdmin;
+        const memberUsers = info.members.map(id => uInfo(id));
+        const names = memberUsers.map(u => u.name).join(" • ");
+        const avatarStack = memberUsers.map(u => `<div onclick="openUserProfile('${u.id}')" class="-ml-2 first:ml-0 cursor-pointer ring-2 ring-[#0f172a] rounded-full">${avatar(u, "w-8 h-8 text-xs", true, false)}</div>`).join("");
+
+        document.getElementById("modalRoot").innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
+            <div class="bg-[#0b1120] border border-emerald-500/40 w-full max-w-lg rounded-t-3xl sm:rounded-3xl flex flex-col h-[92vh] animate-slide-up overflow-hidden">
+              <div class="px-3.5 py-3 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div class="flex items-center shrink-0 pl-1">${avatarStack}</div>
+                  <div class="min-w-0">
+                    <div class="text-sm font-extrabold text-emerald-300 flex items-center gap-1">🛡️ ကြားခံ Group (၃ ဦး)</div>
+                    <div class="text-xs text-slate-300 truncate">${esc(names)}</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  ${isEscrowAdmin ? `<button onclick="closeEscrowDeal('${rid}')" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">✓ ပြီးဆုံးပြီ</button>` : ""}
+                  <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-slate-800 text-white text-sm font-bold">✕</button>
+                </div>
+              </div>
+              <div id="msgBox" class="flex-1 p-3.5 overflow-y-auto space-y-3 bg-[#05080f]"></div>
+              <div id="chatAttachPreview" class="hidden px-3 py-2 bg-[#0f172a] border-t border-slate-800 flex items-center justify-between gap-2">
+                <div id="chatAttachLabel" class="flex items-center gap-2 text-xs text-emerald-300 font-bold min-w-0 flex-1"></div>
+                <button onclick="clearChatAttach()" class="w-7 h-7 rounded-full bg-slate-800 text-sm text-rose-400 font-bold shrink-0">✕</button>
+              </div>
+              <div class="p-2.5 bg-[#0f172a] border-t border-slate-800 flex items-center gap-2">
+                <label class="w-11 h-11 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 text-xl flex items-center justify-center cursor-pointer shrink-0">🖼️<input type="file" accept="image/*" onchange="onPickChatImg(event)" class="hidden"/></label>
+                <div class="flex-1 min-w-0 h-11 bg-slate-900 border border-slate-700 rounded-full flex items-center px-4">
+                  <input id="grpMsgInp" type="text" placeholder="Group ထဲသို့ စာပို့ရန်..." onkeydown="if(event.key==='Enter')sendGroupMsg()" class="flex-1 min-w-0 bg-transparent text-white text-base focus:outline-none"/>
+                </div>
+                <button onclick="sendGroupMsg()" class="h-11 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shrink-0">ပို့</button>
+              </div>
+            </div>
+          </div>`;
+
+        renderGroupMsgs();
+        startActiveChatStream(rid, true);
+      };
+
+      renderGroupMsgs = function () {
+        const box = document.getElementById("msgBox");
+        if (!box || !st.activeGroupId) return;
+        const rid = st.activeGroupId;
+        const info = parseEscrowRoom(rid);
+        const ms = Object.values(st.chats[rid] || {}).filter(Boolean).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const sig = ms.map(m => m.id).join("|");
+        if (sig === st.lastMsgHtmlSig) return;
+        st.lastMsgHtmlSig = sig;
+
+        box.innerHTML = ms.map(m => {
+          if (m.senderId === "SYSTEM") {
+            return `<div class="mx-auto max-w-[92%] text-center px-3.5 py-2 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-200 leading-relaxed">${esc(m.text)}</div>`;
+          }
+          const me = m.senderId === st.me.id;
+          const sender = uInfo(m.senderId);
+          const isAdm = sender.id === info.adminId;
+          return `
+            <div class="flex items-end gap-2 ${me ? "justify-end" : "justify-start"}">
+              ${!me ? `<div onclick="openUserProfile('${sender.id}')" class="cursor-pointer shrink-0 mb-0.5">${avatar(sender, "w-8 h-8 text-xs", true, false)}</div>` : ""}
+              <div class="flex flex-col ${me ? "items-end" : "items-start"} max-w-[80%]">
+                ${!me ? `<div onclick="openUserProfile('${sender.id}')" class="text-[11px] font-bold text-slate-300 mb-0.5 px-1 flex items-center gap-1 cursor-pointer">${esc(sender.name)} ${blueBadge(sender)} ${isAdm ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px]">🛡️ ကြားခံ</span>` : ""}</div>` : ""}
+                <div class="px-4 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}">
+                  ${m.image ? `<img onclick="openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}
+                  ${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}
+                </div>
+              </div>
+            </div>`;
+        }).join("");
+        box.scrollTop = box.scrollHeight;
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
