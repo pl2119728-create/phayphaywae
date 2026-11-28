@@ -2075,6 +2075,229 @@
         return html;
       };
     })();
+    // =========================================================================
+    // UPGRADE V6: Messenger-Style Swipe Right to Reply
+    // =========================================================================
+    (function () {
+      if (window.__PPW_UPGRADE_V6__) return;
+      window.__PPW_UPGRADE_V6__ = true;
+
+      st.replyTarget = null;
+      const WAVE_H = [35, 65, 45, 90, 55, 100, 75, 40, 85, 95, 60, 45, 80, 100, 70, 50, 85, 60, 40, 75, 50, 35];
+
+      function fmtS(sec) {
+        const s = Math.max(0, Math.round(Number(sec) || 0));
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+      }
+
+      function renderReplyPreviewBar() {
+        let bar = document.getElementById("ppwReplyBar");
+        if (!bar) {
+          const anchor = document.getElementById("chatAttachPreview");
+          if (!anchor) return;
+          bar = document.createElement("div");
+          bar.id = "ppwReplyBar";
+          bar.className = "hidden px-3.5 py-2 bg-[#0f172a] border-t border-slate-700/80 flex items-center justify-between gap-2 animate-pop";
+          anchor.insertAdjacentElement("beforebegin", bar);
+        }
+        if (!st.replyTarget) {
+          bar.classList.add("hidden");
+          bar.innerHTML = "";
+          return;
+        }
+        const rt = st.replyTarget;
+        const preview = rt.audio ? "🎙️ အသံမက်ဆေ့ချ်" : (rt.image ? "🖼️ ဓာတ်ပုံ" : (rt.text || ""));
+        bar.innerHTML = `
+          <div class="min-w-0 flex-1 border-l-2 border-emerald-400 pl-2.5">
+            <div class="text-xs font-bold text-emerald-300 truncate">Replying to ${esc(rt.senderName)}</div>
+            <div class="text-xs text-slate-300 truncate">${esc(preview)}</div>
+          </div>
+          <button type="button" onclick="clearReplyTarget()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-300 text-xs font-bold shrink-0">✕</button>`;
+        bar.classList.remove("hidden");
+      }
+
+      window.setReplyTarget = function (rid, mid) {
+        const m = st.chats[rid] && st.chats[rid][mid];
+        if (!m || m.deletedForAll) return;
+        const senderName = m.senderId === st.me.id ? "yourself" : uInfo(m.senderId).name;
+        st.replyTarget = {
+          id: m.id,
+          senderId: m.senderId,
+          senderName,
+          text: (m.text || "").slice(0, 100),
+          image: m.image ? "1" : "",
+          audio: m.audio ? "1" : ""
+        };
+        const actBar = document.getElementById("msgActionBar");
+        if (actBar) actBar.innerHTML = "";
+        renderReplyPreviewBar();
+        playSong("like");
+        if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {}
+        const inp = document.getElementById("msgInp");
+        if (inp) inp.focus();
+      };
+
+      window.clearReplyTarget = function () {
+        st.replyTarget = null;
+        renderReplyPreviewBar();
+      };
+
+      // Add Reply button inside existing Reaction/Forward menu
+      const _origOpenMenuV6 = openDeleteMsgMenu;
+      openDeleteMsgMenu = function (mid) {
+        _origOpenMenuV6(mid);
+        if (!st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const bar = document.getElementById("msgActionBar");
+        const btnRow = bar && bar.querySelector(".flex.items-center.justify-between.gap-1\\.5");
+        if (btnRow && !btnRow.querySelector("[data-reply-btn]")) {
+          const rBtn = document.createElement("button");
+          rBtn.type = "button";
+          rBtn.dataset.replyBtn = "1";
+          rBtn.onclick = () => setReplyTarget(rid, mid);
+          rBtn.className = "px-3 py-2 rounded-xl bg-emerald-600/25 border border-emerald-500/40 text-emerald-300 font-bold";
+          rBtn.textContent = "↩️ Reply";
+          btnRow.prepend(rBtn);
+        }
+      };
+
+      // Attach Swipe-Right Gesture on #msgBox
+      function bindSwipeReply() {
+        const box = document.getElementById("msgBox");
+        if (!box || box.dataset.swipeBound) return;
+        box.dataset.swipeBound = "1";
+
+        let startX = 0, startY = 0, curDx = 0, activeBubble = null, activeMid = "";
+
+        box.addEventListener("touchstart", (e) => {
+          const t = e.touches && e.touches[0];
+          const bubble = e.target && e.target.closest("[data-mid]");
+          if (!t || !bubble) { activeBubble = null; return; }
+          startX = t.clientX;
+          startY = t.clientY;
+          curDx = 0;
+          activeBubble = bubble;
+          activeMid = bubble.dataset.mid || "";
+          activeBubble.style.transition = "none";
+        }, { passive: true });
+
+        box.addEventListener("touchmove", (e) => {
+          if (!activeBubble || !e.touches || !e.touches[0]) return;
+          const t = e.touches[0];
+          const dx = t.clientX - startX;
+          const dy = t.clientY - startY;
+          if (dx > 10 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+            curDx = Math.min(62, dx);
+            activeBubble.style.transform = `translateX(${curDx}px)`;
+          }
+        }, { passive: true });
+
+        box.addEventListener("touchend", () => {
+          if (!activeBubble) return;
+          activeBubble.style.transition = "transform 0.16s ease-out";
+          activeBubble.style.transform = "translateX(0px)";
+          if (curDx >= 42 && activeMid && st.chatUid) {
+            setReplyTarget(roomId(st.me.id, st.chatUid), activeMid);
+          }
+          activeBubble = null;
+          activeMid = "";
+          curDx = 0;
+        }, { passive: true });
+      }
+
+      // Include replyTo in outgoing messages
+      sendChatPayload = async function ({ text, image, audio }) {
+        if (!st.chatUid || !st.me) return;
+        const rid = roomId(st.me.id, st.chatUid), mid = `M-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const dur = audio ? (st.chatAudioDur || Math.max(1, Math.round((Date.now() - (window._recAt || Date.now())) / 1000))) : 0;
+        st.chatAudioDur = 0;
+        const replyData = st.replyTarget ? { ...st.replyTarget } : null;
+        clearReplyTarget();
+
+        const m = {
+          id: mid, senderId: st.me.id, text: text || "", image: image || "", audio: audio || "",
+          audioDur: dur, replyTo: replyData, seenAt: 0, deletedFor: {}, deletedForAll: false,
+          createdAt: Date.now(), _status: navigator.onLine ? "sending" : "queued"
+        };
+        if (!pendingChats[rid]) pendingChats[rid] = {}; pendingChats[rid][mid] = m; savePending();
+        if (!st.chats[rid]) st.chats[rid] = {}; st.chats[rid][mid] = m;
+        clearChatAttach();
+        if (navigator.onLine) fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {});
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+        await pushMessageToServer(rid, mid);
+      };
+
+      // Render messages with Quoted Reply Box + V3 Waveform + V4 Reactions & Forward
+      renderMsgs = function () {
+        const box = document.getElementById("msgBox"); if (!box || !st.chatUid) return;
+        bindSwipeReply();
+        const rid = roomId(st.me.id, st.chatUid); mergeRoomSafe(rid, null);
+        const ms = Object.values(st.chats[rid] || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const sig = ms.map(m => {
+          const rxSig = m.reactions ? Object.values(m.reactions).sort().join("") : "";
+          return `${m.id}_${m._status || "sent"}_${m.seenAt ? 1 : 0}_${m.deletedForAll ? 1 : 0}_${rxSig}`;
+        }).join("|");
+
+        if (sig !== st.lastMsgHtmlSig) {
+          st.lastMsgHtmlSig = sig;
+          box.innerHTML = ms.length ? ms.map(m => {
+            const me = m.senderId === st.me.id;
+            const isPureSticker = !m.deletedForAll && !m.image && !m.audio && !m.replyTo && STICKER_ICONS.includes((m.text || "").trim());
+            let tick = "";
+            if (me) {
+              if (m._status === "sending") tick = `<span class="text-emerald-100/80 text-[10px]">⏳ ပို့နေဆဲ...</span>`;
+              else if (m._status === "queued") tick = `<span class="text-amber-200 text-[10px]">🕒 Offline</span>`;
+              else if (m._status === "failed") tick = `<button type="button" onclick="event.stopPropagation();retryChatMsg('${rid}','${m.id}')" class="text-rose-200 underline text-[10px] font-bold">⚠️ ပြန်ပို့ရန်</button>`;
+              else if (m.seenAt) tick = `<span class="text-sky-200 font-bold">✓✓</span>`;
+              else tick = `<span class="text-emerald-200/90 font-bold">✓</span>`;
+            }
+            let audioHtml = "";
+            if (m.audio) {
+              const dur = Number(m.audioDur || (window._ppwDurCache && window._ppwDurCache[m.id]) || 0);
+              const barsHtml = WAVE_H.map(h => `<span class="w-[3px] rounded-full bg-white transition-opacity duration-150" style="height:${Math.round(h * 0.26)}px;opacity:0.4"></span>`).join("");
+              audioHtml = `<div onclick="event.stopPropagation();toggleVoicePlay('${m.id}','${rid}')" class="flex items-center gap-2.5 py-0.5 min-w-[215px]">
+                <button id="aud-btn-${m.id}" type="button" class="w-9 h-9 rounded-full bg-black/25 text-white flex items-center justify-center text-sm font-bold shrink-0 pl-0.5">▶</button>
+                <div id="aud-wave-${m.id}" class="flex-1 flex items-center justify-between gap-[2px] h-7 px-1">${barsHtml}</div>
+                <span id="aud-time-${m.id}" class="text-xs font-mono font-bold text-white/95 shrink-0 min-w-[34px] text-right">${dur > 0 ? fmtS(dur) : "0:01"}</span>
+              </div>`;
+            }
+            let replyHtml = "";
+            if (m.replyTo && !m.deletedForAll) {
+              const rt = m.replyTo;
+              const rPrev = rt.audio ? "🎙️ အသံမက်ဆေ့ချ်" : (rt.image ? "🖼️ ဓာတ်ပုံ" : (rt.text || ""));
+              replyHtml = `<div class="mb-1.5 px-2.5 py-1.5 rounded-xl ${me ? "bg-black/20 border-l-2 border-emerald-200" : "bg-slate-800/90 border-l-2 border-sky-400"} text-xs">
+                <div class="font-bold opacity-90 truncate">↩️ ${esc(rt.senderName || "")}</div>
+                <div class="opacity-80 truncate">${esc(rPrev)}</div>
+              </div>`;
+            }
+            const rxVals = m.reactions ? Object.values(m.reactions).filter(Boolean) : [];
+            const uniqRx = [...new Set(rxVals)].slice(0, 3).join("");
+            const rxBadge = rxVals.length
+              ? `<div class="absolute -bottom-3 ${me ? "left-2" : "right-2"} px-1.5 py-0.5 rounded-full bg-[#1e293b] border border-slate-600 shadow-md text-xs flex items-center gap-0.5 leading-none"><span>${uniqRx}</span>${rxVals.length > 1 ? `<span class="text-[10px] text-slate-300 font-bold">${rxVals.length}</span>` : ""}</div>`
+              : "";
+
+            return `<div class="flex items-end ${me ? "justify-end" : "justify-start"} ${rxVals.length ? "mb-3.5" : ""}">
+              <div data-mid="${m.id}" onclick="openDeleteMsgMenu('${m.id}')" class="relative cursor-pointer ${isPureSticker ? "text-6xl py-1 px-2" : `max-w-[85%] px-3.5 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">
+                ${m.forwarded && !m.deletedForAll ? `<div class="text-[10px] opacity-80 font-bold flex items-center gap-1">↪️ Forwarded</div>` : ""}
+                ${replyHtml}
+                ${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${audioHtml}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}
+                ${me ? `<div class="text-[11px] text-right leading-none pt-0.5">${tick}</div>` : ""}
+                ${rxBadge}
+              </div>
+            </div>`;
+          }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+          box.scrollTop = box.scrollHeight;
+        }
+        renderTypingBanner();
+      };
+
+      const _origCloseV6 = closeModal;
+      closeModal = function () {
+        st.replyTarget = null;
+        return _origCloseV6();
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
