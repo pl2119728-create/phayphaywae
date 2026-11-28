@@ -1515,6 +1515,304 @@
         else if (dx > 45) { g.idx = (g.idx - 1 + g.imgs.length) % g.imgs.length; renderGalleryModal(); }
       }, { passive: true });
     };
+    // =========================================================================
+    // CLEAN UPGRADE 2: Reel Auto-Pause on Scroll + @ကြားခံ (3-Person Group)
+    // =========================================================================
+
+    // 1. Reel Video Auto-Pause when scrolled off-screen or switching tabs
+    function pauseAllPpwVideos(exceptVid = null) {
+      document.querySelectorAll("video").forEach(v => {
+        if (v !== exceptVid && !v.paused) {
+          try { v.pause(); } catch (e) {}
+        }
+      });
+    }
+
+    function checkOffscreenVideos() {
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      document.querySelectorAll("video").forEach(v => {
+        if (v.paused) return;
+        const r = v.getBoundingClientRect();
+        const visibleH = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        if (r.height <= 0 || visibleH < Math.min(r.height * 0.45, 90)) {
+          try { v.pause(); } catch (e) {}
+        }
+      });
+    }
+
+    window.addEventListener("scroll", checkOffscreenVideos, { passive: true });
+    document.addEventListener("scroll", checkOffscreenVideos, { passive: true, capture: true });
+    document.addEventListener("visibilitychange", () => { if (document.hidden) pauseAllPpwVideos(null); });
+    document.addEventListener("play", e => {
+      if (e.target && e.target.tagName === "VIDEO") pauseAllPpwVideos(e.target);
+    }, true);
+    setInterval(() => { if (st.me) checkOffscreenVideos(); }, 500);
+
+    const _origSwitchTabPause = switchTab;
+    switchTab = function(t) {
+      pauseAllPpwVideos(null);
+      return _origSwitchTabPause(t);
+    };
+
+    // 2. @ကြားခံ (Blue Mark 3-Person Escrow Group System)
+    st.activeGroupId = null;
+
+    function isEscrowRoom(rk) {
+      return typeof rk === "string" && rk.startsWith("ESCROW__");
+    }
+
+    function parseEscrowRoom(rk) {
+      const parts = String(rk || "").split("__");
+      return {
+        members: [parts[1], parts[2], parts[3]].filter(Boolean),
+        adminId: parts[3] || OWNER_ID
+      };
+    }
+
+    function openEscrowPicker(partnerId) {
+      const blueUsers = Object.values(st.users || {})
+        .filter(u => u && u.blueMark && u.id !== st.me.id && u.id !== partnerId && !isBlockedPair(u.id))
+        .sort((a, b) => (isOnline(b.id) ? 1 : 0) - (isOnline(a.id) ? 1 : 0));
+
+      const old = document.getElementById("escrowPickerOverlay");
+      if (old) old.remove();
+
+      const ov = document.createElement("div");
+      ov.id = "escrowPickerOverlay";
+      ov.className = "fixed inset-0 z-[60] bg-black/85 flex items-end sm:items-center justify-center p-3";
+      ov.onclick = () => ov.remove();
+      ov.innerHTML = `
+        <div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-emerald-500/40 w-full max-w-md rounded-3xl p-4 space-y-3 max-h-[80vh] flex flex-col animate-slide-up">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <div>
+              <h3 class="text-base font-bold text-emerald-300">🛡️ @ကြားခံ ရွေးချယ်ရန် (Blue Mark)</h3>
+              <div class="text-xs text-slate-400">Online ဖြစ်နေသူများကို အပေါ်ဆုံးတွင် ပြထားပါသည်</div>
+            </div>
+            <button onclick="document.getElementById('escrowPickerOverlay').remove()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+          </div>
+          <div class="flex-1 overflow-y-auto space-y-2">
+            ${blueUsers.length ? blueUsers.map(u => `
+              <div onclick="createEscrowGroup('${partnerId}','${u.id}')" class="p-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border ${isOnline(u.id) ? "border-emerald-500/40" : "border-slate-800"} flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99] transition">
+                <div class="flex items-center gap-3 min-w-0">
+                  ${avatar(u, "w-11 h-11 text-base", true, false)}
+                  <div class="min-w-0">
+                    <div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div>
+                    <div class="text-xs ${isOnline(u.id) ? "text-emerald-400 font-semibold" : "text-slate-400"}">${esc(onlineText(u.id))}</div>
+                  </div>
+                </div>
+                <span class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shrink-0">ခေါ်မည်</span>
+              </div>`).join("") : `<div class="text-center text-sm text-slate-400 py-8">လောလောဆယ် ခေါ်ယူနိုင်သော Blue Mark ကြားခံ မရှိသေးပါ</div>`}
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+    }
+
+    async function createEscrowGroup(partnerId, adminId) {
+      const ov = document.getElementById("escrowPickerOverlay");
+      if (ov) ov.remove();
+
+      const pair = [st.me.id, partnerId].sort();
+      const rid = `ESCROW__${pair[0]}__${pair[1]}__${adminId}__${Date.now()}`;
+      const adminUser = uInfo(adminId);
+      const sysId = "M-SYS-" + Date.now();
+      const sysMsg = {
+        id: sysId,
+        senderId: "SYSTEM",
+        text: `🛡️ ${adminUser.name} ကြားခံအဖြစ် ဝင်ရောက်လာပါပြီ — ငွေလွှဲပြေစာနှင့် အကောင့်အချက်အလက်များကို ဤ Group ထဲတွင်သာ ပို့ပါ။ (Anti-Scam: ဤ Group တွင် Everyone ဖျက်ခွင့် ပိတ်ထားပါသည်)`,
+        createdAt: Date.now()
+      };
+
+      if (!st.chats[rid]) st.chats[rid] = {};
+      st.chats[rid][sysId] = sysMsg;
+      await fbPut(`chats/${rid}/${sysId}`, sysMsg).catch(() => {});
+
+      notify(adminId, `က ${uInfo(partnerId).name} နှင့် အရောင်းအဝယ်လုပ်ရန် သင့်ကို @ကြားခံ ခေါ်ထားပါသည် 🛡️`);
+      notify(partnerId, `က ${adminUser.name} ကို @ကြားခံ ခေါ်ပြီး ၃ ယောက် Group ဖွဲ့လိုက်ပါပြီ 🛡️`);
+      playSong("upload");
+      openEscrowGroup(rid);
+    }
+
+    async function closeEscrowDeal(rid) {
+      if (!confirm("ဤအရောင်းအဝယ် ပြီးဆုံးကြောင်း အတည်ပြုပြီး Group ပိတ်မှာ သေချာပါသလား?")) return;
+      const mid = "M-DONE-" + Date.now();
+      const doneMsg = {
+        id: mid,
+        senderId: "SYSTEM",
+        text: `✅ ကြားခံ (${st.me.name}) မှ ဤအရောင်းအဝယ် ပြီးဆုံးကြောင်း အတည်ပြုပြီး Group ကို ပိတ်သိမ်းလိုက်ပါပြီ။`,
+        closed: true,
+        createdAt: Date.now()
+      };
+      if (!st.chats[rid]) st.chats[rid] = {};
+      st.chats[rid][mid] = doneMsg;
+      await fbPut(`chats/${rid}/${mid}`, doneMsg).catch(() => {});
+      playSong("love");
+      toast("✓ အရောင်းအဝယ် ပြီးဆုံးပြီး Group ပိတ်လိုက်ပါပြီ");
+      st.lastMsgHtmlSig = "";
+      renderGroupMsgs();
+    }
+
+    function openEscrowGroup(rid) {
+      ensureBackGuard();
+      st.chatUid = null;
+      st.activeGroupId = rid;
+      st.chatImg = null;
+      st.chatAudioPreview = null;
+      st.showStickers = false;
+      st.lastMsgHtmlSig = "";
+
+      const info = parseEscrowRoom(rid);
+      const isEscrowAdmin = st.me.id === info.adminId || st.me.isAdmin;
+      const names = info.members.map(id => uInfo(id).name).join(" • ");
+
+      document.getElementById("modalRoot").innerHTML = `
+        <div class="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center">
+          <div class="bg-[#0b1120] border border-emerald-500/40 w-full max-w-lg rounded-t-3xl sm:rounded-3xl flex flex-col h-[92vh] animate-slide-up overflow-hidden">
+            <div class="px-3.5 py-3 bg-[#0f172a] border-b border-slate-800 flex items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-extrabold text-emerald-300 flex items-center gap-1.5">🛡️ ကြားခံ Group (၃ ဦး)</div>
+                <div class="text-xs text-slate-300 truncate mt-0.5">${esc(names)}</div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${isEscrowAdmin ? `<button onclick="closeEscrowDeal('${rid}')" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">✓ ပြီးဆုံးပြီ</button>` : ""}
+                <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-slate-800 text-white text-sm font-bold">✕</button>
+              </div>
+            </div>
+            <div id="msgBox" class="flex-1 p-3.5 overflow-y-auto space-y-2.5 bg-[#05080f]"></div>
+            <div id="chatAttachPreview" class="hidden px-3 py-2 bg-[#0f172a] border-t border-slate-800 flex items-center justify-between gap-2">
+              <div id="chatAttachLabel" class="flex items-center gap-2 text-xs text-emerald-300 font-bold min-w-0 flex-1"></div>
+              <button onclick="clearChatAttach()" class="w-7 h-7 rounded-full bg-slate-800 text-sm text-rose-400 font-bold shrink-0">✕</button>
+            </div>
+            <div class="p-2.5 bg-[#0f172a] border-t border-slate-800 flex items-center gap-2">
+              <label class="w-11 h-11 rounded-full bg-slate-800 hover:bg-slate-700 text-sky-400 text-xl flex items-center justify-center cursor-pointer shrink-0">🖼️<input type="file" accept="image/*" onchange="onPickChatImg(event)" class="hidden"/></label>
+              <div class="flex-1 min-w-0 h-11 bg-slate-900 border border-slate-700 rounded-full flex items-center px-4">
+                <input id="grpMsgInp" type="text" placeholder="Group ထဲသို့ စာပို့ရန်..." onkeydown="if(event.key==='Enter')sendGroupMsg()" class="flex-1 min-w-0 bg-transparent text-white text-base focus:outline-none"/>
+              </div>
+              <button onclick="sendGroupMsg()" class="h-11 px-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shrink-0">ပို့</button>
+            </div>
+          </div>
+        </div>`;
+      renderGroupMsgs();
+      fastSyncChats();
+    }
+
+    function renderGroupMsgs() {
+      const box = document.getElementById("msgBox");
+      if (!box || !st.activeGroupId) return;
+      const rid = st.activeGroupId;
+      const ms = Object.values(st.chats[rid] || {}).filter(Boolean).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      const sig = ms.map(m => m.id).join("|");
+      if (sig === st.lastMsgHtmlSig) return;
+      st.lastMsgHtmlSig = sig;
+
+      box.innerHTML = ms.map(m => {
+        if (m.senderId === "SYSTEM") {
+          return `<div class="mx-auto max-w-[92%] text-center px-3.5 py-2 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 text-xs text-emerald-200 leading-relaxed">${esc(m.text)}</div>`;
+        }
+        const me = m.senderId === st.me.id;
+        const sender = uInfo(m.senderId);
+        return `
+          <div class="flex flex-col ${me ? "items-end" : "items-start"}">
+            ${!me ? `<div class="text-[11px] font-bold text-slate-400 mb-0.5 px-1 flex items-center gap-1">${esc(sender.name)} ${blueBadge(sender)}</div>` : ""}
+            <div class="max-w-[82%] px-4 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}">
+              ${m.image ? `<img onclick="openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}
+              ${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function sendGroupMsg() {
+      if (!st.activeGroupId) return;
+      const inp = document.getElementById("grpMsgInp");
+      const text = inp ? inp.value.trim() : "";
+      if (!text && !st.chatImg) return;
+      const rid = st.activeGroupId, mid = "M-" + Date.now();
+      const m = { id: mid, senderId: st.me.id, text, image: st.chatImg || "", createdAt: Date.now() };
+      if (!st.chats[rid]) st.chats[rid] = {};
+      st.chats[rid][mid] = m;
+      if (inp) inp.value = "";
+      clearChatAttach();
+      st.lastMsgHtmlSig = "";
+      renderGroupMsgs();
+      fbPut(`chats/${rid}/${mid}`, m).catch(() => {});
+    }
+
+    // Inject @ကြားခံ button into 1-on-1 Chat Header
+    const _origOpenChatEscrowBtn = openChat;
+    openChat = function(oid) {
+      st.activeGroupId = null;
+      const out = _origOpenChatEscrowBtn(oid);
+      setTimeout(() => {
+        const hdr = document.querySelector("#modalRoot .border-b.border-slate-800");
+        if (hdr && !document.getElementById("btnMentionEscrow")) {
+          const closeBtn = hdr.querySelector("button");
+          const wrap = document.createElement("div");
+          wrap.className = "flex items-center gap-1.5 shrink-0";
+          const btn = document.createElement("button");
+          btn.id = "btnMentionEscrow";
+          btn.type = "button";
+          btn.className = "px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold";
+          btn.textContent = "@ကြားခံ";
+          btn.onclick = () => openEscrowPicker(oid);
+          wrap.appendChild(btn);
+          if (closeBtn) wrap.appendChild(closeBtn);
+          hdr.appendChild(wrap);
+        }
+      }, 20);
+      return out;
+    };
+
+    const _origCloseModalGrp = closeModal;
+    closeModal = function() {
+      st.activeGroupId = null;
+      return _origCloseModalGrp();
+    };
+
+    // Update Group Chat in Real-Time + Show Escrow Groups in Chats Tab
+    const _origFastSyncGrp = fastSyncChats;
+    fastSyncChats = async function() {
+      await _origFastSyncGrp();
+      if (st.activeGroupId) renderGroupMsgs();
+    };
+
+    const _origRenderGrpTab = render;
+    render = function() {
+      _origRenderGrpTab();
+      if (st.tab === "chats" && st.me) {
+        const escrowRooms = Object.entries(st.chats || {})
+          .filter(([k]) => isEscrowRoom(k) && k.includes(st.me.id))
+          .sort(([, a], [, b]) => {
+            const la = Math.max(0, ...Object.values(a || {}).map(m => (m && m.createdAt) || 0));
+            const lb = Math.max(0, ...Object.values(b || {}).map(m => (m && m.createdAt) || 0));
+            return lb - la;
+          });
+        const container = document.querySelector("#mainContent > div");
+        if (container && escrowRooms.length && !document.getElementById("ppwEscrowGroupList")) {
+          const sec = document.createElement("div");
+          sec.id = "ppwEscrowGroupList";
+          sec.className = "space-y-2 pb-2 border-b border-slate-800";
+          sec.innerHTML = `<div class="text-xs font-bold text-emerald-400 px-1">🛡️ ကြားခံ Group များ (${escrowRooms.length})</div>` +
+            escrowRooms.map(([rk, mObj]) => {
+              const ms = Object.values(mObj || {}).filter(Boolean).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+              const last = ms[ms.length - 1];
+              const isClosed = ms.some(m => m.closed);
+              const info = parseEscrowRoom(rk);
+              const names = info.members.map(id => uInfo(id).name).join(" • ");
+              return `
+                <div onclick="openEscrowGroup('${rk}')" class="bg-emerald-950/30 p-3.5 rounded-2xl border ${isClosed ? "border-slate-800 opacity-65" : "border-emerald-500/40"} flex items-center justify-between gap-3 cursor-pointer">
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-bold text-emerald-300 truncate flex items-center gap-1.5">🛡️ ကြားခံ Group ${isClosed ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">ပြီးဆုံးပြီး</span>` : ""}</div>
+                    <div class="text-xs text-slate-300 truncate mt-0.5">${esc(names)}</div>
+                    <div class="text-xs text-slate-400 truncate mt-0.5">${last ? esc(last.text || "📷 ဓာတ်ပုံ") : ""}</div>
+                  </div>
+                  <span class="text-xs text-slate-400 shrink-0">${last ? ago(last.createdAt) : ""}</span>
+                </div>`;
+            }).join("");
+          container.insertBefore(sec, container.children[1] || null);
+        }
+      }
+    };
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
