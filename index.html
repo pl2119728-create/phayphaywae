@@ -2586,6 +2586,176 @@
         });
       };
     })();
+    // =========================================================================
+    // FIX V9: Like / Reaction Notification -> Exact Post Redirect (Never Profile)
+    // =========================================================================
+    (function () {
+      if (window.__PPW_FIX_V9__) return;
+      window.__PPW_FIX_V9__ = true;
+
+      // 1. Clean notify: ONLY save postId when explicitly passed (no wrong fallback!)
+      notify = function (toId, text, postId = "", kind = "") {
+        if (!st.me || !toId || toId === st.me.id || isBlockedPair(toId)) return;
+        const id = "N-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        fbPut(`notifications/${toId}/${id}`, {
+          id,
+          fromId: st.me.id,
+          fromName: st.me.name,
+          text,
+          postId: postId || "",
+          kind: kind || "",
+          read: false,
+          createdAt: Date.now()
+        }).catch(() => {});
+      };
+
+      // 2. Pass exact pid when giving Like / Love / Haha / Angry reaction
+      setReaction = function (pid, rKey) {
+        recordRealView(pid);
+        const p = st.posts.find(x => x.id === pid);
+        if (!p) return;
+        if (!p.reactions) p.reactions = {};
+        REACTIONS.forEach(r => { if (!p.reactions[r.key]) p.reactions[r.key] = {}; });
+        const prev = userReaction(p);
+        REACTIONS.forEach(r => {
+          if (p.reactions[r.key][st.me.id]) {
+            delete p.reactions[r.key][st.me.id];
+            fbDel(`posts/${pid}/reactions/${r.key}/${st.me.id}`).catch(() => {});
+          }
+        });
+        if (p.likes && p.likes[st.me.id]) {
+          delete p.likes[st.me.id];
+          fbDel(`posts/${pid}/likes/${st.me.id}`).catch(() => {});
+        }
+        if (prev !== rKey) {
+          p.reactions[rKey][st.me.id] = true;
+          playSong(rKey);
+          const rxObj = REACTIONS.find(r => r.key === rKey);
+          const rxIcon = rxObj ? rxObj.icon : "👍";
+          notify(p.authorId, `က သင့်ပို့စ်ကို ${rxIcon} Reaction ပေးလိုက်ပါသည်`, pid, "reaction");
+          fbPut(`posts/${pid}/reactions/${rKey}/${st.me.id}`, true).catch(() => {});
+        }
+        updateLiveLikeCounters();
+        saveFastCache();
+      };
+
+      // 3. Pass exact postId when commenting or replying on a post
+      const _origAddCmtV9 = addCmt;
+      addCmt = async function (id) {
+        const inp = document.getElementById("ci-" + id);
+        if (!inp) return;
+        const text = inp.value.trim();
+        if (!text) return;
+        const p = st.posts.find(x => x.id === id);
+        if (!p) return;
+        if (!p.comments) p.comments = {};
+
+        const rep = (st.cmtReply && st.cmtReply[id]) || null;
+        const cid = "C-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        const c = {
+          id: cid,
+          authorId: st.me.id,
+          text,
+          parentId: rep ? rep.parentId : "",
+          replyToUid: rep ? rep.replyToUid : "",
+          replyToName: rep ? rep.replyToName : "",
+          createdAt: Date.now()
+        };
+
+        p.comments[cid] = c;
+        inp.value = "";
+        if (st.cmtReply) delete st.cmtReply[id];
+        playSong("notif");
+        saveFastCache();
+        safeRender(true);
+
+        if (rep && rep.replyToUid && rep.replyToUid !== st.me.id) {
+          notify(rep.replyToUid, "က သင့်မှတ်ချက်ကို Reply ပြန်လိုက်သည်: " + text.slice(0, 20), id, "comment");
+        }
+        if (p.authorId !== st.me.id && (!rep || rep.replyToUid !== p.authorId)) {
+          notify(p.authorId, "က မှတ်ချက်ရေးခဲ့သည်: " + text.slice(0, 20), id, "comment");
+        }
+        await fbPut(`posts/${id}/comments/${cid}`, c).catch(() => {});
+      };
+
+      // 4. Jump directly to the exact post when clicking Like / Comment / Mention Noti
+      window.openNotifTarget = async function (notifIdx, fallbackFromId) {
+        const list = (st.notifs || []).filter(n => n && !isBlockedPair(n.fromId));
+        const n = list[notifIdx];
+        if (!n) {
+          if (fallbackFromId) openUserProfile(fallbackFromId);
+          return;
+        }
+
+        const txt = n.text || "";
+        const isPostNotif = !!(n.postId || txt.includes("ပို့စ်") || txt.includes("Reaction") || txt.includes("မှတ်ချက်") || txt.includes("Reply") || txt.includes("@Mention"));
+
+        let pid = n.postId || "";
+        let targetPost = pid ? st.posts.find(x => x && x.id === pid) : null;
+
+        // Fetch post from Firebase if not currently in local list
+        if (!targetPost && pid && navigator.onLine) {
+          try {
+            const fetched = await fbGet(`posts/${pid}`).catch(() => null);
+            if (fetched && isValidPostObj(fetched)) {
+              mergeServerPosts({ [pid]: fetched });
+              targetPost = st.posts.find(x => x && x.id === pid);
+            }
+          } catch (e) {}
+        }
+
+        // For older Like/Comment notifs created before V9 (which had no postId):
+        // find user's post that actually has a reaction/comment from n.fromId
+        if (!targetPost && isPostNotif && n.fromId) {
+          const myPosts = st.posts.filter(p => p && p.authorId === st.me.id && !st.deletedIds[p.id]);
+          if (txt.includes("Reaction")) {
+            targetPost = myPosts.find(p => getReactionList(p).some(r => r.uid === n.fromId));
+          } else if (txt.includes("မှတ်ချက်") || txt.includes("Reply")) {
+            targetPost = myPosts.find(p => p.comments && Object.values(p.comments).some(c => c && c.authorId === n.fromId));
+          } else if (txt.includes("@Mention")) {
+            targetPost = st.posts.find(p => p && p.authorId === n.fromId && p.mentions && Object.values(p.mentions).includes(st.me.id));
+          }
+          if (!targetPost && myPosts.length === 1) targetPost = myPosts[0];
+        }
+
+        // If it's a friend/follow/escrow notif (not a post notif), open user profile
+        if (!isPostNotif) {
+          if (n.fromId) openUserProfile(n.fromId);
+          return;
+        }
+
+        // Never jump into Profile by mistake for a Post Noti
+        if (!targetPost) {
+          toast("ဤပို့စ်ကို ဖျက်လိုက်ပါပြီ သို့မဟုတ် မတွေ့တော့ပါ");
+          return;
+        }
+
+        pauseAllVideos(null);
+        pushNavStep("notifications", null);
+        st.tab = "home";
+        st.viewProfileUid = null;
+        st.cat = "အားလုံး";
+        st.focusPostId = targetPost.id;
+        if (txt.includes("မှတ်ချက်") || txt.includes("Reply")) {
+          st.openCmt[targetPost.id] = true;
+        }
+        updateDockHighlight();
+        st.lastRenderSig = "";
+        render();
+
+        setTimeout(() => {
+          const el = document.getElementById("post-card-" + targetPost.id);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("ring-2", "ring-emerald-400");
+            setTimeout(() => {
+              el.classList.remove("ring-2", "ring-emerald-400");
+              st.focusPostId = null;
+            }, 2500);
+          }
+        }, 80);
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
