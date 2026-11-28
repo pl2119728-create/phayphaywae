@@ -1811,6 +1811,270 @@
         renderTypingBanner();
       };
     })();
+    // =========================================================================
+    // UPGRADE V4: Chat Reactions + Forward Message + Friends-Only @Mention
+    // =========================================================================
+    (function () {
+      if (window.__PPW_UPGRADE_V4__) return;
+      window.__PPW_UPGRADE_V4__ = true;
+
+      const MSG_RX = ["❤️", "😂", "😮", "😢", "😡", "👍"];
+      const WAVE_H = [35, 65, 45, 90, 55, 100, 75, 40, 85, 95, 60, 45, 80, 100, 70, 50, 85, 60, 40, 75, 50, 35];
+      st.postMentions = {};
+
+      function fmtS(sec) {
+        const s = Math.max(0, Math.round(Number(sec) || 0));
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+      }
+
+      // 1. MESSAGE REACTION + FORWARD + DELETE POPUP MENU
+      window.reactToMsg = function (rid, mid, emoji) {
+        const m = st.chats[rid] && st.chats[rid][mid];
+        if (!m || !st.me) return;
+        if (!m.reactions || typeof m.reactions !== "object") m.reactions = {};
+        if (m.reactions[st.me.id] === emoji) {
+          delete m.reactions[st.me.id];
+          fbDel(`chats/${rid}/${mid}/reactions/${st.me.id}`).catch(() => {});
+        } else {
+          m.reactions[st.me.id] = emoji;
+          playSong(emoji === "❤️" ? "love" : "like");
+          fbPut(`chats/${rid}/${mid}/reactions/${st.me.id}`, emoji).catch(() => {});
+        }
+        const bar = document.getElementById("msgActionBar");
+        if (bar) bar.innerHTML = "";
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+      };
+
+      openDeleteMsgMenu = function (mid) {
+        if (!st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const m = (st.chats[rid] || {})[mid];
+        const bar = document.getElementById("msgActionBar");
+        if (!m || !bar || m.deletedForAll) return;
+        const myRx = (m.reactions && m.reactions[st.me.id]) || "";
+        bar.innerHTML = `
+          <div class="px-3 py-2.5 bg-[#0f172a] border-t border-slate-700/90 space-y-2.5 animate-pop">
+            <div class="flex items-center justify-between gap-1 bg-slate-900/90 border border-slate-700/80 rounded-full px-2.5 py-1.5">
+              ${MSG_RX.map(ic => `<button type="button" onclick="reactToMsg('${rid}','${mid}','${ic}')" class="w-10 h-10 rounded-full flex items-center justify-center text-2xl transition active:scale-125 ${myRx === ic ? "bg-emerald-600/40 ring-2 ring-emerald-400 scale-110" : "hover:bg-slate-800"}">${ic}</button>`).join("")}
+            </div>
+            <div class="flex items-center justify-between gap-1.5 text-xs">
+              <button type="button" onclick="openForwardModal('${rid}','${mid}')" class="flex-1 py-2 rounded-xl bg-sky-600/20 border border-sky-500/40 text-sky-300 font-bold">↪️ Forward ပို့</button>
+              <button type="button" onclick="deleteForMe('${mid}')" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-200 font-bold">🗑️ ဖျက်</button>
+              ${m.senderId === st.me.id ? `<button type="button" onclick="deleteForEveryone('${mid}')" class="px-3 py-2 rounded-xl bg-rose-600/80 text-white font-bold">Everyone ဖျက်</button>` : ""}
+              <button type="button" onclick="document.getElementById('msgActionBar').innerHTML=''" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 font-bold">✕</button>
+            </div>
+          </div>`;
+      };
+
+      // 2. FORWARD MESSAGE TO FRIEND MODAL
+      window.openForwardModal = function (srcRid, mid) {
+        const m = st.chats[srcRid] && st.chats[srcRid][mid];
+        if (!m) return;
+        const bar = document.getElementById("msgActionBar");
+        if (bar) bar.innerHTML = "";
+
+        const friendIds = Array.isArray(st.me.friends) ? st.me.friends : [];
+        const targets = Object.values(st.users || {})
+          .filter(u => u && u.id !== st.me.id && !isBlockedPair(u.id))
+          .sort((a, b) => (friendIds.includes(b.id) ? 1 : 0) - (friendIds.includes(a.id) ? 1 : 0));
+
+        const old = document.getElementById("ppwForwardOverlay");
+        if (old) old.remove();
+        const ov = document.createElement("div");
+        ov.id = "ppwForwardOverlay";
+        ov.className = "fixed inset-0 z-[65] bg-black/85 flex items-end sm:items-center justify-center p-3";
+        ov.onclick = () => ov.remove();
+        ov.innerHTML = `
+          <div onclick="event.stopPropagation()" class="bg-[#0f172a] border border-sky-500/40 w-full max-w-md rounded-3xl p-4 space-y-3 max-h-[80vh] flex flex-col animate-slide-up">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h3 class="text-base font-bold text-sky-300">↪️ Forward ပို့ရန် ရွေးပါ</h3>
+              <button onclick="document.getElementById('ppwForwardOverlay').remove()" class="w-8 h-8 rounded-full bg-slate-800 text-white text-xs font-bold">✕</button>
+            </div>
+            <div class="text-xs text-slate-300 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 truncate">
+              ${m.audio ? "🎙️ အသံမက်ဆေ့ချ်" : (m.image ? "🖼️ ဓာတ်ပုံ" : esc(m.text || ""))}
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-2">
+              ${targets.length ? targets.map(u => `
+                <div class="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-2.5">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    ${avatar(u, "w-10 h-10 text-sm", true, false)}
+                    <div class="min-w-0">
+                      <div class="text-sm font-bold text-white truncate flex items-center gap-1">${esc(u.name)} ${blueBadge(u)}</div>
+                      <div class="text-[11px] ${friendIds.includes(u.id) ? "text-emerald-400" : "text-slate-400"}">${friendIds.includes(u.id) ? "👥 Friend" : "User"}</div>
+                    </div>
+                  </div>
+                  <button type="button" onclick="sendForwardTo('${srcRid}','${mid}','${u.id}',this)" class="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shrink-0">ပို့မည်</button>
+                </div>`).join("") : `<div class="text-center text-sm text-slate-400 py-8">ပို့နိုင်မည့်သူ မရှိသေးပါ</div>`}
+            </div>
+          </div>`;
+        document.body.appendChild(ov);
+      };
+
+      window.sendForwardTo = async function (srcRid, mid, targetUid, btnEl) {
+        const src = st.chats[srcRid] && st.chats[srcRid][mid];
+        if (!src || !st.me) return;
+        if (btnEl) { btnEl.disabled = true; btnEl.textContent = "✓ ပို့ပြီး"; btnEl.className = "px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shrink-0"; }
+        const targetRid = roomId(st.me.id, targetUid);
+        const newMid = `M-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const fwdMsg = {
+          id: newMid, senderId: st.me.id, text: src.text || "", image: src.image || "",
+          audio: src.audio || "", audioDur: Number(src.audioDur || 0), forwarded: true,
+          seenAt: 0, deletedFor: {}, deletedForAll: false, createdAt: Date.now()
+        };
+        if (!st.chats[targetRid]) st.chats[targetRid] = {};
+        st.chats[targetRid][newMid] = { ...fwdMsg, _status: "sent" };
+        await fbPut(`chats/${targetRid}/${newMid}`, fwdMsg).catch(() => {});
+        notify(targetUid, "က မက်ဆေ့ချ်တစ်ခု Forward ပို့လိုက်သည် ↪️");
+        playSong("notif");
+        toast(`✓ ${uInfo(targetUid).name} ဆီ Forward ပို့ပြီးပါပြီ`);
+      };
+
+      // 3. ENHANCED renderMsgs (Preserves FIX V3 Waveform + Adds Reactions & Forwarded Badge)
+      renderMsgs = function () {
+        const box = document.getElementById("msgBox"); if (!box || !st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid); mergeRoomSafe(rid, null);
+        const ms = Object.values(st.chats[rid] || {}).filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id])).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        const sig = ms.map(m => {
+          const rxSig = m.reactions ? Object.values(m.reactions).sort().join("") : "";
+          return `${m.id}_${m._status || "sent"}_${m.seenAt ? 1 : 0}_${m.deletedForAll ? 1 : 0}_${rxSig}`;
+        }).join("|");
+
+        if (sig !== st.lastMsgHtmlSig) {
+          st.lastMsgHtmlSig = sig;
+          box.innerHTML = ms.length ? ms.map(m => {
+            const me = m.senderId === st.me.id;
+            const isPureSticker = !m.deletedForAll && !m.image && !m.audio && STICKER_ICONS.includes((m.text || "").trim());
+            let tick = "";
+            if (me) {
+              if (m._status === "sending") tick = `<span class="text-emerald-100/80 text-[10px]">⏳ ပို့နေဆဲ...</span>`;
+              else if (m._status === "queued") tick = `<span class="text-amber-200 text-[10px]">🕒 Offline</span>`;
+              else if (m._status === "failed") tick = `<button type="button" onclick="event.stopPropagation();retryChatMsg('${rid}','${m.id}')" class="text-rose-200 underline text-[10px] font-bold">⚠️ ပြန်ပို့ရန်</button>`;
+              else if (m.seenAt) tick = `<span class="text-sky-200 font-bold">✓✓</span>`;
+              else tick = `<span class="text-emerald-200/90 font-bold">✓</span>`;
+            }
+            let audioHtml = "";
+            if (m.audio) {
+              const dur = Number(m.audioDur || (window._ppwDurCache && window._ppwDurCache[m.id]) || 0);
+              const barsHtml = WAVE_H.map(h => `<span class="w-[3px] rounded-full bg-white transition-opacity duration-150" style="height:${Math.round(h * 0.26)}px;opacity:0.4"></span>`).join("");
+              audioHtml = `<div onclick="event.stopPropagation();toggleVoicePlay('${m.id}','${rid}')" class="flex items-center gap-2.5 py-0.5 min-w-[215px]">
+                <button id="aud-btn-${m.id}" type="button" class="w-9 h-9 rounded-full bg-black/25 text-white flex items-center justify-center text-sm font-bold shrink-0 pl-0.5">▶</button>
+                <div id="aud-wave-${m.id}" class="flex-1 flex items-center justify-between gap-[2px] h-7 px-1">${barsHtml}</div>
+                <span id="aud-time-${m.id}" class="text-xs font-mono font-bold text-white/95 shrink-0 min-w-[34px] text-right">${dur > 0 ? fmtS(dur) : "0:01"}</span>
+              </div>`;
+            }
+            const rxVals = m.reactions ? Object.values(m.reactions).filter(Boolean) : [];
+            const uniqRx = [...new Set(rxVals)].slice(0, 3).join("");
+            const rxBadge = rxVals.length
+              ? `<div class="absolute -bottom-3 ${me ? "left-2" : "right-2"} px-1.5 py-0.5 rounded-full bg-[#1e293b] border border-slate-600 shadow-md text-xs flex items-center gap-0.5 leading-none"><span>${uniqRx}</span>${rxVals.length > 1 ? `<span class="text-[10px] text-slate-300 font-bold">${rxVals.length}</span>` : ""}</div>`
+              : "";
+
+            return `<div class="flex items-end ${me ? "justify-end" : "justify-start"} ${rxVals.length ? "mb-3.5" : ""}">
+              <div onclick="openDeleteMsgMenu('${m.id}')" class="relative cursor-pointer ${isPureSticker ? "text-6xl py-1 px-2" : `max-w-[85%] px-3.5 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">
+                ${m.forwarded && !m.deletedForAll ? `<div class="text-[10px] opacity-80 font-bold flex items-center gap-1">↪️ Forwarded</div>` : ""}
+                ${m.deletedForAll ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>` : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${audioHtml}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}
+                ${me ? `<div class="text-[11px] text-right leading-none pt-0.5">${tick}</div>` : ""}
+                ${rxBadge}
+              </div>
+            </div>`;
+          }).join("") : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+          box.scrollTop = box.scrollHeight;
+        }
+        renderTypingBanner();
+      };
+
+      // 4. POST @MENTION (ONLY FRIENDS CAN BE MENTIONED)
+      function attachMentionHelper() {
+        const ta = document.getElementById("postTxt");
+        if (!ta || ta.dataset.mentionReady) return;
+        ta.dataset.mentionReady = "1";
+        st.postMentions = {};
+
+        const box = document.createElement("div");
+        box.id = "ppwMentionBox";
+        box.className = "hidden bg-slate-900 border border-sky-500/40 rounded-2xl p-2 space-y-1 max-h-40 overflow-y-auto";
+        ta.insertAdjacentElement("afterend", box);
+
+        ta.addEventListener("input", () => {
+          const val = ta.value.slice(0, ta.selectionStart);
+          const match = val.match(/@([^\s@]*)$/);
+          if (!match) { box.classList.add("hidden"); return; }
+          const kw = match[1].toLowerCase();
+          const friIds = Array.isArray(st.me.friends) ? st.me.friends : [];
+          const friList = friIds.filter(fid => !isBlockedPair(fid)).map(fid => uInfo(fid)).filter(u => !kw || (u.name || "").toLowerCase().includes(kw));
+
+          if (!friList.length) {
+            box.innerHTML = `<div class="text-xs text-slate-400 px-2 py-1.5">👥 Friend ဖြစ်ပြီးသားသူများကိုသာ @Mention ခေါ်နိုင်ပါသည်</div>`;
+          } else {
+            box.innerHTML = friList.slice(0, 6).map(u => `
+              <button type="button" onclick="pickPostMention('${u.id}','${esc(u.name).replace(/'/g, "\\'")}')" class="w-full p-2 rounded-xl hover:bg-slate-800 flex items-center gap-2.5 text-left">
+                ${avatar(u, "w-7 h-7 text-xs", true, false)}
+                <span class="text-sm font-bold text-white truncate">${esc(u.name)} ${blueBadge(u)}</span>
+              </button>`).join("");
+          }
+          box.classList.remove("hidden");
+        });
+      }
+
+      window.pickPostMention = function (uid, name) {
+        const ta = document.getElementById("postTxt");
+        const box = document.getElementById("ppwMentionBox");
+        if (!ta) return;
+        const pos = ta.selectionStart;
+        const before = ta.value.slice(0, pos).replace(/@([^\s@]*)$/, `@${name} `);
+        const after = ta.value.slice(pos);
+        ta.value = before + after;
+        st.postMentions[name] = uid;
+        if (box) box.classList.add("hidden");
+        ta.focus();
+      };
+
+      const _baseOpenComposer = openComposerModal;
+      openComposerModal = function () {
+        const res = _baseOpenComposer.apply(this, arguments);
+        setTimeout(attachMentionHelper, 30);
+        return res;
+      };
+
+      // Notify mentioned friends & save mentions map with post
+      const _baseSubmitPost = submitPost;
+      submitPost = async function () {
+        const mentionsCopy = { ...(st.postMentions || {}) };
+        const txt = (document.getElementById("postTxt") && document.getElementById("postTxt").value) || "";
+        const res = await _baseSubmitPost.apply(this, arguments);
+        const latest = st.posts[0];
+        if (latest && latest.authorId === st.me.id && Object.keys(mentionsCopy).length) {
+          const used = {};
+          Object.entries(mentionsCopy).forEach(([name, uid]) => {
+            if (txt.includes("@" + name)) {
+              used[name] = uid;
+              notify(uid, "က ပို့စ်ထဲတွင် သင့်ကို @Mention ခေါ်ထားပါသည်");
+            }
+          });
+          if (Object.keys(used).length) {
+            latest.mentions = used;
+            fbPut(`posts/${latest.id}/mentions`, used).catch(() => {});
+            saveFastCache();
+            safeRender(true);
+          }
+        }
+        st.postMentions = {};
+        return res;
+      };
+
+      // Highlight clickable @Mentions inside rendered post cards
+      const _basePostCard = postCard;
+      postCard = function (p) {
+        let html = _basePostCard(p);
+        if (p && p.mentions && typeof p.mentions === "object") {
+          Object.entries(p.mentions).forEach(([name, uid]) => {
+            const safeName = esc(name);
+            html = html.split("@" + safeName).join(`<span onclick="event.stopPropagation();openUserProfile('${uid}')" class="text-sky-400 font-bold cursor-pointer hover:underline">@${safeName}</span>`);
+          });
+        }
+        return html;
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
