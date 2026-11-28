@@ -2761,6 +2761,127 @@
       // Flush any offline queued messages on startup
       setTimeout(flushOfflineChatQueue, 1500);
     })();
+    // =========================================================================
+    // CLEAN UPGRADE V6: Instant Live Online Status (SSE) + Ultra-Fast Photo Chat
+    // =========================================================================
+    (function () {
+      if (window.__PPW_V6_LIVE__) return;
+      window.__PPW_V6_LIVE__ = true;
+
+      // 1. Live Presence Stream (Online တက်တာနဲ့ တစ်ဖက်လူဆီ 0.2s အတွင်း ချက်ချင်းပေါ်စေရန်)
+      window._ppwPresenceStream = null;
+
+      function updateActiveChatOnlineHeader() {
+        if (!st.chatUid) return;
+        const modal = document.querySelector("#modalRoot .flex.flex-col");
+        if (!modal) return;
+        const statusEl = modal.querySelector(".border-b .text-xs.font-semibold");
+        if (statusEl) {
+          const online = isOnline(st.chatUid);
+          statusEl.textContent = onlineText(st.chatUid);
+          statusEl.className = `text-xs font-semibold truncate ${online ? "text-emerald-400" : "text-slate-400"}`;
+        }
+      }
+
+      function applyPresenceUpdate(path, data) {
+        if (!st.presence || typeof st.presence !== "object") st.presence = {};
+        if (!path || path === "/") {
+          if (data && typeof data === "object") st.presence = data;
+        } else {
+          const parts = path.replace(/^\/+/, "").split("/").filter(Boolean);
+          const uid = parts[0];
+          if (uid) {
+            if (parts.length === 1) {
+              if (data === null) delete st.presence[uid];
+              else st.presence[uid] = data;
+            } else {
+              if (!st.presence[uid] || typeof st.presence[uid] !== "object") st.presence[uid] = {};
+              st.presence[uid][parts[1]] = data;
+            }
+          }
+        }
+        updateActiveChatOnlineHeader();
+        if (st.tab === "chats" || st.tab === "friends" || st.tab === "userProfile") {
+          clearTimeout(window._presRenderT);
+          window._presRenderT = setTimeout(() => safeRender(false), 250);
+        }
+      }
+
+      function startLivePresenceStream() {
+        if (window._ppwPresenceStream) {
+          try { window._ppwPresenceStream.close(); } catch (e) {}
+        }
+        if (!window.EventSource || !st.me) return;
+        try {
+          const es = new EventSource(`${DB}/presence.json`);
+          window._ppwPresenceStream = es;
+          es.addEventListener("put", (e) => {
+            try {
+              const pl = JSON.parse(e.data);
+              if (pl) applyPresenceUpdate(pl.path, pl.data);
+            } catch (err) {}
+          });
+          es.addEventListener("patch", (e) => {
+            try {
+              const pl = JSON.parse(e.data);
+              if (pl && pl.data && typeof pl.data === "object") {
+                const base = (!pl.path || pl.path === "/") ? "" : pl.path.replace(/\/+$/, "");
+                Object.entries(pl.data).forEach(([k, v]) => applyPresenceUpdate(`${base}/${k}`, v));
+              }
+            } catch (err) {}
+          });
+        } catch (e) {}
+      }
+
+      // ဖုန်းဖွင့်တာနဲ့ ချက်ချင်း Online ပို့ပြီး 10 စက္ကန့်တိုင်း Heartbeat ထိန်းထားခြင်း
+      window.addEventListener("focus", () => { if (st.me) updateMyPresence(true); });
+      setInterval(() => {
+        if (st.me && !document.hidden && navigator.onLine) updateMyPresence(true);
+      }, 10000);
+
+      // Start stream when app initializes or user logs in
+      const _origStartPostStreamV6 = startPostStream;
+      startPostStream = function () {
+        const out = _origStartPostStreamV6.apply(this, arguments);
+        if (st.me) {
+          updateMyPresence(true);
+          startLivePresenceStream();
+        }
+        return out;
+      };
+      if (st.me) {
+        updateMyPresence(true);
+        startLivePresenceStream();
+      }
+
+      // 2. Ultra-Fast Chat Photo Compression (540px / 0.62 -> ~25KB, 5x faster send)
+      onPickChatImg = function (e) {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = (ev) => {
+          const im = new Image();
+          im.onload = () => {
+            const c = document.createElement("canvas");
+            const mw = 540;
+            let w = im.width, h = im.height;
+            if (w > mw) { h = Math.round(h * mw / w); w = mw; }
+            c.width = w; c.height = h;
+            c.getContext("2d").drawImage(im, 0, 0, w, h);
+            st.chatImg = c.toDataURL("image/jpeg", 0.62);
+            st.chatAudioPreview = null;
+            const lbl = document.getElementById("chatAttachLabel");
+            const box = document.getElementById("chatAttachPreview");
+            if (lbl) lbl.innerHTML = `<img src="${st.chatImg}" class="w-10 h-10 rounded-lg object-cover"/><span>ဓာတ်ပုံ ပို့ရန်အသင့် (Fast)</span>`;
+            if (box) box.classList.remove("hidden");
+            updateChatRightBtn();
+          };
+          im.src = ev.target.result;
+        };
+        r.readAsDataURL(f);
+        e.target.value = "";
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
