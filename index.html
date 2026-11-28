@@ -2756,6 +2756,211 @@
         }, 80);
       };
     })();
+    // =========================================================================
+    // PPW PRO UI BUNDLE: Facebook Pro Post Card + Chat Topic Tabs (Fri / Group)
+    // =========================================================================
+    (function () {
+      if (window.__PPW_PRO_UI_BUNDLE__) return;
+      window.__PPW_PRO_UI_BUNDLE__ = true;
+
+      // -----------------------------------------------------------------------
+      // 1. FACEBOOK PRO POST CARD UI (Clean Header, Add friend, ⋯ Menu, Full Media)
+      // -----------------------------------------------------------------------
+      window.quickAddFriendFromPost = async function (uid, btnEl) {
+        if (!st.me || !uid || uid === st.me.id) return;
+        if (typeof sendFriendReq === "function") { sendFriendReq(uid); return; }
+        if (typeof addFriend === "function") { addFriend(uid); return; }
+        if (!Array.isArray(st.me.friends)) st.me.friends = [];
+        if (!st.me.friends.includes(uid)) {
+          st.me.friends.push(uid);
+          if (typeof saveMe === "function") saveMe();
+          await fbPut(`users/${st.me.id}/friends`, st.me.friends).catch(() => {});
+          if (typeof notify === "function") notify(uid, "က သင့်ကို Friend ထည့်လိုက်ပါသည်");
+        }
+        if (btnEl) btnEl.remove();
+        if (typeof toast === "function") toast("✓ Friend ထည့်ပြီးပါပြီ");
+      };
+
+      window.openPostDotsMenu = function (pid) {
+        const p = (st.posts || []).find(x => x && x.id === pid);
+        if (!p || !st.me) return;
+        const own = p.authorId === st.me.id || st.me.isAdmin;
+        const old = document.getElementById("ppwDotsMenu");
+        if (old) old.remove();
+
+        const ov = document.createElement("div");
+        ov.id = "ppwDotsMenu";
+        ov.className = "fixed inset-0 z-[75] bg-black/75 flex items-end sm:items-center justify-center p-3";
+        ov.onclick = () => ov.remove();
+        ov.innerHTML = `
+          <div onclick="event.stopPropagation()" class="w-full max-w-sm bg-[#0f172a] border border-slate-700 rounded-3xl p-3 space-y-1.5 shadow-2xl animate-pop">
+            <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-2"></div>
+            ${own ? `
+              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof openEditPostModal==='function')openEditPostModal('${pid}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-white flex items-center gap-3"><span>✏️</span><span>ပို့စ်ပြင်ဆင်မည်</span></button>
+              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof toggleSold==='function')toggleSold('${pid}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-amber-300 flex items-center gap-3"><span>🏷️</span><span>${p.sold ? "ပြန်ရောင်းမည် (Unsold)" : "ရောင်းပြီး (Sold) မှတ်မည်"}</span></button>
+              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof delPost==='function')delPost('${pid}')" class="w-full p-3 rounded-2xl hover:bg-rose-950/60 text-left text-sm font-bold text-rose-400 flex items-center gap-3"><span>🗑️</span><span>ပို့စ်ဖျက်မည်</span></button>
+            ` : `
+              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();openUserProfile('${p.authorId}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-white flex items-center gap-3"><span>👤</span><span>Profile ကြည့်မည်</span></button>
+              <button type="button" onclick="document.getElementById('ppwDotsMenu').remove();if(typeof openChat==='function')openChat('${p.authorId}');else openUserProfile('${p.authorId}')" class="w-full p-3 rounded-2xl hover:bg-slate-800 text-left text-sm font-bold text-emerald-400 flex items-center gap-3"><span>💬</span><span>မက်ဆေ့ချ် ပို့မည်</span></button>
+            `}
+            <button type="button" onclick="document.getElementById('ppwDotsMenu').remove()" class="w-full p-2.5 rounded-2xl bg-slate-800/80 text-center text-xs font-bold text-slate-300 mt-1">ပိတ်မည်</button>
+          </div>`;
+        document.body.appendChild(ov);
+      };
+
+      const _origPostCardFB = postCard;
+      postCard = function (p) {
+        if (!p || !st.me) return _origPostCardFB(p);
+        const u = uInfo(p.authorId);
+        const own = p.authorId === st.me.id;
+        const isFri = Array.isArray(st.me.friends) && st.me.friends.includes(p.authorId);
+
+        const addFriHtml = (!own && !isFri)
+          ? `<span class="text-slate-500 mx-1">•</span><button type="button" onclick="event.stopPropagation();quickAddFriendFromPost('${p.authorId}',this)" class="text-sky-400 hover:text-sky-300 text-sm font-bold shrink-0">Add friend</button>`
+          : "";
+
+        const soldPill = p.sold
+          ? `<span class="ml-1.5 px-1.5 py-0.5 rounded bg-rose-600/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold">Sold</span>`
+          : "";
+
+        let caption = esc(p.text || "");
+        if (p.mentions && typeof p.mentions === "object") {
+          Object.entries(p.mentions).forEach(([name, uid]) => {
+            const sn = esc(name);
+            caption = caption.split("@" + sn).join(`<span onclick="event.stopPropagation();openUserProfile('${uid}')" class="text-sky-400 font-bold cursor-pointer">@${sn}</span>`);
+          });
+        }
+
+        const mediaHtml = p.video
+          ? `<video src="${p.video}" controls playsinline class="w-full max-h-[520px] bg-black object-contain"></video>`
+          : (p.image ? `<img onclick="if(typeof openImageViewer==='function')openImageViewer(this.src)" src="${p.image}" class="w-full max-h-[520px] object-cover bg-slate-950 cursor-zoom-in" />` : "");
+
+        const origHtml = _origPostCardFB(p);
+        const rxCount = (typeof getReactionList === "function") ? getReactionList(p).length : 0;
+        const cmtCount = p.comments ? Object.keys(p.comments).length : 0;
+        const myRx = (typeof userReaction === "function") ? userReaction(p) : "";
+
+        const footerHtml = `
+          <div class="px-3.5 py-2 flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/70">
+            <span>👍 ${rxCount} ဦး</span>
+            <span>👁️ ${p.views || 1}</span>
+          </div>
+          <div class="px-2 py-1.5 grid grid-cols-3 gap-1.5 text-sm font-bold text-slate-300">
+            <button type="button" onclick="setReaction('${p.id}','like')" class="py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-center gap-1.5 ${myRx ? "text-sky-400" : ""}"><span>👍</span><span>${rxCount || "Like"}</span></button>
+            <button type="button" onclick="st.openCmt['${p.id}']=!st.openCmt['${p.id}'];if(typeof safeRender==='function')safeRender(true);else render()" class="py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-center gap-1.5"><span>💬</span><span>မန့် ${cmtCount ? `(${cmtCount})` : ""}</span></button>
+            <button type="button" onclick="if(typeof sharePost==='function')sharePost('${p.id}');else toast('Link ကူးပြီးပါပြီ')" class="py-2 rounded-xl hover:bg-slate-800/80 flex items-center justify-center gap-1.5"><span>↪️</span><span>Share</span></button>
+          </div>`;
+
+        const cmtMarker = `<div class="bg-slate-900/90 px-3.5 py-3 border-t border-slate-800 rounded-b-2xl space-y-2.5">`;
+        const cmtIdx = origHtml.lastIndexOf(cmtMarker);
+        const cmtHtml = cmtIdx !== -1 ? origHtml.slice(cmtIdx).replace(/<\/article>\s*$/, "") : "";
+
+        return `
+          <article id="post-card-${p.id}" class="bg-[#0f172a] border-y sm:border border-slate-800/90 sm:rounded-2xl overflow-hidden">
+            <div class="px-3.5 pt-3 pb-2 flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div onclick="openUserProfile('${u.id}')" class="cursor-pointer shrink-0">${avatar(u, "w-10 h-10 text-sm", true, true)}</div>
+                <div class="min-w-0">
+                  <div class="flex items-center flex-wrap leading-tight">
+                    <span onclick="openUserProfile('${u.id}')" class="text-[15px] font-bold text-white cursor-pointer truncate max-w-[170px]">${esc(u.name)}</span>
+                    <span class="ml-1">${blueBadge(u)}</span>
+                    ${addFriHtml}
+                  </div>
+                  <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                    <span>${ago(p.createdAt)}</span>
+                    <span>•</span>
+                    <span>🌐</span>
+                    ${soldPill}
+                  </div>
+                </div>
+              </div>
+              <button type="button" onclick="openPostDotsMenu('${p.id}')" class="w-9 h-9 -mr-1.5 rounded-full hover:bg-slate-800 text-slate-300 text-xl font-bold flex items-center justify-center shrink-0">⋯</button>
+            </div>
+            ${caption ? `<div class="px-3.5 pb-2.5 text-[15px] leading-relaxed text-slate-100 whitespace-pre-line">${caption}</div>` : ""}
+            ${mediaHtml}
+            ${footerHtml}
+            ${cmtHtml}
+          </article>`;
+      };
+
+      // -----------------------------------------------------------------------
+      // 2. CHAT TOPIC TABS (Separate Friends Direct Chat vs Escrow Groups)
+      // -----------------------------------------------------------------------
+      st.chatSubTab = st.chatSubTab || "direct";
+
+      window.setChatSubTab = function (tab) {
+        st.chatSubTab = tab;
+        applyChatTopicSplit();
+      };
+
+      function applyChatTopicSplit() {
+        if (!st.me || st.tab !== "chat") return;
+        const root = document.getElementById("mainContent");
+        if (!root || !root.firstElementChild) return;
+
+        const wrap = root.firstElementChild;
+        const children = Array.from(wrap.children);
+        const groupNodes = [];
+        const directNodes = [];
+        let headerNode = null;
+
+        children.forEach((el, idx) => {
+          if (el.id === "ppwChatTopicBar" || el.id === "ppwEmptyGrpHint") return;
+          const txt = el.textContent || "";
+          if (idx === 0 && txt.includes("မက်ဆေ့ချ် Box")) {
+            headerNode = el;
+            return;
+          }
+          if (txt.includes("ကြားခံ Group")) groupNodes.push(el);
+          else directNodes.push(el);
+        });
+
+        const grpCount = groupNodes.filter(n => !n.textContent.includes("ကြားခံ Group များ")).length || groupNodes.length;
+
+        let bar = document.getElementById("ppwChatTopicBar");
+        if (!bar) {
+          bar = document.createElement("div");
+          bar.id = "ppwChatTopicBar";
+          bar.className = "grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-900 border border-slate-800 my-2";
+          if (headerNode) headerNode.insertAdjacentElement("afterend", bar);
+          else wrap.prepend(bar);
+        }
+
+        const isDirect = st.chatSubTab === "direct";
+        bar.innerHTML = `
+          <button type="button" onclick="setChatSubTab('direct')" class="py-2.5 px-3 rounded-xl text-xs font-bold transition ${isDirect ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"}">
+            💬 စာတိုများ (Fri)
+          </button>
+          <button type="button" onclick="setChatSubTab('groups')" class="py-2.5 px-3 rounded-xl text-xs font-bold transition ${!isDirect ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"}">
+            🛡️ ကြားခံ Group (${grpCount})
+          </button>
+        `;
+
+        groupNodes.forEach(el => el.classList.toggle("hidden", isDirect));
+        directNodes.forEach(el => el.classList.toggle("hidden", !isDirect));
+
+        let emptyGrp = document.getElementById("ppwEmptyGrpHint");
+        if (!isDirect && groupNodes.length === 0) {
+          if (!emptyGrp) {
+            emptyGrp = document.createElement("div");
+            emptyGrp.id = "ppwEmptyGrpHint";
+            emptyGrp.className = "text-center text-slate-400 text-xs py-8 bg-[#0f172a] rounded-2xl border border-slate-800";
+            emptyGrp.textContent = "🛡️ ကြားခံ Group မရှိသေးပါ";
+            bar.insertAdjacentElement("afterend", emptyGrp);
+          }
+        } else if (emptyGrp) {
+          emptyGrp.remove();
+        }
+      }
+
+      const _origRenderBundle = render;
+      render = function () {
+        _origRenderBundle();
+        if (st.me && st.tab === "chat") {
+          applyChatTopicSplit();
+        }
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
