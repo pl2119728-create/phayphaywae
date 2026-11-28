@@ -3407,6 +3407,223 @@
         return html;
       };
     })();
+    // =========================================================================
+    // PRODUCTION REAL-TIME CHAT ENGINE (SSE Stream + limitToLast=40 + userChats)
+    // =========================================================================
+    (function () {
+      if (window.__PPW_PROD_CHAT_ENGINE__) return;
+      window.__PPW_PROD_CHAT_ENGINE__ = true;
+      window.__PPW_2WAY_LIVE_FIX__ = true; // Prevent old polling block from running
+
+      let _roomES = null;
+      let _inboxES = null;
+      let _activeStreamRid = "";
+
+      function canonRid(a, b) {
+        if (!a || !b) return "";
+        if (String(a).startsWith("GRP_") || String(a).startsWith("ESCROW_")) return String(a);
+        return [String(a), String(b)].sort().join("_");
+      }
+
+      // 1. Force Canonical Room ID Everywhere
+      roomId = function (a, b) { return canonRid(a, b); };
+
+      // 2. Update userChats Index for Both Sender & Receiver (Lightweight Inbox)
+      function updateUserChatIndex(rid, peerId, msgObj) {
+        if (!st.me || !rid || !peerId || !msgObj) return;
+        const preview = msgObj.audio ? "🎙️ အသံမက်ဆေ့ချ်" : (msgObj.image ? "🖼️ ဓာတ်ပုံ" : String(msgObj.text || "").slice(0, 60));
+        const now = Number(msgObj.createdAt || Date.now());
+        const myEntry = { rid, peerId, lastText: preview, lastAt: now, senderId: st.me.id };
+        const peerEntry = { rid, peerId: st.me.id, lastText: preview, lastAt: now, senderId: st.me.id };
+
+        fbPut(`userChats/${st.me.id}/${rid}`, myEntry).catch(() => {});
+        if (!String(rid).startsWith("GRP_") && !String(rid).startsWith("ESCROW_")) {
+          fbPut(`userChats/${peerId}/${rid}`, peerEntry).catch(() => {});
+        }
+      }
+
+      // 3. Fast Non-Blocking Message Send + Index Update
+      if (typeof pushMessageToServer === "function") {
+        const _origPushProd = pushMessageToServer;
+        pushMessageToServer = async function (rid, mid) {
+          const isGrp = String(rid).startsWith("GRP_") || String(rid).startsWith("ESCROW_");
+          const targetRid = (!isGrp && st.me && st.chatUid) ? canonRid(st.me.id, st.chatUid) : rid;
+          const m = (pendingChats[rid] && pendingChats[rid][mid]) || (st.chats[rid] && st.chats[rid][mid]) || (st.chats[targetRid] && st.chats[targetRid][mid]);
+
+          if (targetRid !== rid && m) {
+            if (!st.chats[targetRid]) st.chats[targetRid] = {};
+            st.chats[targetRid][mid] = m;
+            if (!pendingChats[targetRid]) pendingChats[targetRid] = {};
+            pendingChats[targetRid][mid] = m;
+            if (pendingChats[rid]) delete pendingChats[rid][mid];
+          }
+
+          await _origPushProd(targetRid, mid);
+          if (m && !isGrp && st.chatUid) {
+            updateUserChatIndex(targetRid, st.chatUid, m);
+          }
+        };
+      }
+
+      // 4. Real-Time SSE Stream for Active Chat Room (Last 40 Messages Only)
+      function closeProdRoomStream() {
+        if (_roomES) {
+          try { _roomES.close(); } catch (e) {}
+          _roomES = null;
+        }
+        _activeStreamRid = "";
+      }
+
+      function applyStreamEvent(rid, isGroup, path, data) {
+        if (!st.chats) st.chats = {};
+        if (!st.chats[rid]) st.chats[rid] = {};
+        let hasNewIncoming = false;
+
+        if (path === "/") {
+          if (data && typeof data === "object") {
+            const prevKeys = Object.keys(st.chats[rid]).length;
+            Object.entries(data).forEach(([mid, m]) => {
+              if (!m || typeof m !== "object") return;
+              if (!st.chats[rid][mid] && prevKeys > 0 && m.senderId !== st.me.id) hasNewIncoming = true;
+              st.chats[rid][mid] = { ...(st.chats[rid][mid] || {}), ...m, id: m.id || mid, _status: "sent" };
+            });
+          }
+        } else {
+          const parts = path.split("/").filter(Boolean);
+          const mid = parts[0];
+          if (!mid) return;
+
+          if (parts.length === 1) {
+            if (data === null) {
+              delete st.chats[rid][mid];
+            } else if (typeof data === "object") {
+              if (!st.chats[rid][mid] && data.senderId !== st.me.id) hasNewIncoming = true;
+              st.chats[rid][mid] = { ...(st.chats[rid][mid] || {}), ...data, id: data.id || mid, _status: "sent" };
+            }
+          } else if (st.chats[rid][mid]) {
+            // Nested update (e.g., reactions, seenAt, deletedForAll)
+            let cur = st.chats[rid][mid];
+            for (let i = 1; i < parts.length - 1; i++) {
+              if (!cur[parts[i]] || typeof cur[parts[i]] !== "object") cur[parts[i]] = {};
+              cur = cur[parts[i]];
+            }
+            const leaf = parts[parts.length - 1];
+            if (data === null) delete cur[leaf];
+            else cur[leaf] = data;
+          }
+        }
+
+        if (hasNewIncoming && typeof playSong === "function") playSong("message");
+        st.lastMsgHtmlSig = "";
+        if (isGroup && typeof renderGroupMsgs === "function") renderGroupMsgs();
+        else if (!isGroup && typeof renderMsgs === "function") renderMsgs();
+      }
+
+      openRoomStream = function (rid, isGroup) {
+        const finalRid = (!isGroup && st.me && st.chatUid) ? canonRid(st.me.id, st.chatUid) : rid;
+        if (!finalRid || !navigator.onLine) return;
+        if (_activeStreamRid === finalRid && _roomES && _roomES.readyState !== 2) return;
+
+        closeProdRoomStream();
+        _activeStreamRid = finalRid;
+
+        // Firebase RTDB REST SSE with limitToLast=40 (Zero Polling, Low Bandwidth)
+        const streamUrl = `${DB}/chats/${finalRid}.json?orderBy=%22$key%22&limitToLast=40`;
+        try {
+          const es = new EventSource(streamUrl);
+          _roomES = es;
+
+          es.addEventListener("put", (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              applyStreamEvent(finalRid, isGroup, msg.path || "/", msg.data);
+            } catch (e) {}
+          });
+
+          es.addEventListener("patch", (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg.data && typeof msg.data === "object") {
+                Object.entries(msg.data).forEach(([k, v]) => {
+                  const p = msg.path === "/" ? `/${k}` : `${msg.path}/${k}`;
+                  applyStreamEvent(finalRid, isGroup, p, v);
+                });
+              }
+            } catch (e) {}
+          });
+
+          es.onerror = () => {
+            if (_roomES === es && es.readyState === 2) {
+              setTimeout(() => {
+                if (_activeStreamRid === finalRid && navigator.onLine) openRoomStream(finalRid, isGroup);
+              }, 3000);
+            }
+          };
+        } catch (e) {}
+      };
+
+      const _origCloseStreamProd = typeof closeRoomStream === "function" ? closeRoomStream : null;
+      closeRoomStream = function () {
+        closeProdRoomStream();
+        if (_origCloseStreamProd) _origCloseStreamProd();
+      };
+
+      // 5. Real-Time Inbox Stream (Reads ONLY userChats/{myId}, Never Full /chats)
+      function startInboxStream() {
+        if (!st.me || !navigator.onLine || _inboxES) return;
+        try {
+          const es = new EventSource(`${DB}/userChats/${st.me.id}.json`);
+          _inboxES = es;
+
+          const handleInbox = (data) => {
+            if (!data || typeof data !== "object") return;
+            if (!st.chats) st.chats = {};
+            Object.entries(data).forEach(([rk, info]) => {
+              if (!info || typeof info !== "object") return;
+              if (!st.chats[rk] || !Object.keys(st.chats[rk]).length) {
+                st.chats[rk] = {
+                  _preview: {
+                    id: "_preview",
+                    senderId: info.senderId || info.peerId || "",
+                    text: info.lastText || "",
+                    createdAt: Number(info.lastAt || Date.now()),
+                    _status: "sent"
+                  }
+                };
+              }
+            });
+            if (st.tab === "chat" && !st.chatUid && typeof render === "function") {
+              st.lastRenderSig = "";
+              render();
+            }
+          };
+
+          es.addEventListener("put", (ev) => {
+            try {
+              const msg = JSON.parse(ev.data);
+              if (msg.path === "/") handleInbox(msg.data);
+              else if (msg.data && typeof msg.data === "object") {
+                const rk = msg.path.replace(/^\//, "").split("/")[0];
+                handleInbox({ [rk]: msg.data });
+              }
+            } catch (e) {}
+          });
+
+          es.onerror = () => {
+            if (_inboxES === es && es.readyState === 2) {
+              _inboxES = null;
+              setTimeout(startInboxStream, 5000);
+            }
+          };
+        } catch (e) {}
+      }
+
+      setTimeout(startInboxStream, 400);
+      window.addEventListener("online", () => {
+        startInboxStream();
+        if (st.chatUid) openRoomStream(canonRid(st.me.id, st.chatUid), false);
+      });
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
