@@ -2756,6 +2756,89 @@
         }, 80);
       };
     })();
+    // =========================================================================
+    // FIX V10: Restore Morning Chats & Force-Show All Conversations in Chat Tab
+    // =========================================================================
+    (function () {
+      if (window.__PPW_FIX_V10__) return;
+      window.__PPW_FIX_V10__ = true;
+
+      function normalizeChatsFromServer(rawChats) {
+        if (!st.me || !rawChats || typeof rawChats !== "object") return;
+        if (!st.chats) st.chats = {};
+
+        Object.entries(rawChats).forEach(([rk, msgs]) => {
+          if (!msgs || typeof msgs !== "object") return;
+          const parts = rk.split("_");
+          // Match 1-to-1 rooms (A_B) involving me, or group rooms
+          const involvesMe = rk.includes(st.me.id) || parts.includes(st.me.id);
+          if (!involvesMe && !rk.startsWith("GRP_") && !rk.startsWith("ESCROW_")) return;
+
+          if (!st.chats[rk]) st.chats[rk] = {};
+          Object.entries(msgs).forEach(([mid, m]) => {
+            if (!m || typeof m !== "object") return;
+            const cleanM = {
+              id: m.id || mid,
+              senderId: m.senderId || "",
+              text: m.text || "",
+              image: m.image || "",
+              audio: m.audio || "",
+              audioDur: Number(m.audioDur || 0),
+              replyTo: m.replyTo || null,
+              reactions: m.reactions || null,
+              forwarded: !!m.forwarded,
+              seenAt: m.seenAt || 0,
+              deletedFor: m.deletedFor || {},
+              deletedForAll: !!m.deletedForAll,
+              createdAt: Number(m.createdAt || Date.now()),
+              _status: "sent"
+            };
+            st.chats[rk][cleanM.id] = { ...(st.chats[rk][cleanM.id] || {}), ...cleanM };
+          });
+        });
+      }
+
+      window.restoreAllMyChats = async function () {
+        if (!st.me || !navigator.onLine) return;
+        try {
+          const [ch, us] = await Promise.all([
+            fbGet("chats").catch(() => null),
+            fbGet("users").catch(() => null)
+          ]);
+          if (us && typeof us === "object") {
+            st.users = { ...(st.users || {}), ...us };
+            st.users[st.me.id] = { ...(st.users[st.me.id] || {}), ...st.me };
+          }
+          if (ch && typeof ch === "object") {
+            normalizeChatsFromServer(ch);
+          }
+          if (st.chatUid && typeof renderMsgs === "function") {
+            st.lastMsgHtmlSig = "";
+            renderMsgs();
+          } else if (st.tab === "chat" && typeof render === "function") {
+            st.lastRenderSig = "";
+            render();
+          }
+        } catch (e) {}
+      };
+
+      // Run immediately on load & whenever switching to Chat tab
+      setTimeout(() => { window.restoreAllMyChats(); }, 300);
+      setInterval(() => {
+        if (st.me && !document.hidden && navigator.onLine) {
+          window.restoreAllMyChats();
+        }
+      }, 5000);
+
+      const _origRenderV10 = render;
+      render = function () {
+        _origRenderV10();
+        if (st.me && st.tab === "chat" && !window.__ppwChatFetchedOnce) {
+          window.__ppwChatFetchedOnce = true;
+          window.restoreAllMyChats();
+        }
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
