@@ -1837,6 +1837,315 @@
       }
     `;
     document.head.appendChild(_safeBottomCss);
+    // =========================================================================
+    // CLEAN BUGFIX V3: No-Flicker Chat (Sending/✓/✓✓) + APK Voice + Step Back
+    // =========================================================================
+    (function () {
+      if (window.__PPW_BUGFIX_V3__) return;
+      window.__PPW_BUGFIX_V3__ = true;
+
+      // 1. Keep local pending/just-sent messages so sync NEVER wipes them out
+      window._ppwPendingMsgs = {}; // { [rid]: { [mid]: msgObj } }
+
+      function mergeServerChatsWithPending(serverChats) {
+        const merged = serverChats && typeof serverChats === "object" ? { ...serverChats } : {};
+        const now = Date.now();
+        Object.entries(window._ppwPendingMsgs).forEach(([rid, map]) => {
+          if (!merged[rid]) merged[rid] = {};
+          Object.entries(map || {}).forEach(([mid, m]) => {
+            if (merged[rid][mid]) {
+              // Server confirmed it -> remove from pending
+              delete window._ppwPendingMsgs[rid][mid];
+            } else if (now - (m.createdAt || 0) < 20000) {
+              // Still uploading or server cache hasn't caught up -> keep visible!
+              merged[rid][mid] = m;
+            } else {
+              delete window._ppwPendingMsgs[rid][mid];
+            }
+          });
+        });
+        return merged;
+      }
+
+      // Override sendChatPayload: Show "Sending..." immediately -> "✓" when saved -> "✓✓" when seen
+      sendChatPayload = async function ({ text, image, audio }) {
+        if (!st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const mid = "M-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        const m = {
+          id: mid,
+          senderId: st.me.id,
+          text: text || "",
+          image: image || "",
+          audio: audio || "",
+          seenAt: 0,
+          deletedFor: {},
+          deletedForAll: false,
+          createdAt: Date.now(),
+          _sending: true
+        };
+
+        if (!st.chats[rid]) st.chats[rid] = {};
+        if (!window._ppwPendingMsgs[rid]) window._ppwPendingMsgs[rid] = {};
+        st.chats[rid][mid] = m;
+        window._ppwPendingMsgs[rid][mid] = m;
+
+        clearChatAttach();
+        fbPut(`typing/${rid}/${st.me.id}`, 0).catch(() => {});
+        st.lastMsgHtmlSig = "";
+        renderMsgs();
+
+        try {
+          const payload = { ...m };
+          delete payload._sending;
+          const res = await fbPut(`chats/${rid}/${mid}`, payload);
+          if (!res.ok) throw new Error("Send failed");
+          m._sending = false;
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._sending = false;
+          notify(st.chatUid, "က စာပို့လိုက်သည်");
+          st.lastMsgHtmlSig = "";
+          renderMsgs();
+        } catch (err) {
+          m._failed = true;
+          m._sending = false;
+          st.lastMsgHtmlSig = "";
+          renderMsgs();
+          toast("လိုင်းနှေးနေပါသည် — စာပို့မရပါ");
+        }
+      };
+
+      // Override renderMsgs: Display ⏳ Sending... / ✓ / ✓✓ cleanly
+      renderMsgs = function () {
+        const box = document.getElementById("msgBox");
+        if (!box || !st.chatUid) return;
+        const rid = roomId(st.me.id, st.chatUid);
+        const ms = Object.values(st.chats[rid] || {})
+          .filter(m => m && !(m.deletedFor && m.deletedFor[st.me.id]))
+          .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+        const sig = ms.map(m => `${m.id}_${m._sending ? "s" : (m._failed ? "f" : (m.seenAt ? 2 : 1))}_${m.deletedForAll ? 1 : 0}`).join("|");
+        if (sig !== st.lastMsgHtmlSig) {
+          st.lastMsgHtmlSig = sig;
+          box.innerHTML = ms.length
+            ? ms.map(m => {
+                const me = m.senderId === st.me.id;
+                const isPureSticker = !m.deletedForAll && !m.image && !m.audio && STICKER_ICONS.includes((m.text || "").trim());
+                let tick = "";
+                if (me) {
+                  if (m._sending) tick = `<span class="text-emerald-100/80 text-[10px]">⏳ Sending...</span>`;
+                  else if (m._failed) tick = `<span class="text-rose-200 text-[10px]">⚠️ မရောက်ပါ</span>`;
+                  else if (m.seenAt) tick = `<span class="text-sky-200 font-bold">✓✓</span>`;
+                  else tick = `<span class="text-emerald-200/90 font-bold">✓</span>`;
+                }
+                return `<div class="flex items-end ${me ? "justify-end" : "justify-start"}">
+                  <div onclick="openDeleteMsgMenu('${m.id}')" class="cursor-pointer ${isPureSticker ? "text-6xl py-1 px-2" : `max-w-[82%] px-4 py-2.5 rounded-2xl text-base space-y-1 ${me ? "bg-emerald-600 text-white" : "bg-[#0f172a] border border-slate-800 text-slate-100"}`}">
+                    ${m.deletedForAll
+                      ? `<div class="italic text-xs opacity-75">🚫 ဤမက်ဆေ့ချ်ကို ဖျက်လိုက်ပါပြီ</div>`
+                      : `${m.image ? `<img onclick="event.stopPropagation();openImageViewer(this.src)" src="${m.image}" class="rounded-xl max-h-56 object-cover cursor-zoom-in"/>` : ""}${m.audio ? `<audio controls preload="metadata" src="${m.audio}" class="w-52 h-9"></audio>` : ""}${m.text ? `<div class="whitespace-pre-line">${esc(m.text)}</div>` : ""}`}
+                    ${me ? `<div class="text-[11px] text-right leading-none pt-0.5">${tick}</div>` : ""}
+                  </div>
+                </div>`;
+              }).join("")
+            : `<p class="text-sm text-slate-400 text-center py-8">မင်္ဂလာပါ! စကားစပြောလိုက်ပါ 👋</p>`;
+          box.scrollTop = box.scrollHeight;
+        }
+        renderTypingBanner();
+      };
+
+      // Protect st.chats during fastSyncChats & sync
+      const _origFastSyncV3 = fastSyncChats;
+      fastSyncChats = async function () {
+        await _origFastSyncV3();
+        st.chats = mergeServerChatsWithPending(st.chats);
+        if (st.chatUid) renderMsgs();
+      };
+
+      const _origSyncV3 = sync;
+      sync = async function (init = false) {
+        await _origSyncV3(init);
+        st.chats = mergeServerChatsWithPending(st.chats);
+        if (st.chatUid) renderMsgs();
+      };
+
+      // 2. APK-Compatible Voice Recorder (MimeType auto-detect + Native Audio Fallback)
+      function pickSupportedAudioMime() {
+        if (typeof MediaRecorder === "undefined") return "";
+        const types = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus", "audio/3gpp"];
+        for (const t of types) {
+          try { if (MediaRecorder.isTypeSupported(t)) return t; } catch (e) {}
+        }
+        return "";
+      }
+
+      function triggerApkAudioFallback(instantMode) {
+        let inp = document.getElementById("ppwApkAudioFallback");
+        if (!inp) {
+          inp = document.createElement("input");
+          inp.id = "ppwApkAudioFallback";
+          inp.type = "file";
+          inp.accept = "audio/*";
+          inp.setAttribute("capture", "microphone");
+          inp.className = "hidden";
+          document.body.appendChild(inp);
+        }
+        inp.onchange = (ev) => {
+          const f = ev.target.files && ev.target.files[0];
+          if (!f || !st.chatUid) return;
+          const r = new FileReader();
+          r.onloadend = () => {
+            if (instantMode) {
+              sendChatPayload({ text: "", image: "", audio: r.result });
+            } else {
+              st.chatImg = null;
+              st.chatAudioPreview = r.result;
+              const lbl = document.getElementById("chatAttachLabel"), box = document.getElementById("chatAttachPreview");
+              if (lbl && box) {
+                lbl.innerHTML = `<audio controls src="${st.chatAudioPreview}" class="h-9 flex-1 min-w-0"></audio><button onclick="sendMsg()" class="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">ပို့မည်</button>`;
+                box.classList.remove("hidden");
+              }
+              updateChatRightBtn();
+            }
+          };
+          r.readAsDataURL(f);
+          inp.value = "";
+        };
+        inp.click();
+      }
+
+      async function startSafeVoiceRec(mode) {
+        const isPreview = mode === "preview";
+        const btn = document.getElementById("voiceBtn");
+        if (st.recorder && st.recorder.state === "recording") {
+          st.recorder.stop();
+          if (btn) { btn.className = "w-11 h-11 rounded-full bg-slate-800 text-sky-400 text-xl flex items-center justify-center shrink-0"; btn.textContent = "🎙️"; }
+          updateChatRightBtn();
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+          toast("APK မိုက်ခရိုဖုန်း ဖွင့်ပေးနေပါသည်...");
+          return triggerApkAudioFallback(!isPreview);
+        }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mime = pickSupportedAudioMime();
+          st.audioChunks = [];
+          st.recMode = mode;
+          const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+          st.recorder = rec;
+          rec.ondataavailable = e => { if (e.data && e.data.size > 0) st.audioChunks.push(e.data); };
+          rec.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(st.audioChunks, { type: mime || "audio/webm" });
+            const r = new FileReader();
+            r.onloadend = () => {
+              if (!st.chatUid) return;
+              if (isPreview) {
+                st.chatImg = null;
+                st.chatAudioPreview = r.result;
+                const lbl = document.getElementById("chatAttachLabel"), box = document.getElementById("chatAttachPreview");
+                if (lbl && box) {
+                  lbl.innerHTML = `<audio controls src="${st.chatAudioPreview}" class="h-9 flex-1 min-w-0"></audio><button onclick="sendMsg()" class="px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold shrink-0">ပို့မည်</button>`;
+                  box.classList.remove("hidden");
+                }
+              } else {
+                sendChatPayload({ text: "", image: "", audio: r.result });
+              }
+              updateChatRightBtn();
+            };
+            r.readAsDataURL(blob);
+          };
+          rec.start();
+          if (isPreview && btn) {
+            btn.className = "w-11 h-11 rounded-full bg-amber-500 text-slate-950 text-xl flex items-center justify-center animate-pulse shrink-0";
+            btn.textContent = "⏹️";
+          }
+          updateChatRightBtn();
+          toast(isPreview ? "🎙️ အသံသွင်းနေသည်... ရပ်ရန် ⏹️ နှိပ်ပါ" : "🎤 အသံသွင်းနေသည်... ပို့ရန် ⏹️ နှိပ်ပါ");
+        } catch (err) {
+          toast("APK တွင် Mic ခွင့်ပြုချက် မရှိသေးပါ — Audio ဖိုင်ရွေးပို့နိုင်ပါသည်");
+          triggerApkAudioFallback(!isPreview);
+        }
+      }
+
+      togglePreviewVoiceRec = () => startSafeVoiceRec("preview");
+      toggleInstantVoiceRec = () => startSafeVoiceRec("instant");
+
+      // 3. Step-by-Step Back Navigation (Never jump straight to Home)
+      st.navStack = Array.isArray(st.navStack) ? st.navStack : [];
+
+      function pushStep(tab, uid = null) {
+        const last = st.navStack[st.navStack.length - 1];
+        if (!last || last.tab !== tab || last.uid !== uid) {
+          st.navStack.push({ tab, uid });
+          if (st.navStack.length > 25) st.navStack.shift();
+        }
+        try { history.pushState({ ppw: "step", ts: Date.now() }, ""); } catch (e) {}
+      }
+
+      const _origSwitchTabBack = switchTab;
+      switchTab = function (t) {
+        if (st.tab && st.tab !== t && st.tab !== "userProfile") pushStep(st.tab, null);
+        if (t === "home") st.navStack = [];
+        return _origSwitchTabBack(t);
+      };
+
+      const _origOpenProfileBack = openUserProfile;
+      openUserProfile = function (uid) {
+        if (st.me && uid !== st.me.id) {
+          if (st.tab === "userProfile" && st.viewProfileUid && st.viewProfileUid !== uid) pushStep("userProfile", st.viewProfileUid);
+          else if (st.tab && st.tab !== "userProfile") pushStep(st.tab, null);
+        }
+        return _origOpenProfileBack(uid);
+      };
+
+      window.addEventListener("popstate", (ev) => {
+        if (!st.me) return;
+        ev.stopImmediatePropagation();
+
+        const escrowOv = document.getElementById("escrowPickerOverlay");
+        if (escrowOv) { escrowOv.remove(); try { history.pushState({ ppw: "guard" }, ""); } catch (e) {} return; }
+
+        const mr = document.getElementById("modalRoot");
+        if (mr && mr.innerHTML.trim() !== "") { closeModal(); try { history.pushState({ ppw: "guard" }, ""); } catch (e) {} return; }
+
+        const dr = document.getElementById("drawerRoot");
+        if (dr && dr.innerHTML.trim() !== "") { closeSideMenu(); try { history.pushState({ ppw: "guard" }, ""); } catch (e) {} return; }
+
+        const sb = document.getElementById("topSearchBar");
+        if (sb && !sb.classList.contains("hidden")) { toggleTopSearch(false); try { history.pushState({ ppw: "guard" }, ""); } catch (e) {} return; }
+
+        if (st.navStack.length > 0) {
+          const prev = st.navStack.pop();
+          st.viewProfileUid = prev.tab === "userProfile" ? prev.uid : null;
+          st.tab = prev.tab || "home";
+          st.profileSubTab = "posts";
+          updateDockHighlight();
+          st.lastRenderSig = "";
+          render();
+          try { history.pushState({ ppw: "guard" }, ""); } catch (e) {}
+          return;
+        }
+
+        if (st.tab !== "home") {
+          st.viewProfileUid = null;
+          st.tab = "home";
+          updateDockHighlight();
+          st.lastRenderSig = "";
+          render();
+          try { history.pushState({ ppw: "guard" }, ""); } catch (e) {}
+          return;
+        }
+
+        const now = Date.now();
+        if (now - (window._lastBackAt || 0) < 2000) {
+          history.back();
+        } else {
+          window._lastBackAt = now;
+          toast("ထွက်ရန် Back ခလုတ်ကို ထပ်နှိပ်ပါ");
+          try { history.pushState({ ppw: "guard" }, ""); } catch (e) {}
+        }
+      }, true);
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
