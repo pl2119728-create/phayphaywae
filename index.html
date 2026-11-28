@@ -2839,6 +2839,56 @@
         }
       };
     })();
+    // =========================================================================
+    // FAST SEND FIX: Speed Up Outgoing Messages on Slower / Other Phones
+    // =========================================================================
+    (function () {
+      if (window.__PPW_FAST_SEND__) return;
+      window.__PPW_FAST_SEND__ = true;
+
+      const _origPushMsg = pushMessageToServer;
+      pushMessageToServer = async function (rid, mid) {
+        const m = (pendingChats[rid] && pendingChats[rid][mid]) || (st.chats[rid] && st.chats[rid][mid]);
+        if (!m || !navigator.onLine) {
+          if (_origPushMsg) return _origPushMsg(rid, mid);
+          return;
+        }
+        try {
+          const payload = { ...m };
+          delete payload._status;
+          const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 7000) : null;
+          const res = await fetch(`${DB}/chats/${rid}/${mid}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: ctrl ? ctrl.signal : undefined
+          });
+          if (timer) clearTimeout(timer);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          m._status = "sent";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "sent";
+          if (pendingChats[rid] && pendingChats[rid][mid]) {
+            delete pendingChats[rid][mid];
+            if (!Object.keys(pendingChats[rid]).length) delete pendingChats[rid];
+            savePending();
+          }
+          if (st.chatUid && typeof notify === "function") {
+            notify(st.chatUid, "က မက်ဆေ့ချ် ပို့လိုက်သည်", "", "message");
+          }
+        } catch (e) {
+          m._status = "failed";
+          if (st.chats[rid] && st.chats[rid][mid]) st.chats[rid][mid]._status = "failed";
+          if (!pendingChats[rid]) pendingChats[rid] = {};
+          pendingChats[rid][mid] = m;
+          savePending();
+        } finally {
+          if (typeof st.lastMsgHtmlSig !== "undefined") st.lastMsgHtmlSig = "";
+          if (typeof renderMsgs === "function" && st.chatUid) renderMsgs();
+        }
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
