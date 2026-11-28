@@ -2436,6 +2436,156 @@
         return html.slice(0, idx) + threadedHtml;
       };
     })();
+    // =========================================================================
+    // UPGRADE V8: Smart Notification -> Jump Directly to Mentioned / Target Post
+    // =========================================================================
+    (function () {
+      if (window.__PPW_UPGRADE_V8__) return;
+      window.__PPW_UPGRADE_V8__ = true;
+
+      st.focusPostId = null;
+
+      // 1. Attach postId & kind to notifications automatically
+      const _origNotifyV8 = notify;
+      notify = function (toId, text, postId = "", kind = "") {
+        if (!st.me || !toId || toId === st.me.id || isBlockedPair(toId)) return;
+        const id = "N-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+        const autoPostId = postId || st.focusPostId || ((st.posts && st.posts[0] && st.posts[0].authorId === st.me.id) ? st.posts[0].id : "");
+        fbPut(`notifications/${toId}/${id}`, {
+          id,
+          fromId: st.me.id,
+          fromName: st.me.name,
+          text,
+          postId: autoPostId,
+          kind,
+          read: false,
+          createdAt: Date.now()
+        }).catch(() => {});
+      };
+
+      // Tag exact postId when sending mention notifications
+      const _origSubmitV8 = submitPost;
+      submitPost = async function () {
+        const mentionsCopy = { ...(st.postMentions || {}) };
+        const txt = (document.getElementById("postTxt") && document.getElementById("postTxt").value) || "";
+        const res = await _origSubmitV8.apply(this, arguments);
+        const latest = st.posts[0];
+        if (latest && latest.authorId === st.me.id && Object.keys(mentionsCopy).length) {
+          Object.entries(mentionsCopy).forEach(([name, uid]) => {
+            if (txt.includes("@" + name)) {
+              const nid = "N-" + Date.now() + "-" + Math.floor(Math.random() * 999);
+              fbPut(`notifications/${uid}/${nid}`, {
+                id: nid,
+                fromId: st.me.id,
+                fromName: st.me.name,
+                text: "က ပို့စ်ထဲတွင် သင့်ကို @Mention ခေါ်ထားပါသည်",
+                postId: latest.id,
+                kind: "mention",
+                read: false,
+                createdAt: Date.now()
+              }).catch(() => {});
+            }
+          });
+        }
+        return res;
+      };
+
+      // 2. Jump directly to target post when clicking a notification
+      window.openNotifTarget = async function (notifIdx, fallbackFromId) {
+        const list = (st.notifs || []).filter(n => n && !isBlockedPair(n.fromId));
+        const n = list[notifIdx];
+        if (!n) {
+          if (fallbackFromId) openUserProfile(fallbackFromId);
+          return;
+        }
+
+        let pid = n.postId || "";
+        let targetPost = pid ? st.posts.find(x => x && x.id === pid) : null;
+
+        // Fetch post from Firebase if not currently in memory
+        if (!targetPost && pid && navigator.onLine) {
+          try {
+            const fetched = await fbGet(`posts/${pid}`).catch(() => null);
+            if (fetched && isValidPostObj(fetched)) {
+              mergeServerPosts({ [pid]: fetched });
+              targetPost = st.posts.find(x => x && x.id === pid);
+            }
+          } catch (e) {}
+        }
+
+        // Fallback match by authorId + approximate timestamp if postId wasn't stored
+        if (!targetPost && n.fromId && n.createdAt) {
+          targetPost = st.posts.find(p => p && p.authorId === n.fromId && Math.abs((p.createdAt || 0) - n.createdAt) < 120000);
+          if (targetPost) pid = targetPost.id;
+        }
+
+        if (!targetPost) {
+          if (n.text && (n.text.includes("@Mention") || n.text.includes("မှတ်ချက်") || n.text.includes("Reaction") || n.text.includes("ပို့စ်"))) {
+            toast("ဤပို့စ်ကို ဖျက်လိုက်ပါပြီ သို့မဟုတ် မတွေ့ပါ");
+          }
+          if (n.fromId) openUserProfile(n.fromId);
+          return;
+        }
+
+        pauseAllVideos(null);
+        pushNavStep("notifications", null);
+        st.tab = "home";
+        st.viewProfileUid = null;
+        st.cat = "အားလုံး";
+        st.focusPostId = targetPost.id;
+        if (n.text && (n.text.includes("မှတ်ချက်") || n.text.includes("Reply"))) {
+          st.openCmt[targetPost.id] = true;
+        }
+        updateDockHighlight();
+        st.lastRenderSig = "";
+        render();
+
+        setTimeout(() => {
+          const el = document.getElementById("post-card-" + targetPost.id);
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.classList.add("ring-2", "ring-sky-400");
+            setTimeout(() => {
+              el.classList.remove("ring-2", "ring-sky-400");
+              st.focusPostId = null;
+            }, 2400);
+          }
+        }, 80);
+      };
+
+      // 3. Add id="post-card-..." on each post card + make notifications jump to post
+      const _origPostCardV8 = postCard;
+      postCard = function (p) {
+        const html = _origPostCardV8(p);
+        if (!p || !p.id) return html;
+        return html.replace("<article ", `<article id="post-card-${p.id}" `);
+      };
+
+      const _origRenderV8 = render;
+      render = function () {
+        _origRenderV8();
+        if (!st.me || st.tab !== "notifications") return;
+        const el = document.getElementById("mainContent");
+        if (!el) return;
+        const visNotifs = (st.notifs || []).filter(n => n && !isBlockedPair(n.fromId));
+        if (!visNotifs.length) return;
+
+        const rows = el.querySelectorAll(".p-3\\.5.space-y-3 > div.cursor-pointer");
+        rows.forEach((row, idx) => {
+          const n = visNotifs[idx];
+          if (!n) return;
+          row.setAttribute("onclick", `openNotifTarget(${idx}, '${n.fromId}')`);
+          const isMention = (n.text || "").includes("@Mention");
+          if (isMention && !row.querySelector("[data-mention-pill]")) {
+            const pill = document.createElement("span");
+            pill.dataset.mentionPill = "1";
+            pill.className = "ml-auto px-2.5 py-1 rounded-full bg-sky-500/20 border border-sky-500/40 text-sky-300 text-[11px] font-bold shrink-0";
+            pill.textContent = "ပို့စ်ကြည့် ›";
+            row.appendChild(pill);
+          }
+        });
+      };
+    })();
 
     if (!st.me) {
       document.getElementById("authScreen").classList.remove("hidden");
